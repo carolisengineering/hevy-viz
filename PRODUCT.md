@@ -45,7 +45,7 @@ Hevy's own charts are limited by time window and focus on one exercise at a time
 
 ## Brand Commitments
 
-- Name in use: "Training dashboard" (page heading). No logo, palette, or typeface commitments.
+- Name in use: "Training Log" (the header wordmark and the browser tab title). No logo, palette, or typeface commitments.
 - American spelling in all UI copy.
 
 ## Evidence on Hand
