@@ -29,9 +29,10 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
 
 ```bash
 npm install
-npm run sample   # generate demo data → public/data/sample.json
 npm run dev
 ```
+
+The repo includes a generated sample dataset (`public/data/sample.json`), so the dashboard works right away. `npm run sample` regenerates it.
 
 ### Use your own data
 
