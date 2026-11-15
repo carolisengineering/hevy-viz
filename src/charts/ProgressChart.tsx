@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import type { E1rmPoint } from "../core/metrics";
+import "./chart.css";
+import type { ProgressPoint } from "../core/progress";
 import {
   attachInteraction,
   createFrame,
@@ -10,17 +11,22 @@ import {
   drawSeries,
   hideTooltip,
   resetSvg,
+  type ChartFormat,
   type Cursor,
-} from "./e1rmDraw";
+} from "./progressDraw";
 
 interface Props {
-  history: E1rmPoint[];
-  prs: E1rmPoint[];
+  /** Oldest first. */
+  points: readonly ProgressPoint[];
+  prs: readonly ProgressPoint[];
+  format: ChartFormat;
+  /** What the chart shows, for screen readers: "Squat (Barbell): Est. 1RM". */
+  label: string;
   height?: number;
 }
 
-/** Estimated 1RM over time: one 2px line, PR markers, crosshair tooltip. */
-export function E1rmChart({ history, prs, height = 320 }: Props) {
+/** One exercise's progress over time: an ink line, PR stars, a crosshair tooltip. */
+export function ProgressChart({ points, prs, format, label, height = 340 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
@@ -30,24 +36,27 @@ export function E1rmChart({ history, prs, height = 320 }: Props) {
     const svgEl = svgRef.current!;
     const tip = tipRef.current!;
     // Lives across resizes; resets only when the data changes.
-    const cursor: Cursor = { index: history.length - 1 };
+    const cursor: Cursor = { index: points.length - 1 };
+    // The pen draws the line once per data change, not on every resize.
+    let drawIn = true;
 
     const draw = () => {
       // A redraw replaces every element, including the focused hit area; note it to restore focus.
       const hadFocus = svgEl.contains(document.activeElement);
       hideTooltip(tip); // A redraw moves every point; an open tooltip would be stale.
-      const last = history.at(-1);
+      const last = points.at(-1);
       if (!last) {
         resetSvg(svgEl, wrap.clientWidth, height);
         return;
       }
-      const frame = createFrame(svgEl, wrap.clientWidth, height, history);
-      drawGrid(frame);
-      drawAxes(frame);
-      drawSeries(frame, history);
+      const frame = createFrame(svgEl, wrap.clientWidth, height, points);
+      drawGrid(frame, format);
+      drawAxes(frame, format);
+      drawSeries(frame, points, drawIn);
+      drawIn = false;
       drawPrMarkers(frame, prs);
-      drawEndLabel(frame, last);
-      const hit = attachInteraction(frame, history, prs, tip, cursor);
+      drawEndLabel(frame, last, format);
+      const hit = attachInteraction(frame, points, prs, tip, cursor, format, label);
       // Refocusing reshows the tooltip at the cursor's new position.
       if (hadFocus) hit.focus({ preventScroll: true });
     };
@@ -56,13 +65,13 @@ export function E1rmChart({ history, prs, height = 320 }: Props) {
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [history, prs, height]);
+  }, [points, prs, format, label, height]);
 
   return (
     <div ref={wrapRef} className="chart-wrap">
       {/* Height is set up front so the first draw doesn't resize the observed wrapper
           (that would trigger a ResizeObserver loop error and a second draw). */}
-      <svg ref={svgRef} height={height} role="img" aria-label="Estimated one-rep max over time" />
+      <svg ref={svgRef} height={height} role="img" aria-label={label} />
       <div ref={tipRef} className="tooltip" aria-hidden="true" />
     </div>
   );

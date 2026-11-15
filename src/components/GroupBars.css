@@ -1,0 +1,36 @@
+/* Scribble-filled bars: ink for most groups, raspberry for light ones. */
+
+.group-bars {
+  list-style: none;
+  margin: 6px 0 10px;
+  padding: 0;
+}
+.group-bars li {
+  display: grid;
+  grid-template-columns: 92px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+  line-height: 1.6;
+}
+.group-bars .value {
+  text-align: right;
+}
+.group-bars .bar rect {
+  fill: url(#scribble-ink);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+.group-bars li.light {
+  color: var(--accent);
+}
+.group-bars li.light .bar rect {
+  fill: url(#scribble-accent);
+  stroke: var(--accent);
+}
+
+.group-bars.large li {
+  grid-template-columns: 120px 1fr 56px;
+  font-size: 23px;
+  line-height: 1.9;
+}

@@ -1,0 +1,40 @@
+/* The balance view: big group bars, then every muscle as a ruled table. */
+
+.balance-view {
+  max-width: 920px;
+}
+.balance-view .group-bars {
+  margin-bottom: 4px;
+}
+.balance-key {
+  margin-bottom: 30px;
+}
+.balance-view .section-head h3 {
+  font-size: 34px;
+}
+
+.muscles td {
+  font-size: 20px;
+}
+.muscles td.bar-cell {
+  width: 45%;
+}
+.muscles .bar rect {
+  fill: url(#scribble-ink);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+@media (max-width: 699px) {
+  .muscles th:nth-child(2),
+  .muscles td:nth-child(2) {
+    display: none;
+  }
+  .muscles td.bar-cell {
+    width: 35%;
+  }
+  .group-bars.large li {
+    grid-template-columns: 92px 1fr 48px;
+    font-size: 20px;
+  }
+}

@@ -1,0 +1,271 @@
+/* The overview: the tracklist and the log on the left, consistency and balance on the right. */
+
+.overview {
+  display: grid;
+  gap: 36px 44px;
+}
+@media (min-width: 1360px) {
+  .overview {
+    grid-template-columns: minmax(0, 1fr) clamp(380px, 30vw, 440px);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "lifts side"
+      "log side";
+    align-items: start;
+  }
+  .overview-lifts {
+    grid-area: lifts;
+  }
+  .overview-side {
+    grid-area: side;
+  }
+  .overview-log {
+    grid-area: log;
+  }
+}
+
+/* A section written straight on the page: lettered heading, ruled underneath, a note beside it. */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+.section-head h2 {
+  font-size: 42px;
+}
+.section-head p {
+  font-size: 18px;
+}
+
+/* ---- Main lifts: a cassette j-card ---- */
+
+.tracklist th,
+.tracklist td {
+  border-bottom: 1px solid var(--grid);
+  padding: 0 8px;
+  height: 50px;
+  vertical-align: middle;
+}
+.tracklist tr.side th {
+  position: static;
+  height: auto;
+  padding: 14px 2px 2px;
+  font-size: 23px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--grid);
+  background: none;
+}
+.tracklist tr.side u {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.tracklist td.rank {
+  position: relative;
+  width: 40px;
+  padding-left: 2px;
+}
+.tracklist td.name {
+  font-size: 22px;
+  line-height: 1.15;
+}
+.tracklist td.name a {
+  text-decoration: none;
+}
+.tracklist td.name a:hover {
+  text-decoration: underline;
+}
+.tracklist .name-tail {
+  white-space: nowrap;
+}
+.tracklist td.name .ink-star {
+  margin-left: 6px;
+  vertical-align: -2px;
+}
+.tracklist td.num {
+  white-space: nowrap;
+}
+.tracklist .best-sub {
+  display: none;
+}
+.tracklist td.spark {
+  width: 146px;
+}
+.tracklist td.current {
+  position: relative;
+  width: 120px;
+  padding-right: 34px;
+}
+.tracklist td.current .display {
+  font-size: 46px;
+}
+.tracklist td.current .ink-stripe {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.regress {
+  color: var(--accent);
+  text-decoration-thickness: 2px;
+}
+
+/* PR notes written in the margin, left of the rule. */
+.margin-note {
+  display: none;
+}
+@media (min-width: 900px) {
+  .margin-note {
+    display: block;
+    position: absolute;
+    left: -128px;
+    top: 50%;
+    width: 104px;
+    margin-top: -10px;
+    font-size: 19px;
+    white-space: nowrap;
+  }
+}
+
+.no-lifts {
+  padding: 24px 0;
+  font-size: 21px;
+}
+
+/* ---- Latest entries: log lines ---- */
+
+.overview-log {
+  margin-top: 10px;
+}
+.latest-entries ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.latest-entries li {
+  display: grid;
+  grid-template-columns: 96px 84px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--grid);
+  font-size: 19px;
+}
+.log-date {
+  color: var(--accent);
+}
+.log-title {
+  font-size: 21px;
+}
+/* The sets flow as one line of text; wrapped lines hang under the first set. */
+.log-set + .log-set::before {
+  content: "·";
+  margin: 0 8px;
+  color: var(--ink-soft);
+}
+.log-set a {
+  text-decoration: none;
+}
+.log-set a:hover {
+  text-decoration: underline;
+}
+.log-set .ink-star {
+  margin-left: 4px;
+  vertical-align: -2px;
+}
+
+/* ---- The boxes on the right ---- */
+
+.overview-side {
+  display: grid;
+  gap: 20px;
+}
+.overview-side .box-head span {
+  font-size: 17px;
+}
+
+.figure-pair {
+  display: flex;
+  gap: 36px;
+  margin: 6px 0 12px;
+}
+.figure-pair p {
+  display: flex;
+  flex-direction: column;
+}
+.figure-pair strong {
+  font-size: 66px;
+}
+.figure-pair span {
+  font-size: 17px;
+  color: var(--ink-soft);
+}
+.figure-pair .faded strong {
+  color: var(--ink-soft);
+}
+
+.dot-grid {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.dot-grid circle {
+  fill: var(--ink);
+}
+.dot-grid circle.this-month {
+  fill: var(--accent);
+}
+.dot-grid circle.rest {
+  fill: var(--ink-line);
+  opacity: 0.45;
+}
+
+.balance-box .more {
+  font-size: 18px;
+}
+
+/* Phones keep rank, name (with the best set beneath), change and the 1RM. */
+@media (max-width: 699px) {
+  .tracklist .best-sub {
+    display: block;
+    font-size: 16px;
+    color: var(--ink-soft);
+  }
+  .tracklist th,
+  .tracklist td {
+    padding: 6px 4px;
+    height: auto;
+  }
+  .tracklist td.rank {
+    width: 28px;
+  }
+  .tracklist td.current {
+    width: auto;
+    padding-right: 26px;
+  }
+  .tracklist td.spark,
+  .tracklist td.best-set,
+  .tracklist thead th:nth-child(3),
+  .tracklist thead th:nth-child(5) {
+    display: none;
+  }
+  .tracklist td.name {
+    font-size: 19px;
+  }
+  .tracklist td.current .display {
+    font-size: 36px;
+  }
+  .figure-pair strong {
+    font-size: 52px;
+  }
+  .latest-entries li {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+  .log-sets {
+    grid-column: 1 / -1;
+  }
+}

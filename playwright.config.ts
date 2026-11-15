@@ -14,7 +14,12 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // A phone-sized screen (390×844) with touch, still in Chromium.
+    { name: "chromium-mobile", use: { ...devices["iPhone 13"], browserName: "chromium" } },
+    { name: "chromium-dark", use: { ...devices["Desktop Chrome"], colorScheme: "dark" } },
+  ],
   webServer: {
     command: `npx vite --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,

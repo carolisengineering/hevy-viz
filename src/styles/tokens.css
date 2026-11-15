@@ -1,0 +1,40 @@
+/* Palette tokens. Ink does everything; accent marks PRs, dates and the margin rule;
+   select is only for text selection and focus highlights. Never gray text. */
+:root {
+  color-scheme: light;
+  --paper: #fcf9f2;
+  --grid: #dce3ee;
+  --ink: #0e4f86;
+  --ink-soft: #4a6f96; /* small text, ≥4.5:1 on paper */
+  --ink-line: #5f86ae; /* lines only */
+  --accent: #d81b60;
+  --select: #ffc21a;
+
+  --font-display: "Sue Ellen Francisco", "Patrick Hand SC", cursive;
+  --font-data: "Patrick Hand SC", "Segoe Print", cursive;
+}
+
+/* The same notebook under a desk lamp. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #121a26;
+    --grid: #1f2a3a;
+    --ink: #cfe2f7;
+    --ink-soft: #9db7d6;
+    --ink-line: #7f9bbe;
+    --accent: #ff5c93;
+    --select: #ffc21a;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #121a26;
+  --grid: #1f2a3a;
+  --ink: #cfe2f7;
+  --ink-soft: #9db7d6;
+  --ink-line: #7f9bbe;
+  --accent: #ff5c93;
+  --select: #ffc21a;
+}

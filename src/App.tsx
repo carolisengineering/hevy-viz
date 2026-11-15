@@ -1,74 +1,95 @@
-import { useState } from "react";
-import { E1rmChart } from "./charts/E1rmChart";
-import { E1rmTable } from "./components/E1rmTable";
-import { EmptyRange } from "./components/EmptyRange";
-import { ExercisePicker } from "./components/ExercisePicker";
-import { RangePicker } from "./components/RangePicker";
-import { StatTile } from "./components/StatTile";
-import type { RangeId } from "./core/ranges";
+import { useEffect, useRef, useState } from "react";
+import "./App.css";
+import { Header } from "./components/Header";
+import { ScribbleDefs } from "./components/ink";
+import { rangeById, type RangeId } from "./core/ranges";
 import type { HevyDataset } from "./core/types";
-import { formatKg, formatKgChange } from "./format";
+import type { Unit } from "./format";
 import { useDataset } from "./hooks/useDataset";
-import { useE1rmView } from "./hooks/useE1rmView";
+import { usePreference } from "./hooks/usePreference";
+import { useRoute } from "./hooks/useRoute";
+import { useTraining } from "./hooks/useTraining";
+import { Balance } from "./views/Balance";
+import { ExerciseDetail } from "./views/ExerciseDetail";
+import { Exercises, INITIAL_LIST_VIEW, type ListView } from "./views/Exercises";
+import { Overview } from "./views/Overview";
+
+const UNITS: readonly Unit[] = ["kg", "lb"];
 
 export default function App() {
   const dataset = useDataset();
   if (dataset.status === "error") return <main className="viz-root"><p className="notice">{dataset.message}</p></main>;
-  if (dataset.status === "loading") return <main className="viz-root"><p className="muted">Loading…</p></main>;
+  if (dataset.status === "loading") return <main className="viz-root"><p className="quiet">Loading…</p></main>;
   return <Dashboard data={dataset.data} skipped={dataset.skipped} />;
 }
 
 function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
-  const [templateId, setTemplateId] = useState("");
+  const training = useTraining(data);
   const [rangeId, setRangeId] = useState<RangeId>("all");
-  const [showTable, setShowTable] = useState(false);
-  const view = useE1rmView(data, templateId, rangeId);
-  const isEmpty = view.history.length === 0;
+  const [unit, setUnit] = usePreference("hevy-viz:unit", UNITS, "kg");
+  const [route, navigate] = useRoute();
+  const [query, setQuery] = useState("");
+  const [listView, setListView] = useState<ListView>(INITIAL_LIST_VIEW);
+  const listScroll = useRef(0);
+  // The route of the previous render, to tell "back from an exercise page" from other arrivals.
+  const previous = useRef(route);
+  const backFromExercise = previous.current.view === "exercises" && previous.current.exerciseId != null;
+  useEffect(() => {
+    previous.current = route;
+  });
+  const range = rangeById(rangeId);
+
+  const onQuery = (q: string) => {
+    setQuery(q);
+    if (route.view !== "exercises" || route.exerciseId != null) navigate({ view: "exercises" });
+  };
 
   return (
-    <main className="viz-root">
-      <header>
-        <h1>Training dashboard</h1>
-        <p className="muted">
-          {data.workouts.length} workouts
-          {data.source === "sample" && <span className="badge">Sample data</span>}
-        </p>
+    <>
+      <ScribbleDefs />
+      <Header
+        route={route}
+        rangeId={rangeId}
+        onRange={setRangeId}
+        unit={unit}
+        onUnit={setUnit}
+        query={query}
+        onQuery={onQuery}
+        sessions={data.workouts.length}
+        isSample={data.source === "sample"}
+      />
+      <main className="viz-root">
         {skipped > 0 && (
           <p className="notice small" role="status">
             Skipped {skipped} {skipped === 1 ? "workout" : "workouts"} with an unreadable start time.
           </p>
         )}
-      </header>
-
-      <div className="filters" role="toolbar" aria-label="Filters">
-        <RangePicker value={rangeId} onChange={setRangeId} />
-        <ExercisePicker exercises={view.lifts} value={view.selected?.templateId ?? ""} onChange={setTemplateId} />
-      </div>
-
-      <section className="stats">
-        <StatTile label="Current est. 1RM" value={view.current ? formatKg(view.current.e1rm) : "—"} />
-        <StatTile label="Change in range" value={view.change == null ? "—" : formatKgChange(view.change)} />
-        <StatTile label="PRs in range" value={String(view.prs.length)} />
-      </section>
-
-      <section className="card">
-        <div className="card-head">
-          <h2>{view.selected ? `${view.selected.title}: estimated 1RM` : "Estimated 1RM"}</h2>
-          {!isEmpty && (
-            <button className="link" onClick={() => setShowTable((v) => !v)}>
-              {showTable ? "Show chart" : "Show table"}
-            </button>
-          )}
-        </div>
-        <p className="muted small">Best working set per session (Epley formula). Dots mark PRs.</p>
-        {isEmpty ? (
-          <EmptyRange lastSession={view.lastSession} onShowAll={() => setRangeId("all")} />
-        ) : showTable ? (
-          <E1rmTable history={view.history} />
+        {route.view === "exercises" && route.exerciseId != null ? (
+          <ExerciseDetail
+            training={training}
+            exerciseId={route.exerciseId}
+            range={range}
+            unit={unit}
+            onShowAll={() => setRangeId("all")}
+          />
+        ) : route.view === "exercises" ? (
+          <Exercises
+            training={training}
+            range={range}
+            unit={unit}
+            query={query}
+            onQuery={setQuery}
+            view={listView}
+            onView={setListView}
+            scrollMemory={listScroll}
+            restoreScroll={backFromExercise}
+          />
+        ) : route.view === "overview" ? (
+          <Overview training={training} range={range} unit={unit} />
         ) : (
-          <E1rmChart history={view.history} prs={view.prs} />
+          <Balance training={training} range={range} />
         )}
-      </section>
-    </main>
+      </main>
+    </>
   );
 }

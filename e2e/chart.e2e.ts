@@ -1,10 +1,10 @@
-import { expect, test } from "./fixtures.ts";
+import { expect, serveSynced, syncedEndingDaysAgo, test } from "./fixtures.ts";
 
 const tooltip = (page: import("@playwright/test").Page) => page.locator(".tooltip");
 
 test("arrow keys step through sessions, and focus and position survive a resize", async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 900 });
-  await page.goto("/");
+  await page.goto("/#/exercises/squat");
   const hit = page.locator("rect.hit");
 
   await hit.focus();
@@ -29,7 +29,7 @@ test("arrow keys step through sessions, and focus and position survive a resize"
 
 test("a resize while hovering doesn't move focus to the chart", async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 900 });
-  await page.goto("/");
+  await page.goto("/#/exercises/squat");
   const svg = page.locator(".chart-wrap svg");
   await page.locator("rect.hit").hover();
   const width = await svg.getAttribute("width");
@@ -40,10 +40,62 @@ test("a resize while hovering doesn't move focus to the chart", async ({ page })
 
 // Errors, including ResizeObserver loop errors, fail the test via the failOnBrowserErrors fixture.
 test("remounting the chart raises no browser errors", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/exercises/squat");
   for (let i = 0; i < 2; i++) {
     await page.click("text=Show table");
     await page.click("text=Show chart");
     await expect(page.locator("path.series-line")).toBeVisible();
   }
+});
+
+test("charts a lift with a single session in range without broken coordinates", async ({ page }) => {
+  // Bench keeps only its most recent session in the last 95 days, so the 90-day range holds exactly one.
+  const data = syncedEndingDaysAgo(1);
+  const cutoff = Date.now() - 95 * 86_400_000;
+  const recentBench = data.workouts
+    .filter((w) => Date.parse(w.start_time) >= cutoff && w.exercises.some((e) => e.exercise_template_id === "bench"))
+    .map((w) => w.id);
+  const keep = recentBench.at(-1);
+  data.workouts = data.workouts.map((w) =>
+    recentBench.includes(w.id) && w.id !== keep
+      ? { ...w, exercises: w.exercises.filter((e) => e.exercise_template_id !== "bench") }
+      : w,
+  );
+  await serveSynced(page, data);
+  await page.goto("/#/exercises/bench");
+  await page.click('button[role=radio]:has-text("90 days")');
+
+  // One session: no change over the range, and the chart has redrawn with no curve segments.
+  await expect(page.locator(".figures .change strong")).toHaveText("±0");
+  await expect(page.locator("path.series-line")).not.toHaveAttribute("d", /C/);
+  await expect(page.locator("path.series-line")).toBeVisible();
+  await expect(page.locator(".end-label")).not.toHaveText("");
+  const broken = await page.locator(".chart-wrap svg").evaluate((svg) =>
+    [svg, ...svg.querySelectorAll("*")].flatMap((el) =>
+      [...el.attributes].filter((a) => a.value.includes("NaN")).map((a) => `${el.tagName}[${a.name}]`),
+    ),
+  );
+  expect(broken).toEqual([]);
+});
+
+test("marks every session of an exercise trained only every few weeks", async ({ page }) => {
+  // A curl done roughly every 40 days: each session sits alone between two long breaks.
+  const data = syncedEndingDaysAgo(1);
+  let last = -Infinity;
+  let sessions = 0;
+  data.workouts = data.workouts.map((w) => {
+    const t = Date.parse(w.start_time);
+    if (t - last < 40 * 86_400_000) return w;
+    last = t;
+    sessions++;
+    const set = { index: 0, type: "normal" as const, weight_kg: 10 + (sessions % 4), reps: 10 };
+    return { ...w, exercises: [...w.exercises, { index: w.exercises.length, title: "Sparse Curl", exercise_template_id: "sparse", sets: [set] }] };
+  });
+  data.exercise_templates = [
+    ...data.exercise_templates,
+    { id: "sparse", title: "Sparse Curl", type: "weight_reps", primary_muscle_group: "biceps", secondary_muscle_groups: [] },
+  ];
+  await serveSynced(page, data);
+  await page.goto("/#/exercises/sparse");
+  await expect(page.locator(".chart-wrap svg circle.series-dot")).toHaveCount(sessions);
 });

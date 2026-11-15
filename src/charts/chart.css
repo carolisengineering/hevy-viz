@@ -1,0 +1,136 @@
+/* The progress chart in ballpoint: ink line, faint grid, raspberry PRs. */
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+.chart-wrap svg {
+  display: block;
+  overflow: visible;
+}
+.grid line {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+.axis text {
+  fill: var(--ink-soft);
+  font-family: var(--font-data);
+  font-size: 16px;
+}
+.series-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+/* A layoff: the line stops and a faint dashed stroke bridges the gap. */
+.series-gaps line {
+  stroke: var(--ink-line);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+}
+
+.series-dot {
+  fill: var(--ink);
+}
+
+/* The pen draws the line once when the data changes. */
+.series-line.draw-in {
+  stroke-dasharray: 1 1;
+  animation: pen-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes pen-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .series-line.draw-in {
+    animation: none;
+  }
+}
+
+.pr-star {
+  fill: var(--accent);
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.focus-ring {
+  fill: var(--paper);
+  stroke: var(--select);
+  stroke-width: 3;
+  pointer-events: none;
+}
+.axis-unit {
+  fill: var(--ink-soft);
+  font-family: var(--font-data);
+  font-size: 15px;
+}
+.end-label {
+  fill: var(--ink);
+  font-family: var(--font-display);
+  font-size: 22px;
+  text-transform: uppercase;
+  stroke: var(--ink);
+  stroke-width: 0.6px;
+}
+.crosshair {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+  pointer-events: none;
+}
+.hit {
+  fill: transparent;
+  outline: none;
+}
+.hit:focus-visible {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 17px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.tooltip strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.036em currentColor;
+}
+.end-label .unit {
+  font-family: var(--font-data);
+  font-size: 15px;
+  fill: var(--ink-soft);
+  stroke: none;
+  text-transform: none;
+}
+.tooltip .unit {
+  font-family: var(--font-data);
+  font-size: 16px;
+  color: var(--ink-soft);
+  -webkit-text-stroke: 0;
+  text-transform: none;
+}
+.tooltip .quiet {
+  color: var(--ink-soft);
+}
