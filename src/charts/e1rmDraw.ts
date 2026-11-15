@@ -3,7 +3,7 @@
 import * as d3 from "d3";
 import { parseDay } from "../core/dates";
 import type { E1rmPoint } from "../core/metrics";
-import { formatDate, formatKg, formatKgPrecise, formatSet } from "../format";
+import { formatDate, formatSet, formatWeight } from "../format";
 
 const MARGIN = { top: 16, right: 56, bottom: 28, left: 48 };
 const Y_TICKS = 5;
@@ -106,7 +106,10 @@ export function drawEndLabel(f: Frame, last: E1rmPoint): void {
     .attr("x", xOf(f, last) + 8)
     .attr("y", yOf(f, last))
     .attr("dy", "0.32em")
-    .text(formatKg(last.e1rm));
+    .text(formatWeight(last.e1rm, "kg"))
+    .append("tspan")
+    .attr("class", "unit")
+    .text(" kg");
 }
 
 /** Shared between redraws so a resize doesn't lose the keyboard position. */
@@ -174,7 +177,10 @@ export function attachInteraction(
 /** Fills the tooltip with text nodes only (no HTML parsing of data). */
 function renderTooltip(tip: HTMLElement, d: E1rmPoint, isPr: boolean): void {
   const value = document.createElement("strong");
-  value.textContent = formatKgPrecise(d.e1rm);
+  const unit = document.createElement("span");
+  unit.className = "unit";
+  unit.textContent = " kg";
+  value.append(formatWeight(d.e1rm, "kg"), unit);
   const detail = document.createElement("div");
   detail.textContent = `${formatSet(d)}${isPr ? " · PR" : ""}`;
   const date = document.createElement("div");

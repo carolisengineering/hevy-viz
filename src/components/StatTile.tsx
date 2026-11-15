@@ -1,13 +1,18 @@
 interface Props {
   label: string;
   value: string;
+  /** Shown small beside the value, e.g. "kg". */
+  unit?: string;
 }
 
-export function StatTile({ label, value }: Props) {
+export function StatTile({ label, value, unit }: Props) {
   return (
     <div className="stat">
       <span className="muted">{label}</span>
-      <strong>{value}</strong>
+      <span className="stat-figure">
+        <strong>{value}</strong>
+        {unit && <span className="unit"> {unit}</span>}
+      </span>
     </div>
   );
 }

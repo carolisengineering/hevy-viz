@@ -13,13 +13,6 @@
   }
 }
 
-.viz-root > header {
-  padding-bottom: 10px;
-  border-bottom: 3px solid var(--ink);
-}
-.viz-root h1 {
-  font-size: 54px;
-}
 .viz-root h2 {
   font-size: 34px;
 }
@@ -34,15 +27,6 @@
   color: var(--accent);
 }
 
-/* The red-outlined label, like the one on a cassette. */
-.badge {
-  margin-left: 10px;
-  padding: 1px 8px;
-  border: 2px solid var(--accent);
-  border-radius: 3px;
-  color: var(--accent);
-  font-size: 17px;
-}
 
 .filters {
   display: flex;
@@ -70,6 +54,15 @@ select {
   cursor: pointer;
 }
 
+/* A unit written small beside its number, in the data hand. */
+.unit {
+  font-family: var(--font-data);
+  font-size: 22px;
+  color: var(--ink-soft);
+  -webkit-text-stroke: 0;
+  text-transform: none;
+}
+
 /* Figures written on the page, not cards. */
 .stats {
   display: flex;
@@ -83,10 +76,13 @@ select {
   gap: 4px;
   font-size: 17px;
 }
+.stat-figure {
+  white-space: nowrap;
+}
 .stat strong {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 56px;
+  font-size: 72px;
   line-height: 1;
   text-transform: uppercase;
   -webkit-text-stroke: 0.036em currentColor;

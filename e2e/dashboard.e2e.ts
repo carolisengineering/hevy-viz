@@ -5,7 +5,7 @@ const range = (label: string) => `button[role=radio]:has-text("${label}")`;
 test("shows the sample with a chart, only lifts in the picker, and data in every range", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("path.series-line")).toBeVisible();
-  await expect(page.locator(".badge")).toHaveText("Sample data");
+  await expect(page.locator(".cassette")).toContainText("Sample data");
   await expect(page.locator("select option")).toHaveText([
     "Bench Press (Barbell)",
     "Overhead Press (Barbell)",
@@ -44,7 +44,7 @@ test("skips workouts with unreadable start times instead of failing", async ({ p
   await page.goto("/");
   await expect(page.locator("path.series-line")).toBeVisible();
   await expect(page.getByRole("status")).toHaveText("Skipped 3 workouts with an unreadable start time.");
-  await expect(page.locator("header p.muted")).toContainText(`${sample.workouts.length} workouts`);
+  await expect(page.locator(".cassette")).toContainText(`${sample.workouts.length} sessions`);
 });
 
 test("shows an empty state when the range has no sessions", async ({ page }) => {
@@ -65,4 +65,45 @@ test("shows an empty state when the range has no sessions", async ({ page }) => 
   await page.getByRole("button", { name: "Show all time" }).click();
   await expect(page.locator(range("All time"))).toHaveAttribute("aria-checked", "true");
   await expect(page.locator("path.series-line")).toBeVisible();
+});
+
+test("switches views with the header tabs", async ({ page }) => {
+  await page.goto("/");
+  const tabs = page.getByRole("navigation", { name: "Views" }).getByRole("link");
+  await expect(tabs).toHaveText(["Overview", "Exercises", "Balance"]);
+  await expect(tabs.first()).toHaveAttribute("aria-current", "page");
+
+  await page.getByRole("link", { name: "Exercises" }).click();
+  await expect(page.getByRole("link", { name: "Exercises" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("link", { name: "Overview" })).not.toHaveAttribute("aria-current");
+  expect(new URL(page.url()).hash).toBe("#/exercises");
+});
+
+test("searching goes to the exercise list", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("searchbox", { name: "Find an exercise" }).fill("squat");
+  expect(new URL(page.url()).hash).toBe("#/exercises");
+  await expect(page.getByRole("searchbox", { name: "Find an exercise" })).toBeFocused();
+});
+
+test("remembers the unit across reloads", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("radio", { name: "kg" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radio", { name: "lb" }).click();
+  await page.reload();
+  await expect(page.getByRole("radio", { name: "lb" })).toHaveAttribute("aria-checked", "true");
+});
+
+test("works when the browser blocks storage", async ({ page }) => {
+  await page.addInitScript(() => {
+    const blocked = () => {
+      throw new DOMException("The operation is insecure.", "SecurityError");
+    };
+    Storage.prototype.getItem = blocked;
+    Storage.prototype.setItem = blocked;
+  });
+  await page.goto("/");
+  await expect(page.locator("path.series-line")).toBeVisible();
+  await page.getByRole("radio", { name: "lb" }).click();
+  await expect(page.getByRole("radio", { name: "lb" })).toHaveAttribute("aria-checked", "true");
 });

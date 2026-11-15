@@ -1,0 +1,111 @@
+/* The header rule across the page. Wide screens keep everything on one line;
+   narrower ones put the tools above the tabs so the tabs still sit on the rule. */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 28px;
+  padding: 18px 20px 0;
+  border-bottom: 3px solid var(--ink);
+}
+@media (min-width: 900px) {
+  .site-header {
+    padding: 18px 36px 0 136px;
+  }
+}
+
+.wordmark {
+  font-size: 54px;
+  white-space: nowrap;
+  padding-bottom: 8px;
+}
+
+.tabs {
+  order: 2;
+  flex-basis: 100%;
+  display: flex;
+  gap: 26px;
+  margin-bottom: -3px; /* The active underline sits on the rule. */
+}
+.tabs a {
+  font-size: 22px;
+  padding: 0 2px 8px;
+  text-decoration: none;
+  border-bottom: 4px solid transparent;
+}
+.tabs a:hover {
+  border-bottom-color: var(--ink-line);
+}
+.tabs a[aria-current="page"] {
+  border-bottom-color: var(--accent);
+}
+
+.tools {
+  order: 1;
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+@media (min-width: 1600px) {
+  .tabs {
+    order: 1;
+    flex-basis: auto;
+  }
+  .tools {
+    order: 2;
+  }
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  padding: 2px 10px;
+  background: var(--paper);
+}
+.search:focus-within {
+  outline: 2px dashed var(--accent);
+  outline-offset: 3px;
+}
+.search input {
+  width: 170px;
+  border: 0;
+  padding: 1px 0;
+  background: none;
+  font-size: 18px;
+  outline: none;
+}
+.search input::placeholder {
+  color: var(--ink-soft);
+  opacity: 1;
+}
+
+/* The red-outlined label on a cassette. */
+.cassette {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  padding: 2px 10px;
+  color: var(--accent);
+  font-size: 18px;
+  white-space: nowrap;
+}
+.cassette strong {
+  font-size: 30px;
+}
+.cassette .sample {
+  padding-left: 8px;
+  border-left: 1px solid var(--accent);
+}
+.cassette .ink-stripe {
+  height: 24px;
+}

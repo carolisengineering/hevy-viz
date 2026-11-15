@@ -80,6 +80,20 @@
   text-transform: uppercase;
   -webkit-text-stroke: 0.036em currentColor;
 }
+.end-label .unit {
+  font-family: var(--font-data);
+  font-size: 15px;
+  fill: var(--ink-soft);
+  stroke: none;
+  text-transform: none;
+}
+.tooltip .unit {
+  font-family: var(--font-data);
+  font-size: 16px;
+  color: var(--ink-soft);
+  -webkit-text-stroke: 0;
+  text-transform: none;
+}
 .tooltip .muted {
   color: var(--ink-soft);
 }
