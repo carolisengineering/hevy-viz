@@ -1,20 +1,33 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import "./App.css";
-import { E1rmChart } from "./charts/E1rmChart";
-import { E1rmTable } from "./components/E1rmTable";
+import { ProgressChart } from "./charts/ProgressChart";
+import { ProgressTable } from "./components/ProgressTable";
 import { EmptyRange } from "./components/EmptyRange";
 import { ExercisePicker } from "./components/ExercisePicker";
 import { Header } from "./components/Header";
 import { StatTile } from "./components/StatTile";
+import type { E1rmPoint } from "./core/metrics";
+import type { ProgressPoint } from "./core/progress";
 import type { RangeId } from "./core/ranges";
 import type { HevyDataset } from "./core/types";
-import { formatChange, formatValue, type Unit } from "./format";
+import { chartFormat, formatChange, formatValue, type Unit } from "./format";
 import { useDataset } from "./hooks/useDataset";
 import { useE1rmView } from "./hooks/useE1rmView";
 import { usePreference } from "./hooks/usePreference";
 import { useRoute } from "./hooks/useRoute";
 
 const UNITS: readonly Unit[] = ["kg", "lb"];
+
+/** The old estimated-1RM points as progress points, until Task 9 reads progressIndex directly. */
+const toProgress = (p: E1rmPoint): ProgressPoint => ({
+  date: p.date,
+  value: p.e1rm,
+  workoutId: p.workoutId,
+  weightKg: p.weightKg,
+  reps: p.reps,
+  durationS: null,
+  distanceM: null,
+});
 
 export default function App() {
   const dataset = useDataset();
@@ -32,6 +45,10 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
   const [showTable, setShowTable] = useState(false);
   const view = useE1rmView(data, templateId, rangeId);
   const isEmpty = view.history.length === 0;
+  const points = useMemo(() => view.history.map(toProgress), [view.history]);
+  const prs = useMemo(() => view.prs.map(toProgress), [view.prs]);
+  const format = useMemo(() => chartFormat("e1rm", "weight_reps", unit), [unit]);
+  const title = view.selected ? `${view.selected.title}: Est. 1RM` : "Est. 1RM";
 
   const onQuery = (q: string) => {
     setQuery(q);
@@ -85,13 +102,13 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
               </button>
             )}
           </div>
-          <p className="muted small">Best working set per session (Epley formula). Dots mark PRs.</p>
+          <p className="muted small">Best working set per session (Epley formula). Stars mark PRs.</p>
           {isEmpty ? (
-            <EmptyRange lastSession={view.lastSession} onShowAll={() => setRangeId("all")} />
+            <EmptyRange lastSession={view.lastSession && toProgress(view.lastSession)} onShowAll={() => setRangeId("all")} />
           ) : showTable ? (
-            <E1rmTable history={view.history} />
+            <ProgressTable points={points} format={format} />
           ) : (
-            <E1rmChart history={view.history} prs={view.prs} />
+            <ProgressChart points={points} prs={prs} format={format} label={title} />
           )}
         </section>
       </main>

@@ -24,15 +24,41 @@
   stroke-linejoin: round;
   stroke-linecap: round;
 }
-.pr-dot {
-  fill: var(--accent);
-  stroke: var(--paper);
-  stroke-width: 2;
+/* The pen draws the line once when the data changes. */
+.series-line.draw-in {
+  stroke-dasharray: 1 1;
+  animation: pen-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.focus-dot {
-  fill: var(--ink);
-  stroke: var(--paper);
-  stroke-width: 2;
+@keyframes pen-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .series-line.draw-in {
+    animation: none;
+  }
+}
+
+.pr-star {
+  fill: var(--accent);
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.focus-ring {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  pointer-events: none;
+}
+.axis-unit {
+  fill: var(--ink-soft);
+  font-family: var(--font-data);
+  font-size: 15px;
 }
 .end-label {
   fill: var(--ink);
@@ -94,6 +120,6 @@
   -webkit-text-stroke: 0;
   text-transform: none;
 }
-.tooltip .muted {
+.tooltip .quiet {
   color: var(--ink-soft);
 }

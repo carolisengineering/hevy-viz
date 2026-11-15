@@ -3,12 +3,15 @@
 import { parseDay } from "../core/dates";
 import type { ProgressPoint } from "../core/progress";
 
+/** The hand-drawn star, in a 24×24 box. Shared with the chart's PR markers. */
+export const STAR_PATH = "M12.2 2.4 L14.7 8.8 L21.6 9.1 L16.2 13.5 L18.1 20.4 L12.1 16.5 L5.9 20.6 L7.8 13.6 L2.4 9.4 L9.3 8.9 Z";
+
 /** A raspberry PR star. Named for screen readers by `title`. */
 export function Star({ size = 18, title = "PR" }: { size?: number; title?: string }) {
   return (
     <svg className="ink-star" width={size} height={size} viewBox="0 0 24 24" role="img" aria-label={title}>
       <path
-        d="M12.2 2.4 L14.7 8.8 L21.6 9.1 L16.2 13.5 L18.1 20.4 L12.1 16.5 L5.9 20.6 L7.8 13.6 L2.4 9.4 L9.3 8.9 Z"
+        d={STAR_PATH}
         fill="currentColor"
         stroke="currentColor"
         strokeWidth="1.4"

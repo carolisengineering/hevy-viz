@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ProgressPoint } from "./core/progress";
 import {
+  chartFormat,
   formatChange,
   formatCount,
   formatDate,
@@ -109,5 +110,18 @@ describe("measure- and unit-aware formatting", () => {
     expect(formatShortDate("2026-11-14")).toBe("Nov 14");
     expect(formatLogDate("2026-11-13")).toBe("Fri 11/13");
     expect(formatCount(1432)).toBe("1,432");
+  });
+});
+
+describe("chartFormat", () => {
+  it("writes weights in the chosen unit with ticks on round pounds", () => {
+    const f = chartFormat("e1rm", "weight_reps", "lb");
+    expect([f.measure, f.unit, f.value(100)]).toEqual(["Est. 1RM", "lb", "220"]);
+    expect(f.scale).toBeCloseTo(2.20462);
+  });
+
+  it("writes times as clock time with no unit", () => {
+    const f = chartFormat("duration", "duration", "kg");
+    expect([f.measure, f.unit, f.value(105), f.scale]).toEqual(["Longest", "", "1:45", 1]);
   });
 });

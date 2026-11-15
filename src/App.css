@@ -122,6 +122,11 @@ select {
   text-align: center;
 }
 
+td.num,
+th.num {
+  text-align: right;
+}
+
 .table-wrap {
   max-height: 340px;
   overflow: auto;

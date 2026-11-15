@@ -1,6 +1,7 @@
 // Display formatting shared by the table, stat tiles, and chart.
 import { parseDay } from "./core/dates";
-import type { MetricId, ProgressPoint } from "./core/progress";
+import type { ChartFormat } from "./charts/progressDraw";
+import { METRIC_LABEL, type MetricId, type ProgressPoint } from "./core/progress";
 
 /** "117 kg" */
 export const formatKg = (kg: number): string => `${Math.round(kg)} kg`;
@@ -116,3 +117,15 @@ const countFormat = new Intl.NumberFormat("en-US");
 
 /** "1,432" */
 export const formatCount = (n: number): string => countFormat.format(n);
+
+/** How a measure is written on its chart and table, for an exercise type and unit. */
+export function chartFormat(metric: MetricId, type: string, unit: Unit): ChartFormat {
+  const isWeight = metric === "e1rm" || metric === "weight";
+  return {
+    value: (v) => formatValue(metric, v, unit),
+    unit: valueUnit(metric, unit),
+    set: (p) => formatPointSet(p, type, unit),
+    measure: METRIC_LABEL[metric],
+    scale: isWeight && unit === "lb" ? 1 / KG_PER_LB : 1,
+  };
+}
