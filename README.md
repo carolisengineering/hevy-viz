@@ -70,6 +70,7 @@ scripts/generate-sample.ts  Seeded, realistic demo data
 |---|---|
 | `npm run dev` | Start the dev server |
 | `npm test` | Run unit tests (Vitest) |
+| `npm run lint` | Lint with oxlint |
 | `npm run build` | Type-check and build to `dist/` |
 | `npm run sync` | Pull your Hevy data |
 | `npm run sample` | Regenerate sample data |

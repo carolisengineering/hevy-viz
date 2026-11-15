@@ -33,6 +33,8 @@ export function E1rmChart({ history, prs, height = 320 }: Props) {
     const cursor: Cursor = { index: history.length - 1 };
 
     const draw = () => {
+      // A redraw replaces every element, including the focused hit area; note it to restore focus.
+      const hadFocus = svgEl.contains(document.activeElement);
       hideTooltip(tip); // A redraw moves every point; an open tooltip would be stale.
       const last = history.at(-1);
       if (!last) {
@@ -45,7 +47,9 @@ export function E1rmChart({ history, prs, height = 320 }: Props) {
       drawSeries(frame, history);
       drawPrMarkers(frame, prs);
       drawEndLabel(frame, last);
-      attachInteraction(frame, history, prs, tip, cursor);
+      const hit = attachInteraction(frame, history, prs, tip, cursor);
+      // Refocusing reshows the tooltip at the cursor's new position.
+      if (hadFocus) hit.focus({ preventScroll: true });
     };
 
     // ResizeObserver calls draw once on observe, so no separate initial draw.
