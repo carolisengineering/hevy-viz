@@ -51,8 +51,8 @@
 }
 .focus-ring {
   fill: var(--paper);
-  stroke: var(--ink);
-  stroke-width: 2.4;
+  stroke: var(--select);
+  stroke-width: 3;
   pointer-events: none;
 }
 .axis-unit {
@@ -69,9 +69,9 @@
   stroke-width: 0.6px;
 }
 .crosshair {
-  stroke: var(--ink-line);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
   pointer-events: none;
 }
 .hit {

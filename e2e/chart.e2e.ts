@@ -4,7 +4,7 @@ const tooltip = (page: import("@playwright/test").Page) => page.locator(".toolti
 
 test("arrow keys step through sessions, and focus and position survive a resize", async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 900 });
-  await page.goto("/");
+  await page.goto("/#/exercises/squat");
   const hit = page.locator("rect.hit");
 
   await hit.focus();
@@ -29,7 +29,7 @@ test("arrow keys step through sessions, and focus and position survive a resize"
 
 test("a resize while hovering doesn't move focus to the chart", async ({ page }) => {
   await page.setViewportSize({ width: 1000, height: 900 });
-  await page.goto("/");
+  await page.goto("/#/exercises/squat");
   const svg = page.locator(".chart-wrap svg");
   await page.locator("rect.hit").hover();
   const width = await svg.getAttribute("width");
@@ -40,7 +40,7 @@ test("a resize while hovering doesn't move focus to the chart", async ({ page })
 
 // Errors, including ResizeObserver loop errors, fail the test via the failOnBrowserErrors fixture.
 test("remounting the chart raises no browser errors", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/#/exercises/squat");
   for (let i = 0; i < 2; i++) {
     await page.click("text=Show table");
     await page.click("text=Show chart");
@@ -62,12 +62,11 @@ test("charts a lift with a single session in range without broken coordinates", 
       : w,
   );
   await serveSynced(page, data);
-  await page.goto("/");
-  await page.selectOption("select", { label: "Bench Press (Barbell)" });
+  await page.goto("/#/exercises/bench");
   await page.click('button[role=radio]:has-text("90 days")');
 
   // One session: no change over the range, and the chart has redrawn with no curve segments.
-  await expect(page.locator(".stat strong").nth(1)).toHaveText("±0");
+  await expect(page.locator(".figures .change strong")).toHaveText("±0");
   await expect(page.locator("path.series-line")).not.toHaveAttribute("d", /C/);
   await expect(page.locator("path.series-line")).toBeVisible();
   await expect(page.locator(".end-label")).not.toHaveText("");
