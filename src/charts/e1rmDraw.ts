@@ -114,8 +114,14 @@ export interface Cursor {
   index: number;
 }
 
-/** Crosshair, focus dot, tooltip, and keyboard stepping over sessions. */
-export function attachInteraction(f: Frame, history: E1rmPoint[], prs: E1rmPoint[], tip: HTMLElement, cursor: Cursor): void {
+/** Crosshair, focus dot, tooltip, and keyboard stepping over sessions. Returns the focusable hit area. */
+export function attachInteraction(
+  f: Frame,
+  history: E1rmPoint[],
+  prs: E1rmPoint[],
+  tip: HTMLElement,
+  cursor: Cursor,
+): SVGRectElement {
   const hair = f.svg
     .append("line")
     .attr("class", "crosshair")
@@ -143,7 +149,7 @@ export function attachInteraction(f: Frame, history: E1rmPoint[], prs: E1rmPoint
     hideTooltip(tip);
   };
 
-  f.svg
+  return f.svg
     .append("rect")
     .attr("class", "hit")
     .attr("x", MARGIN.left)
@@ -161,7 +167,8 @@ export function attachInteraction(f: Frame, history: E1rmPoint[], prs: E1rmPoint
       else return;
       e.preventDefault();
       show(cursor.index);
-    });
+    })
+    .node()!;
 }
 
 /** Fills the tooltip with text nodes only (no HTML parsing of data). */

@@ -3,6 +3,7 @@
 // The key is a Hevy Pro developer key: https://hevy.com/settings?developer
 import { mkdir, writeFile } from "node:fs/promises";
 import type { HevyDataset, HevyExerciseTemplate, HevyWorkout } from "../src/core/types.ts";
+import { MAX_RETRIES, planRetry } from "./retry.ts";
 
 const BASE = "https://api.hevyapp.com/v1";
 const apiKey = process.env.HEVY_API_KEY;
@@ -11,23 +12,14 @@ if (!apiKey) {
   process.exit(1);
 }
 
-const MAX_RETRIES = 5;
-
-/** How long to wait before retry `attempt`: the server's Retry-After if given, else exponential backoff. */
-function retryDelayMs(attempt: number, retryAfter: string | null): number {
-  if (retryAfter) {
-    const seconds = Number(retryAfter);
-    if (Number.isFinite(seconds)) return seconds * 1000;
-    const until = Date.parse(retryAfter); // HTTP-date form
-    if (Number.isFinite(until)) return Math.max(0, until - Date.now());
-  }
-  return 1000 * 2 ** attempt;
-}
-
 async function get<T>(path: string, attempt = 1): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { headers: { "api-key": apiKey!, accept: "application/json" } });
-  if (res.status === 429 && attempt <= MAX_RETRIES) {
-    await new Promise((r) => setTimeout(r, retryDelayMs(attempt, res.headers.get("retry-after"))));
+  if (res.status === 429) {
+    const plan = planRetry(attempt, res.headers.get("retry-after"));
+    if (!plan.retry) throw new Error(`GET ${path} → 429: ${plan.reason}`);
+    // Leading newline: don't overwrite the pagination progress line.
+    console.warn(`\nRate-limited on ${path}; retrying in ${Math.ceil(plan.waitMs / 1000)} s (retry ${attempt}/${MAX_RETRIES}).`);
+    await new Promise((r) => setTimeout(r, plan.waitMs));
     return get<T>(path, attempt + 1);
   }
   if (!res.ok) throw new Error(`GET ${path} → ${res.status} ${await res.text()}`);

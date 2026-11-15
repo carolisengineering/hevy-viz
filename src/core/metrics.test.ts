@@ -191,17 +191,36 @@ describe("e1rmSummary", () => {
     "UTC",
   );
 
-  it("filters to the range ending at the latest session", () => {
-    const s = e1rmSummary(all, rangeById("90d"));
+  const TODAY = "2026-11-14";
+
+  it("filters to the range ending today", () => {
+    const s = e1rmSummary(all, rangeById("90d"), TODAY);
     expect(s.history.map((p) => p.workoutId)).toEqual(["c", "d"]);
     expect(s.current?.workoutId).toBe("d");
     expect(s.change).toBe(5);
   });
+  it("is empty when the last session is older than the range, but still reports it", () => {
+    const s = e1rmSummary(all, rangeById("90d"), "2027-06-01");
+    expect(s).toEqual({ history: [], prs: [], current: undefined, change: null, lastSession: all.at(-1) });
+  });
+  it("counts the range back from today, not from the last session", () => {
+    // 90 days before 2026-12-31 is 2026-10-02: c (10-01) drops out, though it's within 90 days of d.
+    const s = e1rmSummary(all, rangeById("90d"), "2026-12-31");
+    expect(s.history.map((p) => p.workoutId)).toEqual(["d"]);
+    expect(s.change).toBe(0);
+  });
   it("judges PRs against all-time history, not just the range", () => {
-    expect(e1rmSummary(all, rangeById("90d")).prs).toEqual([]);
-    expect(e1rmSummary(all, rangeById("all")).prs.map((p) => p.workoutId)).toEqual(["a", "b"]);
+    expect(e1rmSummary(all, rangeById("90d"), TODAY).prs).toEqual([]);
+    expect(e1rmSummary(all, rangeById("all"), TODAY).prs.map((p) => p.workoutId)).toEqual(["a", "b"]);
+    expect(e1rmSummary(all, rangeById("90d"), "2025-07-01").prs.map((p) => p.workoutId)).toEqual(["b"]);
   });
   it("is empty for an empty history", () => {
-    expect(e1rmSummary([], rangeById("all"))).toEqual({ history: [], prs: [], current: undefined, change: null });
+    expect(e1rmSummary([], rangeById("all"), TODAY)).toEqual({
+      history: [],
+      prs: [],
+      current: undefined,
+      change: null,
+      lastSession: undefined,
+    });
   });
 });

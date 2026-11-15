@@ -81,26 +81,29 @@ export interface E1rmSummary {
   history: E1rmPoint[];
   /** All-time PRs that fall in the range. */
   prs: E1rmPoint[];
-  /** Latest point. */
+  /** Latest point in the range. */
   current: E1rmPoint | undefined;
-  /** Latest minus earliest estimate in the range, in kg; null with no data. */
+  /** Latest minus earliest estimate in the range, in kg; null with no points in the range. */
   change: number | null;
+  /** Latest point of all time, even if it's before the range; for saying when the lift was last done. */
+  lastSession: E1rmPoint | undefined;
 }
 
 /**
- * One exercise's full history narrowed to `range`, which ends at the latest session.
- * PRs are judged against the full history, then narrowed, so a range can't invent them.
+ * One exercise's full history narrowed to `range`, which ends on `endDay` ("YYYY-MM-DD",
+ * usually today). PRs are judged against the full history, then narrowed, so a range
+ * can't invent them.
  */
-export function e1rmSummary(all: readonly E1rmPoint[], range: DateRange): E1rmSummary {
-  const latest = all.at(-1);
-  if (!latest) return { history: [], prs: [], current: undefined, change: null };
-  const history = filterByRange(all, range, latest.date);
-  const from = history[0].date;
+export function e1rmSummary(all: readonly E1rmPoint[], range: DateRange, endDay: string): E1rmSummary {
+  const history = filterByRange(all, range, endDay);
+  const first = history[0];
+  const current = history.at(-1);
   return {
     history,
-    prs: personalRecords(all).filter((p) => p.date >= from),
-    current: latest,
-    change: latest.e1rm - history[0].e1rm,
+    prs: filterByRange(personalRecords(all), range, endDay),
+    current,
+    change: first && current ? current.e1rm - first.e1rm : null,
+    lastSession: all.at(-1),
   };
 }
 

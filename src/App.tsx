@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { E1rmChart } from "./charts/E1rmChart";
 import { E1rmTable } from "./components/E1rmTable";
+import { EmptyRange } from "./components/EmptyRange";
 import { ExercisePicker } from "./components/ExercisePicker";
 import { RangePicker } from "./components/RangePicker";
 import { StatTile } from "./components/StatTile";
@@ -22,6 +23,7 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
   const [rangeId, setRangeId] = useState<RangeId>("all");
   const [showTable, setShowTable] = useState(false);
   const view = useE1rmView(data, templateId, rangeId);
+  const isEmpty = view.history.length === 0;
 
   return (
     <main className="viz-root">
@@ -52,12 +54,20 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
       <section className="card">
         <div className="card-head">
           <h2>{view.selected ? `${view.selected.title}: estimated 1RM` : "Estimated 1RM"}</h2>
-          <button className="link" onClick={() => setShowTable((v) => !v)}>
-            {showTable ? "Show chart" : "Show table"}
-          </button>
+          {!isEmpty && (
+            <button className="link" onClick={() => setShowTable((v) => !v)}>
+              {showTable ? "Show chart" : "Show table"}
+            </button>
+          )}
         </div>
         <p className="muted small">Best working set per session (Epley formula). Dots mark PRs.</p>
-        {showTable ? <E1rmTable history={view.history} /> : <E1rmChart history={view.history} prs={view.prs} />}
+        {isEmpty ? (
+          <EmptyRange lastSession={view.lastSession} onShowAll={() => setRangeId("all")} />
+        ) : showTable ? (
+          <E1rmTable history={view.history} />
+        ) : (
+          <E1rmChart history={view.history} prs={view.prs} />
+        )}
       </section>
     </main>
   );
