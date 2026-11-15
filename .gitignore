@@ -8,6 +8,8 @@ data/
 public/data/hevy.json
 
 # Plan-execution scratch
+.impeccable/
 .superpowers/
 test-results/
 playwright-report/
+superpowers/
