@@ -105,6 +105,16 @@ describe("progressIndex", () => {
     expect(progressIndex(dataset([late], templates), "America/Los_Angeles").get("bench")!.points[0].date).toBe("2026-01-05");
   });
 
+  it("charts a type Hevy adds later by what its sets record", () => {
+    const w = workout("w5", "2026-02-02", [
+      ["hold", [{ duration_seconds: 40 }, { duration_seconds: 55 }]],
+      ["hops", [{ reps: 30 }]],
+    ]);
+    const index = progressIndex(dataset([w], [template("hold", "brand_new_timed", "calves"), template("hops", "brand_new_reps", "calves")]), "UTC");
+    expect(index.get("hold")).toMatchObject({ metric: "duration", points: [{ value: 55 }] });
+    expect(index.get("hops")).toMatchObject({ metric: "reps", points: [{ value: 30 }] });
+  });
+
   it("infers the type of an exercise with no template from its sets", () => {
     const w = workout("w4", "2026-02-01", [["mystery", [{ weight_kg: 50, reps: 5 }]]]);
     const mystery = progressIndex(dataset([w], []), "America/Los_Angeles").get("mystery");

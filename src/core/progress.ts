@@ -159,7 +159,9 @@ export function progressIndex(data: HevyDataset, timeZone: string): Map<string, 
   for (const [templateId, a] of acc) {
     const t = templates.get(templateId);
     const type = t?.type ?? a.inferredType ?? "weight_reps";
-    const metric = metricFor(type, a.estimable);
+    // A type this table doesn't know yet is charted by what its sets actually record.
+    const known = type === "weight_reps" || Object.hasOwn(METRIC_OF_TYPE, type);
+    const metric = metricFor(known ? type : (a.inferredType ?? type), a.estimable);
     index.set(templateId, {
       templateId,
       title: t?.title ?? a.title,

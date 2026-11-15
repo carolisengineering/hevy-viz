@@ -58,6 +58,13 @@
 .no-match p:first-child {
   font-size: 24px;
 }
+.no-match-actions {
+  display: flex;
+  gap: 16px;
+}
+.no-match-actions .link {
+  padding-left: 0;
+}
 
 .show-all {
   margin-top: 16px;

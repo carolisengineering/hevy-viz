@@ -9,7 +9,7 @@ The dashboard was built around six barbell lifts and one chart. Real Hevy histor
 1. **Shows every exercise.** It charts each exercise by the measure its type supports, and lets you find any of them.
 2. **Gives the dashboard a visual identity:** a hand-lettered training notebook in cerulean and raspberry ink on ivory graph paper.
 
-Product context lives in [`PRODUCT.md`](../PRODUCT.md). The chosen direction and every sketch from the decision rounds are in `.impeccable/`:
+Product context lives in [`PRODUCT.md`](../PRODUCT.md). The chosen direction and every sketch from the decision rounds are in `.impeccable/`, which is kept locally and not committed to the repo. The built design system is recorded in [`DESIGN.md`](../DESIGN.md).
 - the direction contract is `.impeccable/surfaces/src-app-tsx.md`;
 - the final reference sketch is `.impeccable/mocks/decision/paper-ivory.html`.
 
@@ -119,7 +119,7 @@ Three views behind one header. A hash router (`#/`, `#/exercises`, `#/exercises/
   Show the first 100 rows, with a "Show all 488" control.
 - **Exercise page (`#/exercises/<id>`).**
   - Name, muscle and measure.
-  - Figures: best ever (with date), latest, change in range, sessions, and PRs in range.
+  - Figures: best ever (with date), latest, change in range, days charted, and PRs in range.
   - The progress chart, with a table toggle and the existing empty state ("No sessions in this range · Last session · Show all time").
 - **Exercises with no measurable sets** (15 in the owner's data) still appear and are labeled "No sets to chart".
 

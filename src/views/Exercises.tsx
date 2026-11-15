@@ -17,6 +17,8 @@ const KINDS: readonly { id: Kind; label: string }[] = [
   { id: "timed", label: "Timed" },
   { id: "distance", label: "Distance" },
 ];
+/** A kind as one word inside a sentence: "No timed exercises". */
+const KIND_WORD: Record<Exclude<Kind, "all">, string> = { weights: "weight", bodyweight: "bodyweight", timed: "timed", distance: "distance" };
 const KIND_OF: Record<MetricId, Kind> = { e1rm: "weights", weight: "weights", reps: "bodyweight", duration: "timed", distance: "distance" };
 
 type Sort = "sessions" | "recent" | "az";
@@ -103,37 +105,43 @@ export function Exercises({ training, range, unit, query, onQuery, view, onView,
 
       {matches.length === 0 ? (
         <div className="no-match">
-          {query.trim() ? (
-            <>
-              <p>No exercises match “{query.trim()}”</p>
+          <p>
+            {kind === "all" ? "No exercises" : `No ${KIND_WORD[kind]} exercises`}
+            {query.trim() ? <> match “{query.trim()}”</> : " yet."}
+          </p>
+          <div className="no-match-actions">
+            {kind !== "all" && (
+              <button type="button" className="link" onClick={() => setKind("all")}>
+                Show all kinds
+              </button>
+            )}
+            {query.trim() && (
               <button type="button" className="link" onClick={() => onQuery("")}>
                 Clear search
               </button>
-            </>
-          ) : (
-            <p>No exercises of this kind.</p>
-          )}
+            )}
+          </div>
         </div>
-      ) : null}
-
-      <table className="exercise-list">
-        <thead>
-          <tr>
-            <th>Exercise</th>
-            <th className="num">Best</th>
-            <th className="num">Sessions</th>
-            <th className="num">Last done</th>
-            <th>
-              <span className="visually-hidden">Trend in range</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {shown.map((e) => (
-            <ExerciseRow key={e.templateId} exercise={e} range={range} endDay={training.endDay} unit={unit} />
-          ))}
-        </tbody>
-      </table>
+      ) : (
+        <table className="exercise-list">
+          <thead>
+            <tr>
+              <th>Exercise</th>
+              <th className="num">Best</th>
+              <th className="num">Sessions</th>
+              <th className="num">Last done</th>
+              <th>
+                <span className="visually-hidden">Trend in range</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((e) => (
+              <ExerciseRow key={e.templateId} exercise={e} range={range} endDay={training.endDay} unit={unit} />
+            ))}
+          </tbody>
+        </table>
+      )}
 
       {!showAll && matches.length > FIRST_ROWS && (
         <button type="button" className="show-all" onClick={() => setShowAll(true)}>

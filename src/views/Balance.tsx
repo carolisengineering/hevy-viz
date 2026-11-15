@@ -1,15 +1,15 @@
 import { useMemo } from "react";
 import "./Balance.css";
 import { GroupBars } from "../components/GroupBars";
-import { setsPerWeekByGroup, setsPerWeekByMuscle } from "../core/balance";
+import { groupVolumes, setsPerWeekByMuscle } from "../core/balance";
 import { muscleGroup, muscleLabel } from "../core/muscles";
 import type { DateRange } from "../core/ranges";
 import { TIME_ZONE, type Training } from "../hooks/useTraining";
 
 /** Where the training goes: the six groups, then every muscle trained in the range. */
 export function Balance({ training, range }: { training: Training; range: DateRange }) {
-  const groups = useMemo(() => setsPerWeekByGroup(training.data, TIME_ZONE, range, training.endDay), [training, range]);
   const muscles = useMemo(() => setsPerWeekByMuscle(training.data, TIME_ZONE, range, training.endDay), [training, range]);
+  const groups = useMemo(() => groupVolumes(muscles), [muscles]);
   // One scale for every bar on the page, so the same sets per week draw the same length.
   const max = Math.max(1, ...groups.map((g) => g.setsPerWeek), ...muscles.map((m) => m.setsPerWeek));
 

@@ -90,7 +90,7 @@ export function ExerciseDetail({ training, exerciseId, range, unit, onShowAll }:
               {figure(summary.change == null ? "—" : formatChange(exercise.metric, summary.change, unit))}
             </div>
             <div className="sessions">
-              <dt>Sessions in range</dt>
+              <dt>Days charted in range</dt>
               <dd>
                 <strong>{formatCount(summary.history.length)}</strong>
               </dd>

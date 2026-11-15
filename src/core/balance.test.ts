@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { setsPerWeekByGroup, setsPerWeekByMuscle } from "./balance";
+import { groupVolumes, setsPerWeekByGroup, setsPerWeekByMuscle } from "./balance";
 import { rangeById } from "./ranges";
 import { dataset, template, workout, type SetFields } from "./testkit";
 
@@ -53,5 +53,12 @@ describe("setsPerWeekByMuscle", () => {
     const quads = setsPerWeekByMuscle(data, tz, rangeById("all"), end).find((m) => m.muscle === "quadriceps")!;
     const weeks = (Date.parse("2026-11-14") - Date.parse("2025-01-01")) / (7 * 86_400_000);
     expect(quads.setsPerWeek).toBeCloseTo(130 / weeks);
+  });
+});
+
+describe("groupVolumes", () => {
+  it("derives the groups from muscle volumes already computed", () => {
+    const muscles = setsPerWeekByMuscle(data, tz, rangeById("90d"), end);
+    expect(groupVolumes(muscles)).toEqual(setsPerWeekByGroup(data, tz, rangeById("90d"), end));
   });
 });

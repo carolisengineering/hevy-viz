@@ -60,8 +60,13 @@ const median = (values: readonly number[]): number => {
 
 /** The six main groups in `MAIN_GROUPS` order, each flagged when light relative to the others. */
 export function setsPerWeekByGroup(data: HevyDataset, timeZone: string, range: DateRange, endDay: string): GroupVolume[] {
+  return groupVolumes(setsPerWeekByMuscle(data, timeZone, range, endDay));
+}
+
+/** The six main groups from muscle volumes already computed, so a view showing both scans the workouts once. */
+export function groupVolumes(muscles: readonly MuscleVolume[]): GroupVolume[] {
   const totals = new Map<MuscleGroup, number>(MAIN_GROUPS.map((g) => [g, 0]));
-  for (const { muscle, setsPerWeek } of setsPerWeekByMuscle(data, timeZone, range, endDay)) {
+  for (const { muscle, setsPerWeek } of muscles) {
     const group = muscleGroup(muscle);
     if (totals.has(group)) totals.set(group, totals.get(group)! + setsPerWeek);
   }

@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures.ts";
+import { expect, serveSynced, syncedEndingDaysAgo, test } from "./fixtures.ts";
 
 const side = (page: import("@playwright/test").Page, label: string) =>
   page.locator("table.tracklist tbody").filter({ has: page.locator("tr.side th", { hasText: label }) });
@@ -66,4 +66,23 @@ test("draws rest days in the dot grid so gaps stay visible", async ({ page }) =>
 test("says the hand-lettered number is the latest estimate", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".tracklist-note")).toHaveText("best set · change in range · latest est. 1RM kg");
+});
+
+test("logs an exercise even when its sets don't give its measure", async ({ page }) => {
+  // The latest workout's bench is one set of 15 reps: too many for an estimated 1RM.
+  const data = syncedEndingDaysAgo(1);
+  const latest = data.workouts.reduce((a, b) => (Date.parse(b.start_time) > Date.parse(a.start_time) ? b : a));
+  data.workouts = data.workouts.map((w) =>
+    w !== latest
+      ? w
+      : {
+          ...w,
+          exercises: w.exercises.map((e) =>
+            e.exercise_template_id === "bench" ? { ...e, sets: [{ index: 0, type: "normal" as const, weight_kg: 60, reps: 15 }] } : e,
+          ),
+        },
+  );
+  await serveSynced(page, data);
+  await page.goto("/");
+  await expect(page.locator(".latest-entries li").first()).toContainText("Bench Press (Barbell) 60 × 15");
 });

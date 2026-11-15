@@ -169,3 +169,13 @@ test("going back from an exercise page keeps the list's choices and place", asyn
   await expect(rows(page)).toHaveCount(156);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollY);
 });
+
+test("says when the kind filter, not the search, hides the matches", async ({ page }) => {
+  await page.goto("/#/exercises");
+  await page.getByRole("radio", { name: "Timed" }).click();
+  await search(page).fill("bench");
+  await expect(page.getByText("No timed exercises match “bench”")).toBeVisible();
+  await expect(page.locator("table.exercise-list")).toHaveCount(0);
+  await page.getByRole("button", { name: "Show all kinds" }).click();
+  await expect(rows(page).locator("a")).toHaveText(["Bench Press (Barbell)"]);
+});
