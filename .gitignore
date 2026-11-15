@@ -9,3 +9,5 @@ public/data/hevy.json
 
 # Plan-execution scratch
 .superpowers/
+test-results/
+playwright-report/

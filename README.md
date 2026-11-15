@@ -70,10 +70,13 @@ scripts/generate-sample.ts  Seeded, realistic demo data
 |---|---|
 | `npm run dev` | Start the dev server |
 | `npm test` | Run unit tests (Vitest) |
+| `npm run test:e2e` | Run browser tests (Playwright); starts the dev server itself |
 | `npm run lint` | Lint with oxlint |
 | `npm run build` | Type-check and build to `dist/` |
 | `npm run sync` | Pull your Hevy data |
 | `npm run sample` | Regenerate sample data |
+
+The browser tests need Playwright's Chromium once: `npx playwright install --only-shell chromium`. Each test serves its own data, so your synced `data/hevy.json` never affects the results.
 
 ## Roadmap
 
