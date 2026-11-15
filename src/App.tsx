@@ -7,8 +7,9 @@ import type { HevyDataset } from "./core/types";
 import type { Unit } from "./format";
 import { useDataset } from "./hooks/useDataset";
 import { usePreference } from "./hooks/usePreference";
-import { routeHref, useRoute } from "./hooks/useRoute";
+import { useRoute } from "./hooks/useRoute";
 import { useTraining } from "./hooks/useTraining";
+import { Balance } from "./views/Balance";
 import { ExerciseDetail } from "./views/ExerciseDetail";
 import { Exercises } from "./views/Exercises";
 import { Overview } from "./views/Overview";
@@ -68,10 +69,7 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
         ) : route.view === "overview" ? (
           <Overview training={training} range={range} unit={unit} />
         ) : (
-          // The Balance view is drawn in the next task.
-          <p className="no-match">
-            This view is still being drawn. Every exercise is under <a href={routeHref({ view: "exercises" })}>Exercises</a>.
-          </p>
+          <Balance training={training} range={range} />
         )}
       </main>
     </>

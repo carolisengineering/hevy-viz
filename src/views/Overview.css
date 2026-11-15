@@ -201,34 +201,6 @@
   fill: var(--accent);
 }
 
-.balance-box ul {
-  list-style: none;
-  margin: 6px 0 10px;
-  padding: 0;
-}
-.balance-box li {
-  display: grid;
-  grid-template-columns: 92px 1fr 44px;
-  align-items: center;
-  gap: 8px;
-  font-size: 19px;
-  line-height: 1.6;
-}
-.balance-box .value {
-  text-align: right;
-}
-.balance-box .bar rect {
-  fill: url(#scribble-ink);
-  stroke: var(--ink);
-  stroke-width: 1.5;
-}
-.balance-box li.light {
-  color: var(--accent);
-}
-.balance-box li.light .bar rect {
-  fill: url(#scribble-accent);
-  stroke: var(--accent);
-}
 .balance-box .more {
   font-size: 18px;
 }
