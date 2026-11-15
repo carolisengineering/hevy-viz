@@ -221,6 +221,7 @@ Each step is one small commit, and tests pass after every step.
 ## Open questions
 
 - **Where should a date range end?** Today "90 days" means the 90 days before the lift's last session, so a lift unused for six months shows old data. Should it end today instead?
+  - *Decided 2026-11-14:* ranges end today, and a range with no sessions shows an empty state with the last session's date and a "Show all time" button. The sample is a fixed snapshot, so its ranges end on its last workout day (`rangeEndDay` in `src/core/dataset.ts`).
 - **Which time zone should the sync script and MCP server use?** The browser has one, but a script does not. Options are a `TZ` setting or a time zone stored in the dataset at sync time.
 - **Will a personal build ever be deployed?** If yes, it needs a separate build mode that includes `hevy.json` behind some access control.
 - **Should the README architecture section** be updated as part of this work or after it?

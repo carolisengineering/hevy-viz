@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { rangeEndDay } from "../core/dataset";
 import { localTimeZone } from "../core/dates";
 import { e1rmIndex, e1rmSummary, liftsByFrequency, type E1rmSummary, type ExerciseSummary } from "../core/metrics";
 import { rangeById, type RangeId } from "../core/ranges";
@@ -22,12 +23,13 @@ export interface E1rmView extends E1rmSummary {
  */
 export function useE1rmView(data: HevyDataset, templateId: string, rangeId: RangeId): E1rmView {
   const index = useMemo(() => e1rmIndex(data.workouts, TIME_ZONE), [data]);
+  const endDay = useMemo(() => rangeEndDay(data, TIME_ZONE), [data]);
   const lifts = useMemo(() => liftsByFrequency(data.workouts, index).slice(0, MAX_PICKER_LIFTS), [data, index]);
   const selected = lifts.find((l) => l.templateId === templateId) ?? lifts[0];
 
   const summary = useMemo(
-    () => e1rmSummary((selected && index.get(selected.templateId)) ?? [], rangeById(rangeId)),
-    [index, selected, rangeId],
+    () => e1rmSummary((selected && index.get(selected.templateId)) ?? [], rangeById(rangeId), endDay),
+    [index, selected, rangeId, endDay],
   );
 
   return { ...summary, lifts, selected };
