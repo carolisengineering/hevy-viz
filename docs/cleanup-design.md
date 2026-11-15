@@ -225,3 +225,4 @@ Each step is one small commit, and tests pass after every step.
 - **Which time zone should the sync script and MCP server use?** The browser has one, but a script does not. Options are a `TZ` setting or a time zone stored in the dataset at sync time.
 - **Will a personal build ever be deployed?** If yes, it needs a separate build mode that includes `hevy.json` behind some access control.
 - **Should the README architecture section** be updated as part of this work or after it?
+  - *Done 2026-11-14:* updated after the cleanup and follow-up fixes, once the layout had settled.

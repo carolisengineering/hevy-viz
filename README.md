@@ -34,14 +34,35 @@ If `hevy.json` exists the dashboard uses it; otherwise it falls back to the samp
 ## Architecture
 
 ```
-scripts/sync-hevy.ts      Hevy API → JSON (paginated, retries on 429)
-scripts/generate-sample.ts Seeded, realistic demo data
-src/core/metrics.ts       Pure metric functions (no DOM) — unit tested
-src/charts/               D3 charts rendered inside React components
-src/App.tsx               Filters, stat tiles, chart/table views
+src/core/                   Pure logic, no DOM or fetch; unit tested
+  types.ts                  Shapes of the Hevy API data
+  dataset.ts                Checks on loaded data; the day ranges end on
+  dates.ts                  Timestamps → local calendar days (YYYY-MM-DD)
+  ranges.ts                 90 days / 1 year / all time, and filtering by them
+  metrics.ts                Estimated 1RM, PRs, weekly sets, exercise frequency
+src/hooks/                  Load the dataset; derive what the 1RM view shows
+src/components/             Pickers, stat tiles, table, empty state
+src/charts/                 D3 chart: React wrapper + draw steps (e1rmDraw.ts)
+src/format.ts               Display formatting shared by table, tiles and chart
+src/App.tsx                 Composes the dashboard
+plugins/personal-data.ts    Vite: serves data/hevy.json in dev, blocks it from builds
+scripts/sync-hevy.ts        Hevy API → data/hevy.json (paginated)
+scripts/retry.ts            When to retry a rate-limited (429) request
+scripts/generate-sample.ts  Seeded, realistic demo data
 ```
 
-`src/core` has no browser dependencies, so a future MCP server can reuse the same metrics.
+**How data flows**
+
+1. `useDataset` loads `data/hevy.json`, or the sample if you haven't synced, and drops any workout whose start time can't be read.
+2. `useE1rmView` builds every lift's 1RM history in one pass, once per dataset. Changing the lift or range is then a lookup and a filter.
+3. `App.tsx` passes the result to the components and the chart.
+
+**Rules the code follows**
+
+- `src/core` has no browser dependencies, so a future MCP server can reuse it.
+- A day is a `YYYY-MM-DD` string in the viewer's time zone. Core functions take the time zone as a parameter instead of assuming one.
+- Date ranges end today. The sample is a fixed snapshot, so its ranges end on its last workout day.
+- Personal data stays on your machine: `data/` is git-ignored, only the dev server serves it, and `npm run build` fails if a copy turns up in `public/`.
 
 ## Scripts
 
