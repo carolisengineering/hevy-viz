@@ -1,7 +1,7 @@
 /* The page under the header, and the pieces every view shares. */
 
 .viz-root {
-  max-width: 1180px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 24px 20px 64px;
 }

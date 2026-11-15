@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import sampleJson from "../../public/data/sample.json?raw";
 import { toLocalDay } from "./dates";
 import { estimateOneRepMax } from "./metrics";
-import { metricFor, progressIndex, recordsBy, summarize } from "./progress";
+import { bestSet, metricFor, progressIndex, recordsBy, summarize } from "./progress";
 import { rangeById } from "./ranges";
 import { dataset, template, workout } from "./testkit";
 import type { HevyDataset, HevyWorkout } from "./types";
@@ -179,5 +179,27 @@ describe("summarize", () => {
     expect(s.current).toBeUndefined();
     expect(s.change).toBeNull();
     expect(s.lastSession).toBe(all[3]);
+  });
+});
+
+describe("bestSet", () => {
+  const w = workout("w9", "2026-03-02", [
+    [
+      "bench",
+      [
+        { weight_kg: 120, reps: 1, type: "warmup" },
+        { weight_kg: 100, reps: 5 },
+        { weight_kg: 90, reps: 10 },
+      ],
+    ],
+  ]);
+
+  it("picks a workout's top working set by the exercise's measure", () => {
+    expect(bestSet(w.exercises[0].sets, "e1rm", "2026-03-02", "w9")).toMatchObject({ value: 120, weightKg: 90, reps: 10 });
+    expect(bestSet(w.exercises[0].sets, "weight", "2026-03-02", "w9")).toMatchObject({ value: 100, reps: 5 });
+  });
+
+  it("returns undefined when no working set has the measure", () => {
+    expect(bestSet(w.exercises[0].sets, "duration", "2026-03-02", "w9")).toBeUndefined();
   });
 });

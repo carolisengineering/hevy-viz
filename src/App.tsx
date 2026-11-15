@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
+import { ScribbleDefs } from "./components/ink";
 import { rangeById, type RangeId } from "./core/ranges";
 import type { HevyDataset } from "./core/types";
 import type { Unit } from "./format";
@@ -10,6 +11,7 @@ import { routeHref, useRoute } from "./hooks/useRoute";
 import { useTraining } from "./hooks/useTraining";
 import { ExerciseDetail } from "./views/ExerciseDetail";
 import { Exercises } from "./views/Exercises";
+import { Overview } from "./views/Overview";
 
 const UNITS: readonly Unit[] = ["kg", "lb"];
 
@@ -35,6 +37,7 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
 
   return (
     <>
+      <ScribbleDefs />
       <Header
         route={route}
         rangeId={rangeId}
@@ -62,8 +65,10 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
           />
         ) : route.view === "exercises" ? (
           <Exercises training={training} range={range} unit={unit} query={query} onQuery={setQuery} />
+        ) : route.view === "overview" ? (
+          <Overview training={training} range={range} unit={unit} />
         ) : (
-          // Overview and Balance are drawn in the next tasks.
+          // The Balance view is drawn in the next task.
           <p className="no-match">
             This view is still being drawn. Every exercise is under <a href={routeHref({ view: "exercises" })}>Exercises</a>.
           </p>

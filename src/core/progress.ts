@@ -80,6 +80,27 @@ function valueOf(metric: MetricId, s: HevySet): number | null {
   }
 }
 
+const pointOf = (s: HevySet, value: number, date: string, workoutId: string): ProgressPoint => ({
+  date,
+  value,
+  workoutId,
+  weightKg: s.weight_kg ?? null,
+  reps: s.reps ?? null,
+  durationS: s.duration_seconds ?? null,
+  distanceM: s.distance_meters ?? null,
+});
+
+/** One workout's top working set for an exercise, by `metric`; undefined when no set has it. */
+export function bestSet(sets: readonly HevySet[], metric: MetricId, date: string, workoutId: string): ProgressPoint | undefined {
+  let best: ProgressPoint | undefined;
+  for (const s of sets) {
+    if (s.type === "warmup") continue;
+    const value = valueOf(metric, s);
+    if (value != null && (!best || value > best.value)) best = pointOf(s, value, date, workoutId);
+  }
+  return best;
+}
+
 /** The type of an exercise with no template, from the first working set with any field. */
 function inferType(s: HevySet): string | null {
   if (s.weight_kg != null && s.reps != null) return "weight_reps";
@@ -128,15 +149,7 @@ export function progressIndex(data: HevyDataset, timeZone: string): Map<string, 
           if (metric === "e1rm") a.estimable = true;
           const prev = a.best[metric].get(date);
           if (prev && value <= prev.value) continue;
-          a.best[metric].set(date, {
-            date,
-            value,
-            workoutId: w.id,
-            weightKg: s.weight_kg ?? null,
-            reps: s.reps ?? null,
-            durationS: s.duration_seconds ?? null,
-            distanceM: s.distance_meters ?? null,
-          });
+          a.best[metric].set(date, pointOf(s, value, date, w.id));
         }
       }
     }

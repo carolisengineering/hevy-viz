@@ -1,0 +1,116 @@
+import { useMemo } from "react";
+import { Sparkline, Star, Stripe } from "../../components/ink";
+import { sideOf, type Side } from "../../core/muscles";
+import { recordsBy, summarize, type ExerciseProgress } from "../../core/progress";
+import type { DateRange } from "../../core/ranges";
+import { chartFormat, formatChange, formatShortDate, valueUnit, type Unit } from "../../format";
+import { routeHref } from "../../hooks/useRoute";
+import type { Training } from "../../hooks/useTraining";
+
+const SIDES: readonly { side: Side; label: string; title: string }[] = [
+  { side: "lower", label: "Side A", title: "Lower" },
+  { side: "upper", label: "Side B", title: "Upper" },
+  { side: "bonus", label: "Bonus tracks", title: "Full body & core" },
+];
+
+interface Props {
+  training: Training;
+  range: DateRange;
+  unit: Unit;
+}
+
+/** The main lifts as a cassette j-card: Side A lower, Side B upper, ranked by sessions. */
+export function MainLifts({ training, range, unit }: Props) {
+  const lifts = training.mainLifts;
+  const sides = useMemo(
+    () =>
+      SIDES.map((s) => ({ ...s, rows: lifts.map((lift, i) => ({ lift, rank: i + 1 })).filter((r) => sideOf(r.lift.muscle) === s.side) })).filter(
+        (s) => s.rows.length > 0,
+      ),
+    [lifts],
+  );
+
+  return (
+    <section className="main-lifts" aria-labelledby="main-lifts-title">
+      <div className="section-head">
+        <h2 id="main-lifts-title" className="display">
+          Main lifts
+        </h2>
+        <p className="tracklist-note quiet">est. 1RM {valueUnit("e1rm", unit)} · best set · change in range</p>
+      </div>
+      {lifts.length === 0 ? (
+        <p className="no-lifts">
+          No weight-and-reps sets yet. Every exercise is under <a href={routeHref({ view: "exercises" })}>Exercises</a>.
+        </p>
+      ) : (
+        <table className="tracklist">
+          <thead className="visually-hidden">
+            <tr>
+              <th scope="col">Rank by sessions</th>
+              <th scope="col">Lift</th>
+              <th scope="col">Best set in range</th>
+              <th scope="col">Change in range</th>
+              <th scope="col">Trend</th>
+              <th scope="col">Est. 1RM ({unit})</th>
+            </tr>
+          </thead>
+          {sides.map((s) => (
+            <tbody key={s.side}>
+              <tr className="side">
+                <th scope="rowgroup" colSpan={6}>
+                  <u>{s.label}</u> — {s.title}
+                </th>
+              </tr>
+              {s.rows.map((r) => (
+                <TrackRow key={r.lift.templateId} lift={r.lift} rank={r.rank} range={range} endDay={training.endDay} unit={unit} />
+              ))}
+            </tbody>
+          ))}
+        </table>
+      )}
+    </section>
+  );
+}
+
+interface RowProps {
+  lift: ExerciseProgress;
+  rank: number;
+  range: DateRange;
+  endDay: string;
+  unit: Unit;
+}
+
+function TrackRow({ lift, rank, range, endDay, unit }: RowProps) {
+  const s = summarize(lift.points, range, endDay);
+  const format = chartFormat(lift.metric, lift.type, unit);
+  const bestInRange = recordsBy(s.history).at(-1);
+  const lastPr = s.prs.at(-1);
+  const change = s.change == null ? null : formatChange(lift.metric, s.change, unit);
+  const fell = s.change != null && s.change < 0 && change !== "±0";
+
+  return (
+    <tr className={lastPr ? "pr" : undefined}>
+      <td className="rank">
+        {String(rank).padStart(2, "0")}
+        {lastPr && (
+          <span className="margin-note note" aria-hidden="true">
+            PR {formatShortDate(lastPr.date)}
+          </span>
+        )}
+      </td>
+      <td className="name">
+        <a href={routeHref({ view: "exercises", exerciseId: lift.templateId })}>{lift.title}</a>
+        {lastPr && <Star size={18} title={`PR on ${formatShortDate(lastPr.date)}`} />}
+      </td>
+      <td className="best-set num">{bestInRange ? format.set(bestInRange) : "—"}</td>
+      <td className="change num">{change == null ? "—" : fell ? <s className="regress">{change}</s> : change}</td>
+      <td className="spark">
+        <Sparkline points={s.history} />
+      </td>
+      <td className="current num">
+        <span className="display">{s.current ? format.value(s.current.value) : "—"}</span>
+        {lastPr && <Stripe />}
+      </td>
+    </tr>
+  );
+}
