@@ -3,7 +3,7 @@
 // values arrive in stored units (kg, reps, seconds, meters) and ChartFormat says
 // how to show them.
 import * as d3 from "d3";
-import { addDays, parseDay } from "../core/dates";
+import { addDays, MS_PER_DAY, parseDay } from "../core/dates";
 import type { ProgressPoint } from "../core/progress";
 import { formatDate } from "../format";
 import { STAR_PATH } from "../components/ink";
@@ -31,6 +31,8 @@ const STAR_SIZE = 18;
 /** Half the width of the tick mark drawn for a lone session. */
 const LONE_TICK = 7;
 const TOOLTIP_OFFSET = 12;
+/** A break longer than this many days splits the line, so a layoff stays visible. */
+const MAX_GAP_DAYS = 28;
 
 export interface Frame {
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -126,25 +128,60 @@ export function drawAxes(f: Frame, format: ChartFormat): void {
 }
 
 /**
+ * The line's points with a null wherever consecutive sessions are more than `maxGapDays`
+ * apart, plus each such gap's two ends, so the chart can bridge it with a dashed line.
+ */
+export function splitAtGaps(
+  points: readonly ProgressPoint[],
+  maxGapDays: number,
+): { series: (ProgressPoint | null)[]; bridges: [ProgressPoint, ProgressPoint][] } {
+  const series: (ProgressPoint | null)[] = [];
+  const bridges: [ProgressPoint, ProgressPoint][] = [];
+  points.forEach((p, i) => {
+    const prev = points[i - 1];
+    if (prev && (parseDay(p.date).getTime() - parseDay(prev.date).getTime()) / MS_PER_DAY > maxGapDays) {
+      series.push(null);
+      bridges.push([prev, p]);
+    }
+    series.push(p);
+  });
+  return { series, bridges };
+}
+
+/**
  * The ink line. `drawIn` plays the pen stroke (first draw after the data changes,
- * never on a resize). A lone session is a short tick at its value.
+ * never on a resize). A lone session is a short tick at its value. Breaks longer
+ * than four weeks leave the line and are bridged with a faint dashed stroke.
  */
 export function drawSeries(f: Frame, points: readonly ProgressPoint[], drawIn: boolean): void {
-  let d: string;
   if (points.length === 1) {
     const cx = xOf(f, points[0]);
     const cy = yOf(f, points[0]);
     // A ballpoint dash rises slightly, like a hand-drawn tick.
-    d = `M${cx - LONE_TICK},${cy + 1}L${cx + LONE_TICK},${cy - 1}`;
-  } else {
-    const line = d3
-      .line<ProgressPoint>()
-      .x((p) => xOf(f, p))
-      .y((p) => yOf(f, p))
-      .curve(d3.curveMonotoneX);
-    d = line(points as ProgressPoint[])!;
+    f.svg.append("path").attr("class", "series-line").attr("d", `M${cx - LONE_TICK},${cy + 1}L${cx + LONE_TICK},${cy - 1}`);
+    return;
   }
-  const path = f.svg.append("path").attr("class", drawIn ? "series-line draw-in" : "series-line").attr("d", d);
+  const { series, bridges } = splitAtGaps(points, MAX_GAP_DAYS);
+  f.svg
+    .append("g")
+    .attr("class", "series-gaps")
+    .selectAll("line")
+    .data(bridges)
+    .join("line")
+    .attr("x1", ([a]) => xOf(f, a))
+    .attr("y1", ([a]) => yOf(f, a))
+    .attr("x2", ([, b]) => xOf(f, b))
+    .attr("y2", ([, b]) => yOf(f, b));
+  const line = d3
+    .line<ProgressPoint | null>()
+    .defined((p) => p !== null)
+    .x((p) => xOf(f, p!))
+    .y((p) => yOf(f, p!))
+    .curve(d3.curveMonotoneX);
+  const path = f.svg
+    .append("path")
+    .attr("class", drawIn ? "series-line draw-in" : "series-line")
+    .attr("d", line(series)!);
   if (drawIn) path.attr("pathLength", 1);
 }
 

@@ -10,7 +10,8 @@ import { TIME_ZONE, type Training } from "../hooks/useTraining";
 export function Balance({ training, range }: { training: Training; range: DateRange }) {
   const groups = useMemo(() => setsPerWeekByGroup(training.data, TIME_ZONE, range, training.endDay), [training, range]);
   const muscles = useMemo(() => setsPerWeekByMuscle(training.data, TIME_ZONE, range, training.endDay), [training, range]);
-  const max = Math.max(1, ...muscles.map((m) => m.setsPerWeek));
+  // One scale for every bar on the page, so the same sets per week draw the same length.
+  const max = Math.max(1, ...groups.map((g) => g.setsPerWeek), ...muscles.map((m) => m.setsPerWeek));
 
   return (
     <section className="balance-view" aria-labelledby="balance-title">
@@ -21,7 +22,7 @@ export function Balance({ training, range }: { training: Training; range: DateRa
         <p className="quiet">working sets per week · {range.label.toLowerCase()}</p>
       </div>
 
-      <GroupBars groups={groups} large />
+      <GroupBars groups={groups} max={max} large />
       <p className="quiet small balance-key">Groups in red get under half the sets of the median group.</p>
 
       <div className="section-head">

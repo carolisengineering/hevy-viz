@@ -1,5 +1,5 @@
 /* Palette tokens. Ink does everything; accent marks PRs, dates and the margin rule;
-   select is only for the selected row and focus highlights. Never gray text. */
+   select is only for text selection and focus highlights. Never gray text. */
 :root {
   color-scheme: light;
   --paper: #fcf9f2;

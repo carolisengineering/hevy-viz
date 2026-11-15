@@ -4,11 +4,13 @@ import type { DateRange } from "../../core/ranges";
 import { formatCount, formatLogDate } from "../../format";
 import type { Training } from "../../hooks/useTraining";
 
-/** One grid cell, in svg units. */
-const CELL = 12;
-/** The largest dot fits inside its cell. */
-const MAX_RADIUS = 5.4;
-const radius = (sets: number) => Math.min(MAX_RADIUS, 1.3 + sets / 6);
+/** One grid cell, in svg units: 52 weeks draw close to 1:1 in the box. */
+const CELL = 8;
+/** Sets at which a dot reaches full size. */
+const FULL_DOT_SETS = 30;
+/** Area grows with sets, so dot size reads as volume; the biggest dot stays inside its cell. */
+const radius = (sets: number) => 1.5 + 2.1 * Math.sqrt(Math.min(sets, FULL_DOT_SETS) / FULL_DOT_SETS);
+const REST_RADIUS = 1;
 
 /** Sessions this month against the usual month, and a year of training days as dots. */
 export function Consistency({ training, range }: { training: Training; range: DateRange }) {
@@ -18,7 +20,7 @@ export function Consistency({ training, range }: { training: Training; range: Da
   const month = training.endDay.slice(0, 7);
   const trained = grid.reduce((n, w) => n + w.days.filter((d) => d.sets > 0).length, 0);
   // The 13-week grid draws larger so it still fills the box.
-  const zoom = weeks <= 13 ? 2.4 : 1;
+  const zoom = weeks <= 13 ? 3.6 : 1;
 
   return (
     <section className="box consistency" aria-labelledby="consistency-title">
@@ -57,7 +59,10 @@ export function Consistency({ training, range }: { training: Training; range: Da
                   {formatLogDate(d.day)}: {d.sets} {d.sets === 1 ? "set" : "sets"}
                 </title>
               </circle>
-            ) : null,
+            ) : (
+              // A rest day: a faint dot, so gaps read as empty days rather than missing grid.
+              <circle key={d.day} className="rest" cx={i * CELL + CELL / 2} cy={j * CELL + CELL / 2} r={REST_RADIUS} />
+            ),
           ),
         )}
       </svg>

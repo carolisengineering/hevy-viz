@@ -24,6 +24,14 @@
   stroke-linejoin: round;
   stroke-linecap: round;
 }
+/* A layoff: the line stops and a faint dashed stroke bridges the gap. */
+.series-gaps line {
+  stroke: var(--ink-line);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+}
+
 /* The pen draws the line once when the data changes. */
 .series-line.draw-in {
   stroke-dasharray: 1 1;
@@ -94,7 +102,6 @@
   padding: 6px 10px;
   font-size: 17px;
   color: var(--ink);
-  box-shadow: 0 6px 16px rgb(14 79 134 / 0.16);
   white-space: nowrap;
 }
 .tooltip strong {

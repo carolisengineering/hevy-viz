@@ -55,17 +55,17 @@ export function Header({ route, rangeId, onRange, unit, onUnit, query, onQuery, 
             onChange={(e) => onQuery(e.target.value)}
           />
         </label>
-        <p className="cassette">
-          <strong className="display">{formatCount(sessions)}</strong> <span>sessions</span>
-          {isSample && (
-            <>
-              {" "}
-              <span className="sample">Sample data</span>
-            </>
-          )}
-          <Stripe />
-        </p>
       </div>
+      <p className="cassette">
+        <strong className="display">{formatCount(sessions)}</strong> <span>sessions</span>
+        {isSample && (
+          <>
+            {" "}
+            <span className="sample">Sample data</span>
+          </>
+        )}
+        <Stripe />
+      </p>
     </header>
   );
 }

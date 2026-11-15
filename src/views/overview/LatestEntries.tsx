@@ -40,14 +40,16 @@ export function LatestEntries({ training, unit }: { training: Training; unit: Un
           <li key={workout.id}>
             <span className="log-date">{formatLogDate(day)}</span>
             <span className="log-title">{workout.title}</span>
-            {sets.slice(0, SETS_PER_ENTRY).map(({ exercise, top, record }) => (
-              <span key={exercise.templateId} className="log-set">
-                <a href={routeHref({ view: "exercises", exerciseId: exercise.templateId })}>{exercise.title}</a>{" "}
-                {formatPointSet(top, exercise.type, unit)}
-                {record && <Star size={15} title="All-time record" />}
-              </span>
-            ))}
-            {sets.length > SETS_PER_ENTRY && <span className="log-set quiet">+{sets.length - SETS_PER_ENTRY} more</span>}
+            <span className="log-sets">
+              {sets.slice(0, SETS_PER_ENTRY).map(({ exercise, top, record }) => (
+                <span key={exercise.templateId} className="log-set">
+                  <a href={routeHref({ view: "exercises", exerciseId: exercise.templateId })}>{exercise.title}</a>{" "}
+                  {formatPointSet(top, exercise.type, unit)}
+                  {record && <Star size={15} title="All-time record" />}
+                </span>
+              ))}
+              {sets.length > SETS_PER_ENTRY && <span className="log-set quiet">+{sets.length - SETS_PER_ENTRY} more</span>}
+            </span>
           </li>
         ))}
       </ol>

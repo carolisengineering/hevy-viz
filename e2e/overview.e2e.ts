@@ -34,7 +34,7 @@ test("converts every tracklist figure when switching to pounds", async ({ page }
 test("shows consistency as figures and a dot grid", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("sessions this month")).toBeVisible();
-  expect(await page.locator("svg.dot-grid circle").count()).toBeGreaterThan(0);
+  await expect(page.locator("svg.dot-grid circle").first()).toBeAttached();
   await expect(page.locator("svg.dot-grid circle title").first()).toHaveText(/sets?$/);
 });
 
@@ -48,4 +48,22 @@ test("shows balance by group and links to every muscle", async ({ page }) => {
 test("writes the latest three workouts as log lines", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".latest-entries li")).toHaveCount(3);
+});
+
+test("answers consistency and balance before the log on one-column screens", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  const top = async (selector: string) => (await page.locator(selector).boundingBox())!.y;
+  expect(await top(".consistency")).toBeLessThan(await top(".latest-entries"));
+  expect(await top(".balance-box")).toBeLessThan(await top(".latest-entries"));
+});
+
+test("draws rest days in the dot grid so gaps stay visible", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("svg.dot-grid circle.rest").first()).toBeAttached();
+});
+
+test("says the hand-lettered number is the latest estimate", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".tracklist-note")).toHaveText("best set · change in range · latest est. 1RM kg");
 });

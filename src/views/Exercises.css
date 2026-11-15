@@ -88,12 +88,15 @@
   font-size: 19px;
 }
 
-/* Figures written on the page in a row, not cards. */
+/* The figures as one ruled ledger line: the best ever leads, the rest are read across. */
 .figures {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px 44px;
-  margin: 0 0 22px;
+  align-items: flex-end;
+  gap: 10px 36px;
+  margin: 0 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--grid);
 }
 .figures div {
   display: flex;
@@ -101,7 +104,7 @@
   justify-content: flex-end;
 }
 .figures dt {
-  font-size: 17px;
+  font-size: 16px;
   color: var(--ink-soft);
 }
 .figures dd {
@@ -111,13 +114,39 @@
 .figures strong {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 64px;
+  font-size: 32px;
   line-height: 1;
   text-transform: uppercase;
   -webkit-text-stroke: 0.036em currentColor;
 }
+.figures .best strong {
+  font-size: 50px;
+}
 .figures .unit {
-  font-size: 22px;
+  font-size: 16px;
+}
+.figures .best .unit {
+  font-size: 20px;
+}
+@media (max-width: 699px) {
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    justify-content: start;
+    gap: 10px 22px;
+  }
+  .figures .best {
+    grid-column: 1 / -1;
+  }
+  .figures strong {
+    font-size: 28px;
+  }
+  .figures .best strong {
+    font-size: 42px;
+  }
+  .figures dt {
+    font-size: 15px;
+  }
 }
 
 .chart-box .small {

@@ -36,7 +36,7 @@ export function MainLifts({ training, range, unit }: Props) {
         <h2 id="main-lifts-title" className="display">
           Main lifts
         </h2>
-        <p className="tracklist-note quiet">est. 1RM {valueUnit("e1rm", unit)} · best set · change in range</p>
+        <p className="tracklist-note quiet">best set · change in range · latest est. 1RM {valueUnit("e1rm", unit)}</p>
       </div>
       {lifts.length === 0 ? (
         <p className="no-lifts">
@@ -51,7 +51,7 @@ export function MainLifts({ training, range, unit }: Props) {
               <th scope="col">Best set in range</th>
               <th scope="col">Change in range</th>
               <th scope="col">Trend</th>
-              <th scope="col">Est. 1RM ({unit})</th>
+              <th scope="col">Latest est. 1RM ({unit})</th>
             </tr>
           </thead>
           {sides.map((s) => (
@@ -87,6 +87,9 @@ function TrackRow({ lift, rank, range, endDay, unit }: RowProps) {
   const lastPr = s.prs.at(-1);
   const change = s.change == null ? null : formatChange(lift.metric, s.change, unit);
   const fell = s.change != null && s.change < 0 && change !== "±0";
+  // The last word and the star never part, so a wrapped name keeps its star on the line.
+  const split = lift.title.lastIndexOf(" ") + 1;
+  const [head, tail] = [lift.title.slice(0, split), lift.title.slice(split)];
 
   return (
     <tr className={lastPr ? "pr" : undefined}>
@@ -99,8 +102,15 @@ function TrackRow({ lift, rank, range, endDay, unit }: RowProps) {
         )}
       </td>
       <td className="name">
-        <a href={routeHref({ view: "exercises", exerciseId: lift.templateId })}>{lift.title}</a>
-        {lastPr && <Star size={18} title={`PR on ${formatShortDate(lastPr.date)}`} />}
+        <a href={routeHref({ view: "exercises", exerciseId: lift.templateId })}>
+          {head}
+          <span className="name-tail">
+            {tail}
+            {lastPr && <Star size={18} title={`PR on ${formatShortDate(lastPr.date)}`} />}
+          </span>
+        </a>
+        {/* Phones show the best set here; the best-set column is hidden there. */}
+        {bestInRange && <span className="best-sub">{format.set(bestInRange)}</span>}
       </td>
       <td className="best-set num">{bestInRange ? format.set(bestInRange) : "—"}</td>
       <td className="change num">{change == null ? "—" : fell ? <s className="regress">{change}</s> : change}</td>
