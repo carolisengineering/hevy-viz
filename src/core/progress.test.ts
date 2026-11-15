@@ -99,6 +99,12 @@ describe("progressIndex", () => {
     expect(index.get("bench")).toMatchObject({ sessions: 3, lastDay: "2026-01-08" });
   });
 
+  it("dates a session by the local day it happened", () => {
+    // 03:30 UTC on Jan 6 is the evening of Jan 5 in California.
+    const late = { ...workout("late", "2026-01-06", [["bench", [{ weight_kg: 100, reps: 5 }]]]), start_time: "2026-01-06T03:30:00Z" };
+    expect(progressIndex(dataset([late], templates), "America/Los_Angeles").get("bench")!.points[0].date).toBe("2026-01-05");
+  });
+
   it("infers the type of an exercise with no template from its sets", () => {
     const w = workout("w4", "2026-02-01", [["mystery", [{ weight_kg: 50, reps: 5 }]]]);
     const mystery = progressIndex(dataset([w], []), "America/Los_Angeles").get("mystery");
@@ -171,6 +177,25 @@ describe("summarize", () => {
   it("judges PRs against all time", () => {
     expect(summarize(all, ninety, "2026-11-14").prs).toEqual([]);
     expect(summarize(all, rangeById("all"), "2026-11-14").prs.map((p) => p.value)).toEqual([100, 120]);
+  });
+
+  it("counts the range back from the end day, not from the last session", () => {
+    // 90 days before 2026-12-31 is 2026-10-02, so the 10-01 point drops out.
+    const s = summarize(all, ninety, "2026-12-31");
+    expect(s.history.map((p) => p.value)).toEqual([115]);
+    expect(s.change).toBe(0);
+    expect(summarize(all, ninety, "2025-07-01").prs.map((p) => p.value)).toEqual([120]);
+  });
+
+  it("summarizes an empty history", () => {
+    expect(summarize([], rangeById("all"), "2026-11-14")).toEqual({
+      history: [],
+      prs: [],
+      current: undefined,
+      change: null,
+      best: undefined,
+      lastSession: undefined,
+    });
   });
 
   it("returns an empty history for a range with no points", () => {

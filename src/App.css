@@ -13,9 +13,6 @@
   }
 }
 
-.muted {
-  color: var(--ink-soft);
-}
 .small {
   font-size: 17px;
 }

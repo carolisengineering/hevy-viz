@@ -19,7 +19,7 @@ const UNITS: readonly Unit[] = ["kg", "lb"];
 export default function App() {
   const dataset = useDataset();
   if (dataset.status === "error") return <main className="viz-root"><p className="notice">{dataset.message}</p></main>;
-  if (dataset.status === "loading") return <main className="viz-root"><p className="muted">Loading…</p></main>;
+  if (dataset.status === "loading") return <main className="viz-root"><p className="quiet">Loading…</p></main>;
   return <Dashboard data={dataset.data} skipped={dataset.skipped} />;
 }
 

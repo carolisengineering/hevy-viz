@@ -1,37 +1,6 @@
 import { describe, expect, it } from "vitest";
-import sampleJson from "../../public/data/sample.json?raw";
-import { toLocalDay } from "./dates";
-import {
-  e1rmHistory,
-  e1rmIndex,
-  e1rmSummary,
-  estimateOneRepMax,
-  exercisesByFrequency,
-  liftsByFrequency,
-  personalRecords,
-  weeklySetsByMuscle,
-  type E1rmPoint,
-} from "./metrics";
-import { rangeById } from "./ranges";
+import { estimateOneRepMax, exercisesByFrequency, weeklySetsByMuscle } from "./metrics";
 import type { HevyDataset, HevyExercise, HevySet, HevyWorkout } from "./types";
-
-/** The pre-index algorithm, kept here as an independent reference: one full scan per exercise. */
-function referenceHistory(workouts: HevyWorkout[], templateId: string, timeZone: string): E1rmPoint[] {
-  const byDay = new Map<string, E1rmPoint>();
-  for (const w of workouts) {
-    for (const ex of w.exercises) {
-      if (ex.exercise_template_id !== templateId) continue;
-      for (const s of ex.sets.filter((x) => x.type !== "warmup")) {
-        const e1rm = estimateOneRepMax(s);
-        if (e1rm == null) continue;
-        const date = toLocalDay(w.start_time, timeZone);
-        const prev = byDay.get(date);
-        if (!prev || e1rm > prev.e1rm) byDay.set(date, { date, e1rm, weightKg: s.weight_kg!, reps: s.reps!, workoutId: w.id });
-      }
-    }
-  }
-  return [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
-}
 
 type SetSpec = [weight: number | null, reps: number | null, type?: HevySet["type"]];
 
@@ -66,72 +35,6 @@ describe("estimateOneRepMax", () => {
   });
 });
 
-describe("e1rmHistory", () => {
-  it("keeps the best working set per day and ignores warmups", () => {
-    const h = e1rmHistory(
-      [
-        workout("a", "2026-01-05", [[60, 10, "warmup"], [100, 5], [105, 3]]),
-        workout("b", "2026-01-01", [[95, 5]]),
-      ],
-      "bench",
-      "UTC",
-    );
-    expect(h.map((p) => p.date)).toEqual(["2026-01-01", "2026-01-05"]);
-    expect(h[1].weightKg).toBe(100); // 100x5 (116.7) beats 105x3 (115.5)
-  });
-  it("ignores other exercises", () => {
-    expect(e1rmHistory([workout("a", "2026-01-01", [[100, 5]], "squat")], "bench", "UTC")).toEqual([]);
-  });
-  it("dates a session by the local day it happened", () => {
-    // 03:30 UTC on Jan 6 is the evening of Jan 5 in California.
-    const w = { ...workout("a", "2026-01-06", [[100, 5]]), start_time: "2026-01-06T03:30:00Z" };
-    expect(e1rmHistory([w], "bench", "America/Los_Angeles")[0].date).toBe("2026-01-05");
-  });
-});
-
-describe("e1rmIndex", () => {
-  const workouts: HevyWorkout[] = [
-    {
-      ...workout("a", "2026-01-08", []),
-      exercises: [exercise("bench", [[100, 5]]), exercise("squat", [[140, 3]], 1), exercise("run", [[null, null]], 2)],
-    },
-    workout("b", "2026-01-01", [[95, 5]]),
-  ];
-  const index = e1rmIndex(workouts, "UTC");
-
-  it("groups histories by exercise, oldest first", () => {
-    expect(index.get("bench")?.map((p) => p.workoutId)).toEqual(["b", "a"]);
-    expect(index.get("squat")?.map((p) => p.weightKg)).toEqual([140]);
-  });
-  it("omits exercises with no estimable sets", () => {
-    expect(index.has("run")).toBe(false);
-  });
-  it("matches an independent per-exercise scan for every lift in the sample dataset", () => {
-    const sample = JSON.parse(sampleJson) as HevyDataset;
-    const tz = "America/Los_Angeles";
-    const sampleIndex = e1rmIndex(sample.workouts, tz);
-    expect(sampleIndex.size).toBe(sample.exercise_templates.length);
-    for (const t of sample.exercise_templates) {
-      expect(sampleIndex.get(t.id)).toEqual(referenceHistory(sample.workouts, t.id, tz));
-    }
-  });
-});
-
-describe("personalRecords", () => {
-  it("returns only points that beat every earlier one", () => {
-    const h = e1rmHistory(
-      [
-        workout("a", "2026-01-01", [[100, 5]]),
-        workout("b", "2026-01-08", [[95, 5]]),
-        workout("c", "2026-01-15", [[102.5, 5]]),
-      ],
-      "bench",
-      "UTC",
-    );
-    expect(personalRecords(h).map((p) => p.workoutId)).toEqual(["a", "c"]);
-  });
-});
-
 describe("weeklySetsByMuscle", () => {
   it("counts working sets by primary muscle per week", () => {
     const data: HevyDataset = {
@@ -163,64 +66,5 @@ describe("exercisesByFrequency", () => {
       workout("c", "2026-01-03", [[100, 5]]),
     ]);
     expect(list[0]).toMatchObject({ templateId: "bench", sessions: 2 });
-  });
-});
-
-describe("liftsByFrequency", () => {
-  it("excludes exercises with no 1RM estimate, even when they are the most frequent", () => {
-    const workouts = [
-      workout("a", "2026-01-01", [[null, null]], "treadmill"),
-      workout("b", "2026-01-02", [[null, null]], "treadmill"),
-      workout("c", "2026-01-03", [[null, 10]], "pushup"),
-      workout("d", "2026-01-04", [[100, 5]], "bench"),
-    ];
-    const lifts = liftsByFrequency(workouts, e1rmIndex(workouts, "UTC"));
-    expect(lifts.map((e) => e.templateId)).toEqual(["bench"]);
-  });
-});
-
-describe("e1rmSummary", () => {
-  const all = e1rmHistory(
-    [
-      workout("a", "2025-01-01", [[100, 1]]),
-      workout("b", "2025-06-01", [[120, 1]]),
-      workout("c", "2026-10-01", [[110, 1]]),
-      workout("d", "2026-11-01", [[115, 1]]),
-    ],
-    "bench",
-    "UTC",
-  );
-
-  const TODAY = "2026-11-14";
-
-  it("filters to the range ending today", () => {
-    const s = e1rmSummary(all, rangeById("90d"), TODAY);
-    expect(s.history.map((p) => p.workoutId)).toEqual(["c", "d"]);
-    expect(s.current?.workoutId).toBe("d");
-    expect(s.change).toBe(5);
-  });
-  it("is empty when the last session is older than the range, but still reports it", () => {
-    const s = e1rmSummary(all, rangeById("90d"), "2027-06-01");
-    expect(s).toEqual({ history: [], prs: [], current: undefined, change: null, lastSession: all.at(-1) });
-  });
-  it("counts the range back from today, not from the last session", () => {
-    // 90 days before 2026-12-31 is 2026-10-02: c (10-01) drops out, though it's within 90 days of d.
-    const s = e1rmSummary(all, rangeById("90d"), "2026-12-31");
-    expect(s.history.map((p) => p.workoutId)).toEqual(["d"]);
-    expect(s.change).toBe(0);
-  });
-  it("judges PRs against all-time history, not just the range", () => {
-    expect(e1rmSummary(all, rangeById("90d"), TODAY).prs).toEqual([]);
-    expect(e1rmSummary(all, rangeById("all"), TODAY).prs.map((p) => p.workoutId)).toEqual(["a", "b"]);
-    expect(e1rmSummary(all, rangeById("90d"), "2025-07-01").prs.map((p) => p.workoutId)).toEqual(["b"]);
-  });
-  it("is empty for an empty history", () => {
-    expect(e1rmSummary([], rangeById("all"), TODAY)).toEqual({
-      history: [],
-      prs: [],
-      current: undefined,
-      change: null,
-      lastSession: undefined,
-    });
   });
 });
