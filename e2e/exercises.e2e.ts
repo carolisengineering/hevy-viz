@@ -134,3 +134,38 @@ test("shows an empty state when the range has no sessions", async ({ page }) => 
   await expect(page.locator(range("All time"))).toHaveAttribute("aria-checked", "true");
   await expect(page.locator("path.series-line")).toBeVisible();
 });
+
+test("going back from an exercise page keeps the list's choices and place", async ({ page }) => {
+  // 150 extra exercises, so the list needs "Show all" and scrolling.
+  const data = syncedEndingDaysAgo(1);
+  const extra = Array.from({ length: 150 }, (_, i) => `Drill ${String(i).padStart(3, "0")}`);
+  const last = data.workouts.at(-1)!;
+  data.workouts = [
+    ...data.workouts.slice(0, -1),
+    {
+      ...last,
+      exercises: [
+        ...last.exercises,
+        ...extra.map((title, i) => ({ index: last.exercises.length + i, title, exercise_template_id: title, sets: [set({ reps: 10 }, 0)] })),
+      ],
+    },
+  ];
+  data.exercise_templates = [...data.exercise_templates, ...extra.map((title) => template(title, title, "reps_only", "abdominals"))];
+  await serveSynced(page, data);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#/exercises");
+
+  await page.getByRole("radio", { name: "A–Z" }).click();
+  await page.getByRole("button", { name: /Show all/ }).click();
+  const target = page.getByRole("link", { name: "Drill 140" });
+  await target.scrollIntoViewIfNeeded();
+  const scrollY = await page.evaluate(() => window.scrollY);
+  await target.click();
+  await expect(page.locator("h2")).toHaveText("Drill 140");
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+  await page.goBack();
+  await expect(page.getByRole("radio", { name: "A–Z" })).toHaveAttribute("aria-checked", "true");
+  await expect(rows(page)).toHaveCount(156);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollY);
+});

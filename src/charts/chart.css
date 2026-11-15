@@ -32,6 +32,10 @@
   stroke-linecap: round;
 }
 
+.series-dot {
+  fill: var(--ink);
+}
+
 /* The pen draws the line once when the data changes. */
 .series-line.draw-in {
   stroke-dasharray: 1 1;

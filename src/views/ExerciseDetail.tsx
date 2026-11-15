@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 import "./Exercises.css";
 import { ProgressChart } from "../charts/ProgressChart";
 import { EmptyRange } from "../components/EmptyRange";
@@ -30,6 +30,8 @@ const BackLink = () => (
 export function ExerciseDetail({ training, exerciseId, range, unit, onShowAll }: Props) {
   const exercise = training.index.get(exerciseId);
   const [showTable, setShowTable] = useState(false);
+  // An exercise page opens at its top, not at the list's scroll position.
+  useLayoutEffect(() => window.scrollTo(0, 0), [exerciseId]);
   const summary = useMemo(() => exercise && summarize(exercise.points, range, training.endDay), [exercise, range, training.endDay]);
   const format = useMemo(() => exercise && chartFormat(exercise.metric, exercise.type, unit), [exercise, unit]);
 

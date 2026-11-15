@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
 import { ScribbleDefs } from "./components/ink";
@@ -11,7 +11,7 @@ import { useRoute } from "./hooks/useRoute";
 import { useTraining } from "./hooks/useTraining";
 import { Balance } from "./views/Balance";
 import { ExerciseDetail } from "./views/ExerciseDetail";
-import { Exercises } from "./views/Exercises";
+import { Exercises, INITIAL_LIST_VIEW, type ListView } from "./views/Exercises";
 import { Overview } from "./views/Overview";
 
 const UNITS: readonly Unit[] = ["kg", "lb"];
@@ -29,6 +29,14 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
   const [unit, setUnit] = usePreference("hevy-viz:unit", UNITS, "kg");
   const [route, navigate] = useRoute();
   const [query, setQuery] = useState("");
+  const [listView, setListView] = useState<ListView>(INITIAL_LIST_VIEW);
+  const listScroll = useRef(0);
+  // The route of the previous render, to tell "back from an exercise page" from other arrivals.
+  const previous = useRef(route);
+  const backFromExercise = previous.current.view === "exercises" && previous.current.exerciseId != null;
+  useEffect(() => {
+    previous.current = route;
+  });
   const range = rangeById(rangeId);
 
   const onQuery = (q: string) => {
@@ -65,7 +73,17 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
             onShowAll={() => setRangeId("all")}
           />
         ) : route.view === "exercises" ? (
-          <Exercises training={training} range={range} unit={unit} query={query} onQuery={setQuery} />
+          <Exercises
+            training={training}
+            range={range}
+            unit={unit}
+            query={query}
+            onQuery={setQuery}
+            view={listView}
+            onView={setListView}
+            scrollMemory={listScroll}
+            restoreScroll={backFromExercise}
+          />
         ) : route.view === "overview" ? (
           <Overview training={training} range={range} unit={unit} />
         ) : (

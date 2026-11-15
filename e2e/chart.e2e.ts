@@ -77,3 +77,25 @@ test("charts a lift with a single session in range without broken coordinates", 
   );
   expect(broken).toEqual([]);
 });
+
+test("marks every session of an exercise trained only every few weeks", async ({ page }) => {
+  // A curl done roughly every 40 days: each session sits alone between two long breaks.
+  const data = syncedEndingDaysAgo(1);
+  let last = -Infinity;
+  let sessions = 0;
+  data.workouts = data.workouts.map((w) => {
+    const t = Date.parse(w.start_time);
+    if (t - last < 40 * 86_400_000) return w;
+    last = t;
+    sessions++;
+    const set = { index: 0, type: "normal" as const, weight_kg: 10 + (sessions % 4), reps: 10 };
+    return { ...w, exercises: [...w.exercises, { index: w.exercises.length, title: "Sparse Curl", exercise_template_id: "sparse", sets: [set] }] };
+  });
+  data.exercise_templates = [
+    ...data.exercise_templates,
+    { id: "sparse", title: "Sparse Curl", type: "weight_reps", primary_muscle_group: "biceps", secondary_muscle_groups: [] },
+  ];
+  await serveSynced(page, data);
+  await page.goto("/#/exercises/sparse");
+  await expect(page.locator(".chart-wrap svg circle.series-dot")).toHaveCount(sessions);
+});

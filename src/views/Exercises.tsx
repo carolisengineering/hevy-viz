@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, type RefObject } from "react";
 import "./Exercises.css";
 import { Segmented } from "../components/Segmented";
 import { Sparkline } from "../components/ink";
@@ -29,19 +29,47 @@ const SORTS: readonly { id: Sort; label: string }[] = [
 /** Rows shown before "Show all". */
 const FIRST_ROWS = 100;
 
+/** The list's choices. They live in the app, so opening an exercise and going back keeps them. */
+export interface ListView {
+  kind: Kind;
+  sort: Sort;
+  showAll: boolean;
+}
+export const INITIAL_LIST_VIEW: ListView = { kind: "all", sort: "sessions", showAll: false };
+
 interface Props {
   training: Training;
   range: DateRange;
   unit: Unit;
   query: string;
   onQuery: (query: string) => void;
+  view: ListView;
+  onView: (view: ListView) => void;
+  /** The list's last scroll position, kept while an exercise page is open. */
+  scrollMemory: RefObject<number>;
+  /** True when coming back from an exercise page: return to `scrollMemory`. */
+  restoreScroll: boolean;
 }
 
 /** Every exercise, searchable, filterable by kind and sortable. */
-export function Exercises({ training, range, unit, query, onQuery }: Props) {
-  const [kind, setKind] = useState<Kind>("all");
-  const [sort, setSort] = useState<Sort>("sessions");
-  const [showAll, setShowAll] = useState(false);
+export function Exercises({ training, range, unit, query, onQuery, view, onView, scrollMemory, restoreScroll }: Props) {
+  const { kind, sort, showAll } = view;
+  const setKind = (k: Kind) => onView({ ...view, kind: k });
+  const setSort = (s: Sort) => onView({ ...view, sort: s });
+  const setShowAll = (v: boolean) => onView({ ...view, showAll: v });
+
+  // Back from an exercise page returns to the same place in the list; the rows are already rendered.
+  useLayoutEffect(() => {
+    if (restoreScroll) window.scrollTo(0, scrollMemory.current);
+    // Only on arrival: later renders must not pull the reader back.
+  }, []);
+  useEffect(() => {
+    const remember = () => {
+      scrollMemory.current = window.scrollY;
+    };
+    window.addEventListener("scroll", remember, { passive: true });
+    return () => window.removeEventListener("scroll", remember);
+  }, [scrollMemory]);
 
   const matches = useMemo(() => {
     // A plain substring, so "(Barbell)" or "+" mean themselves.

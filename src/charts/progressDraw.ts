@@ -31,6 +31,8 @@ const STAR_SIZE = 18;
 /** Half the width of the tick mark drawn for a lone session. */
 const LONE_TICK = 7;
 const TOOLTIP_OFFSET = 12;
+/** Radius of the dot marking a session that sits alone between two long breaks. */
+const LONE_DOT_RADIUS = 3;
 /** A break longer than this many days splits the line, so a layoff stays visible. */
 const MAX_GAP_DAYS = 28;
 
@@ -183,6 +185,17 @@ export function drawSeries(f: Frame, points: readonly ProgressPoint[], drawIn: b
     .attr("class", drawIn ? "series-line draw-in" : "series-line")
     .attr("d", line(series)!);
   if (drawIn) path.attr("pathLength", 1);
+  // A session with a long break on both sides has no line of its own; mark it with a dot.
+  const alone = series.filter((p, i): p is ProgressPoint => p !== null && !series[i - 1] && !series[i + 1]);
+  f.svg
+    .append("g")
+    .selectAll("circle")
+    .data(alone)
+    .join("circle")
+    .attr("class", "series-dot")
+    .attr("r", LONE_DOT_RADIUS)
+    .attr("cx", (p) => xOf(f, p))
+    .attr("cy", (p) => yOf(f, p));
 }
 
 /** Raspberry stars on the PRs. */
