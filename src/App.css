@@ -1,0 +1,132 @@
+/* The current single-lift page, restyled on the notebook. Tasks 7–12 replace it. */
+
+.viz-root {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+@media (min-width: 900px) {
+  /* Start right of the margin rule. */
+  .viz-root {
+    margin: 0;
+    padding-left: 136px;
+  }
+}
+
+.viz-root > header {
+  padding-bottom: 10px;
+  border-bottom: 3px solid var(--ink);
+}
+.viz-root h1 {
+  font-size: 54px;
+}
+.viz-root h2 {
+  font-size: 34px;
+}
+.muted {
+  color: var(--ink-soft);
+}
+.small {
+  font-size: 17px;
+  margin: 4px 0 12px;
+}
+.notice {
+  color: var(--accent);
+}
+
+/* The red-outlined label, like the one on a cassette. */
+.badge {
+  margin-left: 10px;
+  padding: 1px 8px;
+  border: 2px solid var(--accent);
+  border-radius: 3px;
+  color: var(--accent);
+  font-size: 17px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+  align-items: center;
+}
+select {
+  font-size: 18px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.link {
+  border: 0;
+  background: none;
+  padding: 4px;
+  font-size: 18px;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* Figures written on the page, not cards. */
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 44px;
+  margin-bottom: 20px;
+}
+.stat {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+  font-size: 17px;
+}
+.stat strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 1;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.036em currentColor;
+}
+
+.card {
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 14px 18px;
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+.card-head h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.036em currentColor;
+}
+
+/* Same height as the chart, so switching ranges doesn't make the page jump. */
+.empty-state {
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.table-wrap {
+  max-height: 340px;
+  overflow: auto;
+}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./App.css";
 import { E1rmChart } from "./charts/E1rmChart";
 import { E1rmTable } from "./components/E1rmTable";
 import { EmptyRange } from "./components/EmptyRange";
@@ -28,7 +29,7 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
   return (
     <main className="viz-root">
       <header>
-        <h1>Training dashboard</h1>
+        <h1 className="display">Training dashboard</h1>
         <p className="muted">
           {data.workouts.length} workouts
           {data.source === "sample" && <span className="badge">Sample data</span>}

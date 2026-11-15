@@ -1,0 +1,85 @@
+/* The progress chart in ballpoint: ink line, faint grid, raspberry PRs. */
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+.chart-wrap svg {
+  display: block;
+  overflow: visible;
+}
+.grid line {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+.axis text {
+  fill: var(--ink-soft);
+  font-family: var(--font-data);
+  font-size: 16px;
+}
+.series-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.pr-dot {
+  fill: var(--accent);
+  stroke: var(--paper);
+  stroke-width: 2;
+}
+.focus-dot {
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 2;
+}
+.end-label {
+  fill: var(--ink);
+  font-family: var(--font-display);
+  font-size: 22px;
+  text-transform: uppercase;
+  stroke: var(--ink);
+  stroke-width: 0.6px;
+}
+.crosshair {
+  stroke: var(--ink-line);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+.hit {
+  fill: transparent;
+  outline: none;
+}
+.hit:focus-visible {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 17px;
+  color: var(--ink);
+  box-shadow: 0 6px 16px rgb(14 79 134 / 0.16);
+  white-space: nowrap;
+}
+.tooltip strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.036em currentColor;
+}
+.tooltip .muted {
+  color: var(--ink-soft);
+}

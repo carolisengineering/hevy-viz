@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import "./chart.css";
 import type { E1rmPoint } from "../core/metrics";
 import {
   attachInteraction,
