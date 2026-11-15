@@ -40,4 +40,46 @@ test("works when the browser blocks storage", async ({ page }) => {
   await expect(page.locator("path.series-line")).toBeVisible();
   await page.getByRole("radio", { name: "lb" }).click();
   await expect(page.getByRole("radio", { name: "lb" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radio", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+const paperColor = (page: import("@playwright/test").Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+const IVORY = "rgb(252, 249, 242)";
+const DESK_LAMP = "rgb(18, 26, 38)";
+
+test("the theme follows the system until you choose one, and the choice is remembered", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  await expect(page.getByRole("radio", { name: "Auto" })).toHaveAttribute("aria-checked", "true");
+  expect(await paperColor(page)).toBe(DESK_LAMP);
+
+  await page.getByRole("radio", { name: "Light" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await paperColor(page)).toBe(IVORY);
+
+  await page.reload();
+  await expect(page.getByRole("radio", { name: "Light" })).toHaveAttribute("aria-checked", "true");
+  expect(await paperColor(page)).toBe(IVORY);
+
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.getByRole("radio", { name: "Dark" }).click();
+  expect(await paperColor(page)).toBe(DESK_LAMP);
+
+  await page.getByRole("radio", { name: "Auto" }).click();
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+  expect(await paperColor(page)).toBe(IVORY);
+});
+
+test("applies a remembered theme before the page first draws", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.addInitScript(() => localStorage.setItem("hevy-viz:theme", "dark"));
+  // Read the theme the moment the document exists, before the app's script runs.
+  await page.addInitScript(() =>
+    document.addEventListener("DOMContentLoaded", () => {
+      (window as unknown as { __firstTheme: string | undefined }).__firstTheme = document.documentElement.dataset.theme;
+    }),
+  );
+  await page.goto("/");
+  expect(await page.evaluate(() => (window as unknown as { __firstTheme: string | undefined }).__firstTheme)).toBe("dark");
 });

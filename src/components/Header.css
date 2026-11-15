@@ -1,7 +1,7 @@
 /* The header rule across the page.
    Wide (≥1600px): wordmark, tabs, tools and label on one line.
-   Laptop (≥1240px): wordmark, tools and label on top; tabs sitting on the rule below.
-   Tablet (700–1239px): wordmark and label; the controls; then the tabs on the rule.
+   Laptop (≥1360px): wordmark, tools and label on top; tabs sitting on the rule below.
+   Tablet (700–1359px): wordmark and label; the controls; then the tabs on the rule.
    Phone (<700px): wordmark and label; then the tabs on the rule; then the controls. */
 
 .site-header {
@@ -173,7 +173,7 @@
 }
 
 /* Tablets and small laptops: the controls get their own row. */
-@media (min-width: 700px) and (max-width: 1239px) {
+@media (min-width: 700px) and (max-width: 1359px) {
   .site-header {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:

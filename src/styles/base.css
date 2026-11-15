@@ -133,6 +133,14 @@ select {
 .segmented button:hover {
   background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
+.segmented button.icon-option {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+}
+.segmented button[aria-checked="true"] .ink-icon {
+  color: inherit;
+}
 .segmented button[aria-checked="true"] {
   background: var(--ink);
   color: var(--paper);

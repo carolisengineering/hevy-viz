@@ -143,7 +143,7 @@ The training history is kept like the notebook in a lifter's gym bag: ivory grap
 
 Every mark is drawn rather than rendered: boxes are 2px ballpoint outlines with slightly rounded corners, bars are filled with a diagonal scribble, PRs get a hand-drawn star and a triple stripe, and the chart line draws itself in once like a pen stroke. Nothing floats. There are no shadows, gradients, or glass, and the only depth is ink over paper. The main lifts read as a cassette j-card tracklist: Side A lower, Side B upper, and a bonus side for full body and core, with track numbers that carry each lift's rank by sessions in the selected range.
 
-Dark mode is the same notebook under a desk lamp, with deep blue-black paper, light cerulean ink, and brighter raspberry. The roles stay the same, and both themes meet the contrast floors.
+Dark mode is the same notebook under a desk lamp, with deep blue-black paper, light cerulean ink, and brighter raspberry. The roles stay the same, and both themes meet the contrast floors. The header's theme control picks Auto (follow the system), Light or Dark, remembered per browser; a forced choice sets `data-theme` on the root, and `index.html` applies it before the page first draws.
 
 **Key Characteristics:**
 - One ink for text, lines, and fills, with a second (raspberry) pen for PRs, dates, flags, and the margin rule.
@@ -233,8 +233,9 @@ Words written in ink, not chips.
 - **Focus:** the global dashed 2px raspberry outline, offset 3px.
 
 ### Segmented controls
-One ballpoint box holding a radio group (date range, kg/lb).
+One ballpoint box holding a radio group (date range, kg/lb, theme).
 - **Style:** 2px ink outline, 4px corners, options separated by 1px line ink, 18px data hand, 5px 12px padding.
+- **Icon options:** the theme control draws each option as an 18px ink icon (a half-shaded circle for Auto, a sun, a moon) with 5px 9px padding. The option's name stays readable to screen readers and shows as a tooltip.
 - **State:** the chosen option fills solid ink with paper text. Hover adds a 10% ink wash. Keyboard focus is a sunflower outline inset 4px, which is the only place sunflower meets a control. Arrow keys move the choice, as in any radio group.
 
 ### Search field
