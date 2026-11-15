@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+
+# Personal workout data from `npm run sync`. Never commit or deploy it.
+data/
+public/data/hevy.json
+
+# Plan-execution scratch
+.superpowers/
