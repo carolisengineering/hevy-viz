@@ -4,6 +4,7 @@ import { trainingDays, type DayLoad } from "../core/consistency";
 import { rangeEndDay } from "../core/dataset";
 import { localTimeZone } from "../core/dates";
 import { progressIndex, type ExerciseProgress } from "../core/progress";
+import { filterByRange, type DateRange } from "../core/ranges";
 import type { HevyDataset } from "../core/types";
 
 export const TIME_ZONE = localTimeZone();
@@ -16,8 +17,6 @@ export interface Training {
   index: Map<string, ExerciseProgress>;
   /** Every exercise, most sessions first, then by title. */
   exercises: ExerciseProgress[];
-  /** The most-trained lifts charted by estimated 1RM. */
-  mainLifts: ExerciseProgress[];
   days: Map<string, DayLoad>;
   /** The day every range ends on: today for synced data, the last workout for the sample. */
   endDay: string;
@@ -30,10 +29,28 @@ export function buildTraining(data: HevyDataset, timeZone: string): Training {
     data,
     index,
     exercises,
-    mainLifts: exercises.filter((e) => e.metric === "e1rm" && e.points.length > 0).slice(0, MAIN_LIFT_COUNT),
     days: trainingDays(data.workouts, timeZone),
     endDay: rangeEndDay(data, timeZone),
   };
+}
+
+/** A main lift and how many sessions it had in the range. */
+export interface MainLift {
+  lift: ExerciseProgress;
+  sessions: number;
+}
+
+/**
+ * The overview's main lifts: the estimated-1RM lifts trained most in `range`, so the
+ * tracklist follows what you're training now. Lifts with no session in the range are left out.
+ */
+export function mainLiftsIn(training: Training, range: DateRange): MainLift[] {
+  return training.exercises
+    .filter((e) => e.metric === "e1rm")
+    .map((lift) => ({ lift, sessions: filterByRange(lift.points, range, training.endDay).length }))
+    .filter((m) => m.sessions > 0)
+    .sort((a, b) => b.sessions - a.sessions || a.lift.title.localeCompare(b.lift.title))
+    .slice(0, MAIN_LIFT_COUNT);
 }
 
 /** Built once per dataset; switching views, ranges or units reuses it. */

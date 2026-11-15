@@ -5,7 +5,7 @@ import { recordsBy, summarize, type ExerciseProgress } from "../../core/progress
 import type { DateRange } from "../../core/ranges";
 import { chartFormat, formatChange, formatShortDate, valueUnit, type Unit } from "../../format";
 import { routeHref } from "../../hooks/useRoute";
-import type { Training } from "../../hooks/useTraining";
+import { mainLiftsIn, type Training } from "../../hooks/useTraining";
 
 const SIDES: readonly { side: Side; label: string; title: string }[] = [
   { side: "lower", label: "Side A", title: "Lower" },
@@ -19,14 +19,16 @@ interface Props {
   unit: Unit;
 }
 
-/** The main lifts as a cassette j-card: Side A lower, Side B upper, ranked by sessions. */
+/** The main lifts as a cassette j-card: Side A lower, Side B upper, ranked by sessions in the range. */
 export function MainLifts({ training, range, unit }: Props) {
-  const lifts = training.mainLifts;
+  const lifts = useMemo(() => mainLiftsIn(training, range), [training, range]);
+  const hasAnyLift = training.exercises.some((e) => e.metric === "e1rm");
   const sides = useMemo(
     () =>
-      SIDES.map((s) => ({ ...s, rows: lifts.map((lift, i) => ({ lift, rank: i + 1 })).filter((r) => sideOf(r.lift.muscle) === s.side) })).filter(
-        (s) => s.rows.length > 0,
-      ),
+      SIDES.map((s) => ({
+        ...s,
+        rows: lifts.map((m, i) => ({ lift: m.lift, rank: i + 1 })).filter((r) => sideOf(r.lift.muscle) === s.side),
+      })).filter((s) => s.rows.length > 0),
     [lifts],
   );
 
@@ -40,13 +42,14 @@ export function MainLifts({ training, range, unit }: Props) {
       </div>
       {lifts.length === 0 ? (
         <p className="no-lifts">
-          No weight-and-reps sets yet. Every exercise is under <a href={routeHref({ view: "exercises" })}>Exercises</a>.
+          {hasAnyLift ? "No weight-and-reps sessions in this range." : "No weight-and-reps sets yet."} Every exercise is
+          under <a href={routeHref({ view: "exercises" })}>Exercises</a>.
         </p>
       ) : (
         <table className="tracklist">
           <thead className="visually-hidden">
             <tr>
-              <th scope="col">Rank by sessions</th>
+              <th scope="col">Rank by sessions in range</th>
               <th scope="col">Lift</th>
               <th scope="col">Best set in range</th>
               <th scope="col">Change in range</th>

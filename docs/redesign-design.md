@@ -92,8 +92,8 @@ Three views behind one header. A hash router (`#/`, `#/exercises`, `#/exercises/
 
 **Overview**
 
-- **Main lifts, as a tracklist.** The six most-trained estimated-1RM lifts, split into *Side A, Lower* and *Side B, Upper* (and *Bonus tracks* for core and full-body lifts). It's a real `<table>`: each side is a row group, and each lift's name links to its page. Each row shows:
-  - track number = rank by sessions;
+- **Main lifts, as a tracklist.** The six estimated-1RM lifts with the most sessions in the selected range, split into *Side A, Lower* and *Side B, Upper* (and *Bonus tracks* for core and full-body lifts). It's a real `<table>`: each side is a row group, and each lift's name links to its page. Each row shows:
+  - track number = rank by sessions in the range;
   - name;
   - best set in range;
   - change over the range;
@@ -195,7 +195,7 @@ Replace the kg-only helpers with unit- and measure-aware ones:
 ## Proposed design: UI
 
 **Hooks**
-- `useTraining(data)` builds everything derived from one dataset, once: the index, exercises sorted by sessions, main lifts, training days and `endDay`.
+- `useTraining(data)` builds everything derived from one dataset, once: the index, exercises sorted by sessions, training days and `endDay`. `mainLiftsIn(training, range)` then picks the main lifts for the selected range.
 - `useRoute()` handles the hash routing.
 - `usePreference(key, allowed, fallback)` remembers the unit.
 - The existing `useDataset` stays. `useE1rmView` goes away.
@@ -318,7 +318,7 @@ Each step leaves the app working and the tests green.
 
 ## Open questions
 
-1. **Main lifts selection.** Should the overview always show the top six estimated-1RM lifts by sessions, or should the owner be able to pin which lifts appear?
+1. **Main lifts selection.** Should the overview always show the top six estimated-1RM lifts by sessions, or should the owner be able to pin which lifts appear? *Decided 2026-11-15: the top six by sessions in the selected range; no pinning for now.*
 2. **Balance reference.** Keep the relative flag, or add an optional sets-per-week guideline band (for example 10–20 per muscle) clearly labeled as a guideline?
 3. **Dark mode.** The values above are a starting point and haven't been through a design round. Do we want one before building?
 4. **Bonus tracks.** Is "Bonus tracks" the right name for core and full-body lifts, or should they simply join a side?
