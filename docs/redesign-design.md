@@ -240,7 +240,7 @@ Restyle it in ink:
   - Track numbers are allowed only because they carry the rank.
 - **Browser surfaces** take their styling from the palette: `::selection` (sunflower), the caret (raspberry), `scrollbar-color`, `:focus-visible` (a dashed raspberry outline with an offset), underline offset and tabular figures.
 - **Motion.** One authored moment: the chart line draws itself in like a pen stroke (`pathLength` plus `stroke-dashoffset`), once per data change, never on resize, and not at all under `prefers-reduced-motion`.
-- **Dark mode: "the notebook under a desk lamp."** Deep blue-black paper, light cerulean ink, and brighter raspberry and sunflower. Starting values to tune: paper `#121A26`, grid `#1F2A3A`, ink `#CFE2F7`, faded `#9DB7D6`, accent `#FF5C93`, selection `#FFC21A`. The tokens are redefined under `prefers-color-scheme: dark`.
+- **Dark mode: "the notebook under a desk lamp."** Deep blue-black paper, light cerulean ink, and brighter raspberry and sunflower. Starting values to tune: paper `#121A26`, grid `#1F2A3A`, ink `#CFE2F7`, faded `#9DB7D6`, accent `#FF5C93`, selection `#FFC21A`. The tokens are redefined under `prefers-color-scheme: dark`, and under `data-theme` when the header's theme control (Auto, Light, Dark) forces one.
 - **Phone layout (about 390px).**
   - The header becomes rows: the wordmark with the session label, then tabs, then controls with a full-width search.
   - Tracklist rows keep rank, name (with the best set beneath), change and the 1RM, and drop the sparkline.

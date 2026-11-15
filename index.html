@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Training Log</title>
+    <script>
+      // Apply a remembered light or dark choice before the page first draws (see src/hooks/useTheme.ts).
+      try {
+        var theme = localStorage.getItem("hevy-viz:theme");
+        if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+      } catch (e) {
+        // Storage blocked: follow the system.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

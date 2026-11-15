@@ -8,6 +8,7 @@ import type { Unit } from "./format";
 import { useDataset } from "./hooks/useDataset";
 import { usePreference } from "./hooks/usePreference";
 import { useRoute } from "./hooks/useRoute";
+import { useTheme } from "./hooks/useTheme";
 import { useTraining } from "./hooks/useTraining";
 import { Balance } from "./views/Balance";
 import { ExerciseDetail } from "./views/ExerciseDetail";
@@ -27,6 +28,7 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
   const training = useTraining(data);
   const [rangeId, setRangeId] = useState<RangeId>("all");
   const [unit, setUnit] = usePreference("hevy-viz:unit", UNITS, "kg");
+  const [theme, setTheme] = useTheme();
   const [route, navigate] = useRoute();
   const [query, setQuery] = useState("");
   const [listView, setListView] = useState<ListView>(INITIAL_LIST_VIEW);
@@ -53,6 +55,8 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
         onRange={setRangeId}
         unit={unit}
         onUnit={setUnit}
+        theme={theme}
+        onTheme={setTheme}
         query={query}
         onQuery={onQuery}
         sessions={data.workouts.length}

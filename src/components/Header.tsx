@@ -1,8 +1,10 @@
+import type { ReactNode } from "react";
 import "./Header.css";
 import { RANGES, type RangeId } from "../core/ranges";
 import { formatCount, type Unit } from "../format";
 import { routeHref, type Route } from "../hooks/useRoute";
-import { SearchIcon, Stripe } from "./ink";
+import type { Theme } from "../hooks/useTheme";
+import { AutoThemeIcon, MoonIcon, SearchIcon, Stripe, SunIcon } from "./ink";
 import { Segmented } from "./Segmented";
 
 const TABS: readonly { view: Route["view"]; label: string }[] = [
@@ -16,6 +18,11 @@ const UNIT_OPTIONS: readonly { id: Unit; label: string }[] = [
   { id: "kg", label: "kg" },
   { id: "lb", label: "lb" },
 ];
+const THEME_OPTIONS: readonly { id: Theme; label: string; icon: ReactNode }[] = [
+  { id: "auto", label: "Auto", icon: <AutoThemeIcon /> },
+  { id: "light", label: "Light", icon: <SunIcon /> },
+  { id: "dark", label: "Dark", icon: <MoonIcon /> },
+];
 
 interface Props {
   route: Route;
@@ -23,6 +30,8 @@ interface Props {
   onRange: (id: RangeId) => void;
   unit: Unit;
   onUnit: (unit: Unit) => void;
+  theme: Theme;
+  onTheme: (theme: Theme) => void;
   query: string;
   onQuery: (query: string) => void;
   /** Workouts in the dataset. */
@@ -30,8 +39,8 @@ interface Props {
   isSample: boolean;
 }
 
-/** The header rule: wordmark, view tabs, range, units, search and the session label. */
-export function Header({ route, rangeId, onRange, unit, onUnit, query, onQuery, sessions, isSample }: Props) {
+/** The header rule: wordmark, view tabs, range, units, theme, search and the session label. */
+export function Header({ route, rangeId, onRange, unit, onUnit, theme, onTheme, query, onQuery, sessions, isSample }: Props) {
   return (
     <header className="site-header">
       <h1 className="wordmark display">Training Log</h1>
@@ -45,6 +54,7 @@ export function Header({ route, rangeId, onRange, unit, onUnit, query, onQuery, 
       <div className="tools">
         <Segmented label="Date range" options={RANGE_OPTIONS} value={rangeId} onChange={onRange} />
         <Segmented label="Units" options={UNIT_OPTIONS} value={unit} onChange={onUnit} />
+        <Segmented label="Theme" options={THEME_OPTIONS} value={theme} onChange={onTheme} />
         <label className="search">
           <SearchIcon />
           <input

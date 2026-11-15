@@ -22,7 +22,8 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
 - Date ranges (90 days / 1 year / all time) that apply to every view.
 - kg or lb, remembered per browser.
 - A crosshair tooltip with keyboard support (focus the chart, then use ←/→), plus a table view of every chart.
-- Light and dark mode, and a layout that works on phones.
+- Light and dark mode: follow the system, or pick one in the header (remembered per browser).
+- A layout that works on phones.
 - Works without an account, using a generated sample dataset.
 
 ## Quick start

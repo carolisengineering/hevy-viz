@@ -1,9 +1,10 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 
 interface Props<T extends string> {
   /** Accessible name of the group, e.g. "Date range". */
   label: string;
-  options: readonly { id: T; label: string }[];
+  /** With an `icon`, the button shows the icon and keeps `label` as its name and tooltip. */
+  options: readonly { id: T; label: string; icon?: ReactNode }[];
   value: T;
   onChange: (value: T) => void;
 }
@@ -35,8 +36,17 @@ export function Segmented<T extends string>({ label, options, value, onChange }:
           tabIndex={o.id === value ? 0 : -1}
           onClick={() => onChange(o.id)}
           onKeyDown={(e) => onKeyDown(e, i)}
+          title={o.icon ? o.label : undefined}
+          className={o.icon ? "icon-option" : undefined}
         >
-          {o.label}
+          {o.icon ? (
+            <>
+              {o.icon}
+              <span className="visually-hidden">{o.label}</span>
+            </>
+          ) : (
+            o.label
+          )}
         </button>
       ))}
     </div>

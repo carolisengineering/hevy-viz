@@ -97,3 +97,43 @@ export function BackArrow() {
     </svg>
   );
 }
+
+/** Light theme: a ballpoint sun. Decorative; the button carries the name. */
+export function SunIcon() {
+  return (
+    <svg className="ink-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M12 2.6v2.6M12 18.8v2.6M2.6 12h2.6M18.8 12h2.6M5.4 5.4l1.8 1.8M16.8 16.8l1.8 1.8M5.4 18.6l1.8-1.8M16.8 7.2l1.8-1.8"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/** Dark theme: a crescent moon. Decorative. */
+export function MoonIcon() {
+  return (
+    <svg className="ink-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M19.6 14.6A8 8 0 0 1 9.4 4.4a8 8 0 1 0 10.2 10.2Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Match the system: a circle half shaded in ink. Decorative. */
+export function AutoThemeIcon() {
+  return (
+    <svg className="ink-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
+    </svg>
+  );
+}
