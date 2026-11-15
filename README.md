@@ -1,8 +1,8 @@
-# Training dashboard for Hevy
+# Training Log for Hevy
 
 Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history, with no 3-month or 1-year limit. Built with React, TypeScript and D3.
 
-![Dashboard screenshot](docs/screenshot.png)
+![Training Log overview, with the sample data](docs/screenshot.png)
 
 ## Features
 
