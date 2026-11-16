@@ -30,3 +30,22 @@ export function filterByRange<T extends { date: string }>(points: readonly T[], 
   const from = range.days == null ? "" : addDays(anchor, -range.days);
   return points.filter((p) => p.date >= from && p.date <= anchor);
 }
+
+/** Inclusive "YYYY-MM-DD" days. */
+export interface DayWindow {
+  from: string;
+  to: string;
+}
+
+/**
+ * The days `range` covers ending on `endDay`. All time starts at `firstDay`, the first
+ * workout day ("" when unknown, which keeps every earlier point).
+ */
+export function windowFor(range: DateRange, endDay: string, firstDay = ""): DayWindow {
+  return { from: range.days == null ? firstDay : addDays(endDay, -range.days), to: endDay };
+}
+
+/** Points dated within `w`, both ends included. Keeps the input order. */
+export function filterBetween<T extends { date: string }>(points: readonly T[], w: DayWindow): T[] {
+  return points.filter((p) => p.date >= w.from && p.date <= w.to);
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import sampleJson from "../../public/data/sample.json?raw";
 import { toLocalDay } from "./dates";
 import { estimateOneRepMax } from "./metrics";
-import { bestSet, metricFor, progressIndex, recordsBy, summarize } from "./progress";
+import { bestSet, metricFor, progressIndex, recordsBy, summarize, summarizeIn } from "./progress";
 import { rangeById } from "./ranges";
 import { dataset, template, workout } from "./testkit";
 import type { HevyDataset, HevyWorkout } from "./types";
@@ -195,6 +195,15 @@ describe("summarize", () => {
     expect(s.history.map((p) => p.value)).toEqual([115]);
     expect(s.change).toBe(0);
     expect(summarize(all, ninety, "2025-07-01").prs.map((p) => p.value)).toEqual([120]);
+  });
+
+  it("narrows to a custom window, judging PRs against all time", () => {
+    const s = summarizeIn(all, { from: "2025-01-01", to: "2025-12-31" });
+    expect(s.history.map((p) => p.value)).toEqual([100, 120]);
+    expect(s.change).toBe(20);
+    expect(s.prs.map((p) => p.value)).toEqual([100, 120]);
+    expect(s.best).toBe(all[1]);
+    expect(s.lastSession).toBe(all[3]);
   });
 
   it("summarizes an empty history", () => {

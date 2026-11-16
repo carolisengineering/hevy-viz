@@ -2,7 +2,7 @@
 // Pure: no DOM, no fetch.
 import { toLocalDay } from "./dates";
 import { estimateOneRepMax } from "./metrics";
-import { filterByRange, type DateRange } from "./ranges";
+import { filterBetween, windowFor, type DateRange, type DayWindow } from "./ranges";
 import type { HevyDataset, HevySet } from "./types";
 
 export type MetricId = "e1rm" | "weight" | "reps" | "duration" | "distance";
@@ -209,13 +209,18 @@ export interface Summary<T> {
  * against the full history, then narrowed, so a range can't invent them.
  */
 export function summarize<T extends { date: string; value: number }>(all: readonly T[], range: DateRange, endDay: string): Summary<T> {
-  const history = filterByRange(all, range, endDay);
+  return summarizeIn(all, windowFor(range, endDay));
+}
+
+/** `summarize` over a custom window of days. */
+export function summarizeIn<T extends { date: string; value: number }>(all: readonly T[], w: DayWindow): Summary<T> {
+  const history = filterBetween(all, w);
   const records = recordsBy(all);
   const first = history[0];
   const current = history.at(-1);
   return {
     history,
-    prs: filterByRange(records, range, endDay),
+    prs: filterBetween(records, w),
     current,
     change: first && current ? current.value - first.value : null,
     best: records.at(-1),

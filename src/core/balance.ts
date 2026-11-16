@@ -1,8 +1,8 @@
 // Where the training goes: working sets per week by muscle and by muscle group.
 // Pure: no DOM, no fetch.
-import { addDays, MS_PER_DAY, parseDay, toLocalDay } from "./dates";
+import { MS_PER_DAY, parseDay, toLocalDay } from "./dates";
 import { MAIN_GROUPS, muscleGroup, type MuscleGroup } from "./muscles";
-import type { DateRange } from "./ranges";
+import { windowFor, type DateRange, type DayWindow } from "./ranges";
 import type { HevyDataset } from "./types";
 
 export interface MuscleVolume {
@@ -11,24 +11,21 @@ export interface MuscleVolume {
   setsPerWeek: number;
 }
 
-/** Working sets per primary muscle in the window, and the window's length in weeks. */
-function setsByMuscle(data: HevyDataset, timeZone: string, range: DateRange, endDay: string) {
+/** Working sets per primary muscle in `w`, and the window's length in weeks (at least one). */
+function setsByMuscle(data: HevyDataset, timeZone: string, w: DayWindow) {
   const muscleOf = new Map(data.exercise_templates.map((t) => [t.id, t.primary_muscle_group]));
-  const days = data.workouts.map((w) => toLocalDay(w.start_time, timeZone));
-  let from = range.days == null ? endDay : addDays(endDay, -range.days);
-  if (range.days == null) for (const d of days) if (d < from) from = d;
-
   const counts = new Map<string, number>();
-  data.workouts.forEach((w, i) => {
-    if (days[i] < from || days[i] > endDay) return;
-    for (const ex of w.exercises) {
+  for (const workout of data.workouts) {
+    const day = toLocalDay(workout.start_time, timeZone);
+    if (day < w.from || day > w.to) continue;
+    for (const ex of workout.exercises) {
       const n = ex.sets.filter((s) => s.type !== "warmup").length;
       if (n === 0) continue;
       const muscle = muscleOf.get(ex.exercise_template_id) ?? "other";
       counts.set(muscle, (counts.get(muscle) ?? 0) + n);
     }
-  });
-  const weeks = Math.max(1, (parseDay(endDay).getTime() - parseDay(from).getTime()) / MS_PER_DAY / 7);
+  }
+  const weeks = Math.max(1, (parseDay(w.to).getTime() - parseDay(w.from).getTime()) / MS_PER_DAY / 7);
   return { counts, weeks };
 }
 
@@ -37,7 +34,19 @@ function setsByMuscle(data: HevyDataset, timeZone: string, range: DateRange, end
  * range start (or the first workout, for all time) to `endDay`, and are at least one.
  */
 export function setsPerWeekByMuscle(data: HevyDataset, timeZone: string, range: DateRange, endDay: string): MuscleVolume[] {
-  const { counts, weeks } = setsByMuscle(data, timeZone, range, endDay);
+  let firstDay = endDay;
+  if (range.days == null) {
+    for (const w of data.workouts) {
+      const day = toLocalDay(w.start_time, timeZone);
+      if (day < firstDay) firstDay = day;
+    }
+  }
+  return setsPerWeekByMuscleIn(data, timeZone, windowFor(range, endDay, firstDay));
+}
+
+/** Every muscle trained in `w`, busiest first, in working sets per week over the window's length. */
+export function setsPerWeekByMuscleIn(data: HevyDataset, timeZone: string, w: DayWindow): MuscleVolume[] {
+  const { counts, weeks } = setsByMuscle(data, timeZone, w);
   return [...counts]
     .map(([muscle, n]) => ({ muscle, setsPerWeek: n / weeks }))
     .sort((a, b) => b.setsPerWeek - a.setsPerWeek || a.muscle.localeCompare(b.muscle));

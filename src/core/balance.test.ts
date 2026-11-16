@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupVolumes, setsPerWeekByGroup, setsPerWeekByMuscle } from "./balance";
+import { groupVolumes, setsPerWeekByGroup, setsPerWeekByMuscle, setsPerWeekByMuscleIn } from "./balance";
 import { rangeById } from "./ranges";
 import { dataset, template, workout, type SetFields } from "./testkit";
 
@@ -53,6 +53,18 @@ describe("setsPerWeekByMuscle", () => {
     const quads = setsPerWeekByMuscle(data, tz, rangeById("all"), end).find((m) => m.muscle === "quadriceps")!;
     const weeks = (Date.parse("2026-11-14") - Date.parse("2025-01-01")) / (7 * 86_400_000);
     expect(quads.setsPerWeek).toBeCloseTo(130 / weeks);
+  });
+});
+
+describe("setsPerWeekByMuscleIn", () => {
+  it("averages a custom window over its own length in weeks", () => {
+    const muscles = setsPerWeekByMuscleIn(data, tz, { from: "2026-09-27", to: "2026-10-11" });
+    expect(muscles.find((m) => m.muscle === "quadriceps")!.setsPerWeek).toBeCloseTo(30 / 2);
+  });
+
+  it("counts at least one week for a short window", () => {
+    const muscles = setsPerWeekByMuscleIn(data, tz, { from: "2026-10-01", to: "2026-10-01" });
+    expect(muscles.find((m) => m.muscle === "quadriceps")!.setsPerWeek).toBe(30);
   });
 });
 
