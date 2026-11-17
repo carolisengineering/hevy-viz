@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { recordsBy } from "../src/core/progress";
+import { weekStart } from "../src/core/dates";
+import { recordsBy, summarize } from "../src/core/progress";
 import { rangeById, windowFor } from "../src/core/ranges";
 import { buildTraining } from "../src/core/training";
 import type { HevyDataset } from "../src/core/types";
-import { formatWeight } from "../src/format";
-import { findExercises, resolveExercise, resolveWindow, ToolError, type ToolContext } from "./tools";
+import { dataset, template, workout } from "../src/core/testkit";
+import { formatChange, formatWeight } from "../src/format";
+import { exerciseProgress, findExercises, resolveExercise, resolveWindow, ToolError, type ToolContext } from "./tools";
 
 const sample = JSON.parse(readFileSync(new URL("../public/data/sample.json", import.meta.url), "utf8")) as HevyDataset;
 const t = buildTraining(sample, "America/Chicago");
@@ -181,5 +183,119 @@ describe("findExercises", () => {
       window: null,
       unit: "lb",
     });
+  });
+});
+
+/** Monday-first weeks a window touches. */
+const weeksTouched = (from: string, to: string) => (Date.parse(weekStart(to)) - Date.parse(weekStart(from))) / (7 * 86_400_000) + 1;
+/** A kg value as the tools return it: 0.1 kg. */
+const kg = (v: number) => Number(formatWeight(v, "kg"));
+
+describe("exerciseProgress", () => {
+  const all = exerciseProgress(ctx, { exercise: "squat", range: "all" });
+
+  it("matches the dashboard's summary for the same exercise and range", () => {
+    const s = summarize(t.index.get("squat")!.points, rangeById("all"), t.endDay);
+    expect(all.bestEver!.value).toBe(kg(s.best!.value));
+    expect(all.changeInWindow).toEqual({ value: Math.sign(s.change!) * kg(Math.abs(s.change!)), text: formatChange("e1rm", s.change!, "kg") });
+    expect(all.prsInWindow).toHaveLength(Math.min(20, s.prs.length));
+    expect(all.prsInWindow.at(-1)!.date).toBe(s.prs.at(-1)!.date);
+    expect(all.daysCharted).toBe(s.history.length);
+    expect(all.latestInWindow!.date).toBe(s.current!.date);
+  });
+
+  it("names the exercise, its measure and unit, and the data it describes", () => {
+    expect(all).toMatchObject({ id: "squat", title: "Squat (Barbell)", measure: "Est. 1RM", unit: "kg" });
+    expect(all.context).toEqual({ source: "sample", syncedAt: sample.synced_at, timeZone: "America/Chicago", window: { from: t.firstDay, to: t.endDay }, unit: "kg" });
+    expect(all.bestEver!.set).toMatch(/^\d+(\.\d)? × \d+$/);
+  });
+
+  it("counts workouts with the exercise in the window", () => {
+    const w = resolveWindow(t, { range: "90d" });
+    const expected = sample.workouts.filter((wk) => {
+      const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date(wk.start_time));
+      return day >= w.from && day <= w.to && wk.exercises.some((e) => e.exercise_template_id === "squat");
+    }).length;
+    expect(exerciseProgress(ctx, { exercise: "squat", range: "90d" }).sessionsInWindow).toBe(expected);
+  });
+
+  it("charts weekly bests for a year", () => {
+    expect(exerciseProgress(ctx, { exercise: "squat" }).series.by).toBe("week");
+  });
+
+  it("switches to monthly bests past 104 weeks", () => {
+    expect(all.series.by).toBe(weeksTouched(t.firstDay, t.endDay) > 104 ? "month" : "week");
+    expect(exerciseProgress(ctx, { exercise: "squat", from: "2023-01-02", to: "2026-01-05" }).series.by).toBe("month");
+  });
+
+  it("gives each period's best value", () => {
+    for (const range of ["1y", "all"] as const) {
+      const result = exerciseProgress(ctx, { exercise: "squat", range });
+      const history = summarize(t.index.get("squat")!.points, rangeById(range), t.endDay).history;
+      const keyOf = (day: string) => (result.series.by === "week" ? weekStart(day) : `${day.slice(0, 7)}-01`);
+      expect(result.series.points.length).toBeGreaterThan(0);
+      for (const [start, value] of result.series.points) {
+        const best = Math.max(...history.filter((p) => keyOf(p.date) === start).map((p) => p.value));
+        expect(value).toBe(kg(best));
+      }
+    }
+  });
+
+  it("gives whole pounds when asked", () => {
+    const lb = exerciseProgress(ctx, { exercise: "squat", unit: "lb" });
+    expect(lb.unit).toBe("lb");
+    expect(Number.isInteger(lb.bestEver!.value)).toBe(true);
+    expect(lb.series.points.every(([, v]) => Number.isInteger(v))).toBe(true);
+  });
+
+  it("returns an empty but valid result for a window outside the data", () => {
+    const empty = exerciseProgress(ctx, { exercise: "squat", from: "2030-01-01", to: "2030-02-01" });
+    expect(empty).toMatchObject({ daysCharted: 0, sessionsInWindow: 0, latestInWindow: null, changeInWindow: null, prsInWindow: [], breaks: [], series: { points: [] } });
+    expect(empty.bestEver).not.toBeNull();
+  });
+
+  it("lists breaks longer than 28 days inside the window", () => {
+    const gappy = buildTraining(
+      dataset(
+        ["2026-01-01", "2026-01-20", "2026-04-01", "2026-04-05"].map((day, i) => workout(`w${i}`, day, [["squat", [{ weight_kg: 100, reps: 5 }]]])),
+        [template("squat", "weight_reps", "quadriceps")],
+      ),
+      "UTC",
+    );
+    const gappyCtx = { ...ctx, training: gappy, timeZone: "UTC" };
+    expect(exerciseProgress(gappyCtx, { exercise: "squat", range: "all" }).breaks).toEqual([{ from: "2026-01-20", to: "2026-04-01", days: 71 }]);
+    expect(exerciseProgress(gappyCtx, { exercise: "squat", from: "2026-03-01" }).breaks).toEqual([]);
+  });
+
+  it("says there's nothing to chart for an exercise with only warmups", () => {
+    const warm = buildTraining(
+      dataset([workout("w", "2026-10-01", [["warm", [{ weight_kg: 50, reps: 5, type: "warmup" }]]])], [template("warm", "weight_reps", "chest")]),
+      "UTC",
+    );
+    const result = exerciseProgress({ ...ctx, training: warm, timeZone: "UTC" }, { exercise: "warm" });
+    expect(result).toMatchObject({ bestEver: null, latestInWindow: null, series: { points: [] }, note: "No sets to chart" });
+    expect(all.note).toBeUndefined();
+  });
+
+  it("keeps the 20 most recent PRs", () => {
+    const climbing = buildTraining(
+      dataset(
+        Array.from({ length: 30 }, (_, i) => workout(`w${i}`, `2026-09-${String(i + 1).padStart(2, "0")}`, [["squat", [{ weight_kg: 100 + i, reps: 5 }]]])),
+        [template("squat", "weight_reps", "quadriceps")],
+      ),
+      "UTC",
+    );
+    const prs = exerciseProgress({ ...ctx, training: climbing, timeZone: "UTC" }, { exercise: "squat", range: "all" }).prsInWindow;
+    expect(prs).toHaveLength(20);
+    expect(prs[0].date).toBe("2026-09-11");
+    expect(prs.at(-1)!.date).toBe("2026-09-30");
+  });
+
+  it("stays under 4 KB for squat over all time", () => {
+    expect(JSON.stringify(all).length).toBeLessThan(4096);
+  });
+
+  it("throws for an unknown exercise", () => {
+    expect(toolError(() => exerciseProgress(ctx, { exercise: "nope" })).message).toBe('No exercise matches "nope".');
   });
 });

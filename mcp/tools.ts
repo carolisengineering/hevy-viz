@@ -1,11 +1,11 @@
 // The MCP server's tool handlers: (context, args) → result. No SDK and no I/O here,
 // so every figure comes from src/core exactly as the dashboard computes it.
-import { parseDay } from "../src/core/dates";
+import { parseDay, toLocalDay, weekStart } from "../src/core/dates";
 import { muscleGroup, muscleLabel } from "../src/core/muscles";
-import { METRIC_LABEL, recordsBy, type ExerciseProgress, type MetricId } from "../src/core/progress";
+import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
 import { rangeById, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
 import { matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../src/core/training";
-import { formatValue, type Unit } from "../src/format";
+import { formatChange, formatPointSet, formatValue, formatWeight, valueUnit, type Unit } from "../src/format";
 
 /** A problem Claude can fix by changing the arguments. Its message is the one sentence Claude sees. */
 export class ToolError extends Error {
@@ -125,5 +125,68 @@ export function findExercises(ctx: ToolContext, args: FindExercisesArgs) {
         best: best ? { ...measured(e.metric, best.value, unit), date: best.date } : null,
       };
     }),
+  };
+}
+
+/** A change in the requested unit, rounded the way the dashboard shows it, with its text ("+6.5", "±0"). */
+function measuredChange(metric: MetricId, delta: number, unit: Unit): { value: number; text: string } {
+  const isWeight = metric === "e1rm" || metric === "weight";
+  return { value: isWeight ? Math.sign(delta) * Number(formatWeight(Math.abs(delta), unit)) : delta, text: formatChange(metric, delta, unit) };
+}
+
+const MAX_PRS = 20;
+const MAX_WEEKS = 104;
+const MS_PER_WEEK = 7 * 86_400_000;
+
+/** Monday-first weeks `w` touches. */
+const weeksIn = (w: DayWindow): number => (parseDay(weekStart(w.to)).getTime() - parseDay(weekStart(w.from)).getTime()) / MS_PER_WEEK + 1;
+
+export interface ExerciseProgressArgs extends RangeArgs {
+  exercise: string;
+  unit?: Unit;
+}
+
+/** One exercise's progress in a window, figured exactly as its dashboard page does. */
+export function exerciseProgress(ctx: ToolContext, args: ExerciseProgressArgs) {
+  const { training } = ctx;
+  const exercise = resolveExercise(training, args.exercise);
+  const w = resolveWindow(training, args);
+  const unit = args.unit ?? DEFAULT_UNIT;
+  const { metric, type } = exercise;
+  const summary = summarizeIn(exercise.points, w);
+  const point = (p: ProgressPoint | undefined) => (p ? { ...measured(metric, p.value, unit), set: formatPointSet(p, type, unit), date: p.date } : null);
+
+  // Best per Monday-first week, or per calendar month when weeks would be too many to list.
+  const by: "week" | "month" = weeksIn(w) > MAX_WEEKS ? "month" : "week";
+  const periods = new Map<string, number>();
+  for (const p of summary.history) {
+    const start = by === "week" ? weekStart(p.date) : `${p.date.slice(0, 7)}-01`;
+    periods.set(start, Math.max(periods.get(start) ?? -Infinity, p.value));
+  }
+
+  let sessionsInWindow = 0;
+  for (const workout of training.data.workouts) {
+    const day = toLocalDay(workout.start_time, ctx.timeZone);
+    if (day >= w.from && day <= w.to && workout.exercises.some((e) => e.exercise_template_id === exercise.templateId)) sessionsInWindow += 1;
+  }
+
+  const breaks: Break[] = longBreaks(exercise.points).filter((b) => b.from >= w.from && b.to <= w.to);
+
+  return {
+    context: contextOf(ctx, w, unit),
+    id: exercise.templateId,
+    title: exercise.title,
+    measure: METRIC_LABEL[metric],
+    unit: valueUnit(metric, unit),
+    bestEver: point(summary.best),
+    latestInWindow: point(summary.current),
+    changeInWindow: summary.change == null ? null : measuredChange(metric, summary.change, unit),
+    sessionsInWindow,
+    daysCharted: summary.history.length,
+    prsInWindow: summary.prs.slice(-MAX_PRS).map((p) => point(p)!),
+    /** Each period's best as [start day, value]: compact, so two years of weeks stay small. */
+    series: { by, points: [...periods].map(([start, best]): [string, number] => [start, measured(metric, best, unit).value]) },
+    breaks,
+    ...(exercise.points.length === 0 ? { note: "No sets to chart" as const } : {}),
   };
 }
