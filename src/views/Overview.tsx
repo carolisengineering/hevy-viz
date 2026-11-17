@@ -1,7 +1,7 @@
 import "./Overview.css";
 import type { DateRange } from "../core/ranges";
 import type { Unit } from "../format";
-import type { Training } from "../hooks/useTraining";
+import type { Training } from "../core/training";
 import { BalanceBox } from "./overview/BalanceBox";
 import { Consistency } from "./overview/Consistency";
 import { LatestEntries } from "./overview/LatestEntries";

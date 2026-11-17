@@ -9,7 +9,7 @@ import { METRIC_LABEL, summarize } from "../core/progress";
 import type { DateRange } from "../core/ranges";
 import { chartFormat, formatChange, formatCount, formatDate, type Unit } from "../format";
 import { routeHref } from "../hooks/useRoute";
-import type { Training } from "../hooks/useTraining";
+import type { Training } from "../core/training";
 
 interface Props {
   training: Training;

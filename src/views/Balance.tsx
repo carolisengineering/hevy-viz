@@ -4,7 +4,8 @@ import { GroupBars } from "../components/GroupBars";
 import { groupVolumes, setsPerWeekByMuscle } from "../core/balance";
 import { muscleGroup, muscleLabel } from "../core/muscles";
 import type { DateRange } from "../core/ranges";
-import { TIME_ZONE, type Training } from "../hooks/useTraining";
+import type { Training } from "../core/training";
+import { TIME_ZONE } from "../hooks/useTraining";
 
 /** Where the training goes: the six groups, then every muscle trained in the range. */
 export function Balance({ training, range }: { training: Training; range: DateRange }) {

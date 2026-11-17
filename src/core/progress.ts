@@ -5,6 +5,9 @@ import { estimateOneRepMax } from "./metrics";
 import { filterBetween, windowFor, type DateRange, type DayWindow } from "./ranges";
 import type { HevyDataset, HevySet } from "./types";
 
+/** A gap longer than this many days between sessions is a break: the chart splits its line there. */
+export const LONG_BREAK_DAYS = 28;
+
 export type MetricId = "e1rm" | "weight" | "reps" | "duration" | "distance";
 
 export const METRIC_LABEL: Record<MetricId, string> = {

@@ -1,6 +1,5 @@
-import type { ChartFormat } from "../charts/progressDraw";
 import type { ProgressPoint } from "../core/progress";
-import { formatDate } from "../format";
+import { formatDate, type ChartFormat } from "../format";
 
 interface Props {
   /** Oldest first; shown newest first. */

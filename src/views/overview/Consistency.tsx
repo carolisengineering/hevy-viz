@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { dayGrid, monthlySessions } from "../../core/consistency";
 import type { DateRange } from "../../core/ranges";
 import { formatCount, formatLogDate } from "../../format";
-import type { Training } from "../../hooks/useTraining";
+import type { Training } from "../../core/training";
 
 /** One grid cell, in svg units: 52 weeks draw close to 1:1 in the box. */
 const CELL = 8;

@@ -7,7 +7,7 @@ import { filterByRange, type DateRange } from "../core/ranges";
 import { METRIC_LABEL, recordsBy, type ExerciseProgress, type MetricId } from "../core/progress";
 import { formatCount, formatDate, formatShortDate, formatValue, valueUnit, type Unit } from "../format";
 import { routeHref } from "../hooks/useRoute";
-import type { Training } from "../hooks/useTraining";
+import type { Training } from "../core/training";
 
 type Kind = "all" | "weights" | "bodyweight" | "timed" | "distance";
 const KINDS: readonly { id: Kind; label: string }[] = [

@@ -2,10 +2,10 @@ import { useMemo } from "react";
 import { Sparkline, Star, Stripe } from "../../components/ink";
 import { sideOf, type Side } from "../../core/muscles";
 import { recordsBy, summarize, type ExerciseProgress } from "../../core/progress";
-import type { DateRange } from "../../core/ranges";
+import { windowFor, type DateRange } from "../../core/ranges";
+import { mainLiftsIn, type Training } from "../../core/training";
 import { chartFormat, formatChange, formatShortDate, valueUnit, type Unit } from "../../format";
 import { routeHref } from "../../hooks/useRoute";
-import { mainLiftsIn, type Training } from "../../hooks/useTraining";
 
 const SIDES: readonly { side: Side; label: string; title: string }[] = [
   { side: "lower", label: "Side A", title: "Lower" },
@@ -21,7 +21,7 @@ interface Props {
 
 /** The main lifts as a cassette j-card: Side A lower, Side B upper, ranked by sessions in the range. */
 export function MainLifts({ training, range, unit }: Props) {
-  const lifts = useMemo(() => mainLiftsIn(training, range), [training, range]);
+  const lifts = useMemo(() => mainLiftsIn(training, windowFor(range, training.endDay, training.firstDay)), [training, range]);
   const hasAnyLift = training.exercises.some((e) => e.metric === "e1rm");
   const sides = useMemo(
     () =>
