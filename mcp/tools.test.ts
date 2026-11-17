@@ -1,13 +1,15 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { MAIN_GROUPS } from "../src/core/muscles";
+import { monthlySessions, windowStats } from "../src/core/consistency";
 import { weekStart } from "../src/core/dates";
 import { recordsBy, summarize } from "../src/core/progress";
 import { rangeById, windowFor } from "../src/core/ranges";
-import { buildTraining } from "../src/core/training";
+import { buildTraining, mainLiftsIn } from "../src/core/training";
 import type { HevyDataset } from "../src/core/types";
 import { dataset, template, workout } from "../src/core/testkit";
 import { formatChange, formatWeight } from "../src/format";
-import { exerciseProgress, findExercises, resolveExercise, resolveWindow, ToolError, type ToolContext } from "./tools";
+import { balance, consistency, exerciseProgress, findExercises, mainLifts, recentWorkouts, resolveExercise, resolveWindow, ToolError, type ToolContext } from "./tools";
 
 const sample = JSON.parse(readFileSync(new URL("../public/data/sample.json", import.meta.url), "utf8")) as HevyDataset;
 const t = buildTraining(sample, "America/Chicago");
@@ -297,5 +299,121 @@ describe("exerciseProgress", () => {
 
   it("throws for an unknown exercise", () => {
     expect(toolError(() => exerciseProgress(ctx, { exercise: "nope" })).message).toBe('No exercise matches "nope".');
+  });
+});
+
+describe("mainLifts", () => {
+  const result = mainLifts(ctx, { range: "all" });
+
+  it("lists the dashboard's main lifts in its order", () => {
+    expect(result.lifts.map((l) => l.id)).toEqual(mainLiftsIn(t, windowFor(rangeById("all"), t.endDay, t.firstDay)).map((m) => m.lift.templateId));
+    expect(result.lifts.map((l) => l.rank)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("puts each lift on its side of the tracklist", () => {
+    const side = Object.fromEntries(result.lifts.map((l) => [l.id, l.side]));
+    expect(side).toMatchObject({ squat: "lower", deadlift: "lower", bench: "upper", ohp: "upper" });
+  });
+
+  it("gives each lift's best set, change, latest and PR in the window, as the dashboard figures them", () => {
+    const squat = result.lifts.find((l) => l.id === "squat")!;
+    const s = summarize(t.index.get("squat")!.points, rangeById("all"), t.endDay);
+    const best = recordsBy(s.history).at(-1)!;
+    expect(squat.daysCharted).toBe(s.history.length);
+    expect(squat.bestSetInWindow).toMatchObject({ value: kg(best.value), date: best.date });
+    expect(squat.change!.text).toBe(formatChange("e1rm", s.change!, "kg"));
+    expect(squat.latest).toEqual({ value: kg(s.current!.value), text: formatWeight(s.current!.value, "kg") });
+    expect(squat.prInWindow).toBe(s.prs.length > 0);
+  });
+
+  it("returns no lifts for a window outside the data", () => {
+    expect(mainLifts(ctx, { from: "2030-01-01", to: "2030-02-01" }).lifts).toEqual([]);
+  });
+});
+
+describe("consistency", () => {
+  const result = consistency(ctx, { range: "90d" });
+  const w = resolveWindow(t, { range: "90d" });
+
+  it("compares this month with the monthly average, as on the overview", () => {
+    const m = monthlySessions(t.days, t.endDay);
+    expect(result.thisMonth).toBe(m.thisMonth);
+    expect(result.monthlyAverage).toBeCloseTo(m.monthlyAverage!, 1);
+  });
+
+  it("counts sessions, training days and weeks in the window", () => {
+    const stats = windowStats(t.days, w);
+    expect(result).toMatchObject({
+      sessionsInWindow: stats.sessions,
+      trainingDaysInWindow: stats.trainingDays,
+      sessionsPerWeek: stats.sessionsPerWeek,
+      weeksTrained: stats.weeksTrained,
+      weeksInWindow: stats.weeks,
+    });
+    expect([13, 14]).toContain(result.weeksInWindow);
+  });
+
+  it("gives the longest break in the window", () => {
+    expect(result.longestBreak!.days).toBeGreaterThan(0);
+    expect(result.longestBreak!.from >= w.from && result.longestBreak!.to <= w.to).toBe(true);
+    expect(result.context).toMatchObject({ window: w, unit: null });
+  });
+});
+
+describe("balance", () => {
+  const result = balance(ctx, { range: "all" });
+
+  it("lists the six main groups in order, with the light rule", () => {
+    expect(result.groups.map((g) => g.group)).toEqual(MAIN_GROUPS);
+    expect(result.rule).toBe("Light means under half the sets per week of the median group.");
+  });
+
+  it("lists at most the ten busiest muscles, rounded to 0.1", () => {
+    expect(result.muscles.length).toBeGreaterThan(0);
+    expect(result.muscles.length).toBeLessThanOrEqual(10);
+    for (const v of [...result.groups, ...result.muscles].map((x) => x.setsPerWeek)) expect(Math.round(v * 10) / 10).toBe(v);
+    const perWeek = result.muscles.map((m) => m.setsPerWeek);
+    expect(perWeek).toEqual(perWeek.toSorted((a, b) => b - a));
+  });
+
+  it("gives zero sets for a window outside the data", () => {
+    const empty = balance(ctx, { from: "2030-01-01", to: "2030-02-01" });
+    expect(empty.muscles).toEqual([]);
+    expect(empty.groups.every((g) => g.setsPerWeek === 0)).toBe(true);
+  });
+});
+
+describe("recentWorkouts", () => {
+  it("lists the latest workouts, newest first, five by default and at most 20", () => {
+    expect(recentWorkouts(ctx, {}).workouts).toHaveLength(5);
+    const result = recentWorkouts(ctx, { limit: 99 });
+    expect(result.workouts).toHaveLength(20);
+    expect(result.workouts[0].date).toBe(t.endDay);
+    const dates = result.workouts.map((w) => w.date);
+    expect(dates).toEqual(dates.toSorted().reverse());
+  });
+
+  it("gives each exercise's top set as the log writes it", () => {
+    const [latest] = recentWorkouts(ctx, { limit: 1, unit: "lb" }).workouts;
+    expect(latest.exercises.length).toBeGreaterThan(0);
+    for (const e of latest.exercises) {
+      expect(e.topSet).toMatch(/^\d+ × \d+$/);
+      expect(typeof e.allTimeRecord).toBe("boolean");
+      expect(t.index.has(e.id)).toBe(true);
+    }
+  });
+});
+
+describe("result sizes", () => {
+  // The spec's "typical result" is a default call; recent_workouts at its cap of 20 runs past 4 KB by design.
+  it("keeps every typical result under 4 KB", () => {
+    const results = [
+      findExercises(ctx, { limit: 50 }),
+      mainLifts(ctx, { range: "all" }),
+      consistency(ctx, { range: "all" }),
+      balance(ctx, { range: "all" }),
+      recentWorkouts(ctx, {}),
+    ];
+    for (const r of results) expect(JSON.stringify(r).length).toBeLessThan(4096);
   });
 });

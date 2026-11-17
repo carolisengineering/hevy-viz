@@ -1,10 +1,12 @@
 // The MCP server's tool handlers: (context, args) → result. No SDK and no I/O here,
 // so every figure comes from src/core exactly as the dashboard computes it.
+import { groupVolumes, setsPerWeekByMuscleIn } from "../src/core/balance";
+import { longestBreak, monthlySessions, windowStats } from "../src/core/consistency";
 import { parseDay, toLocalDay, weekStart } from "../src/core/dates";
-import { muscleGroup, muscleLabel } from "../src/core/muscles";
+import { muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
 import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
 import { rangeById, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
-import { matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../src/core/training";
+import { latestEntries, mainLiftsIn, matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../src/core/training";
 import { formatChange, formatPointSet, formatValue, formatWeight, valueUnit, type Unit } from "../src/format";
 
 /** A problem Claude can fix by changing the arguments. Its message is the one sentence Claude sees. */
@@ -188,5 +190,91 @@ export function exerciseProgress(ctx: ToolContext, args: ExerciseProgressArgs) {
     series: { by, points: [...periods].map(([start, best]): [string, number] => [start, measured(metric, best, unit).value]) },
     breaks,
     ...(exercise.points.length === 0 ? { note: "No sets to chart" as const } : {}),
+  };
+}
+
+const round1 = (n: number): number => Math.round(n * 10) / 10;
+
+export interface UnitRangeArgs extends RangeArgs {
+  unit?: Unit;
+}
+
+/** The overview's tracklist: the estimated-1RM lifts trained most in the window. */
+export function mainLifts(ctx: ToolContext, args: UnitRangeArgs) {
+  const w = resolveWindow(ctx.training, args);
+  const unit = args.unit ?? DEFAULT_UNIT;
+  return {
+    context: contextOf(ctx, w, unit),
+    lifts: mainLiftsIn(ctx.training, w).map(({ lift, sessions }, i) => {
+      const s = summarizeIn(lift.points, w);
+      const best = recordsBy(s.history).at(-1);
+      return {
+        rank: i + 1,
+        side: sideOf(lift.muscle),
+        id: lift.templateId,
+        title: lift.title,
+        /** Days the lift was charted in the window: what the tracklist ranks by. */
+        daysCharted: sessions,
+        bestSetInWindow: best ? { ...measured(lift.metric, best.value, unit), set: formatPointSet(best, lift.type, unit), date: best.date } : null,
+        change: s.change == null ? null : measuredChange(lift.metric, s.change, unit),
+        latest: s.current ? measured(lift.metric, s.current.value, unit) : null,
+        prInWindow: s.prs.length > 0,
+      };
+    }),
+  };
+}
+
+/** How often training happened: this month against the usual month, and the window's weeks and breaks. */
+export function consistency(ctx: ToolContext, args: RangeArgs) {
+  const { training } = ctx;
+  const w = resolveWindow(training, args);
+  const { thisMonth, monthlyAverage } = monthlySessions(training.days, training.endDay);
+  const stats = windowStats(training.days, w);
+  return {
+    context: contextOf(ctx, w, null),
+    thisMonth,
+    monthlyAverage: monthlyAverage == null ? null : round1(monthlyAverage),
+    sessionsInWindow: stats.sessions,
+    trainingDaysInWindow: stats.trainingDays,
+    sessionsPerWeek: stats.sessionsPerWeek,
+    weeksTrained: stats.weeksTrained,
+    weeksInWindow: stats.weeks,
+    longestBreak: longestBreak(training.days, w),
+  };
+}
+
+const TOP_MUSCLES = 10;
+
+/** Where the training goes: working sets per week for the six main groups and the busiest muscles. */
+export function balance(ctx: ToolContext, args: RangeArgs) {
+  const w = resolveWindow(ctx.training, args);
+  const muscles = setsPerWeekByMuscleIn(ctx.training.data, ctx.timeZone, w);
+  return {
+    context: contextOf(ctx, w, null),
+    rule: "Light means under half the sets per week of the median group.",
+    groups: groupVolumes(muscles).map((g) => ({ group: g.group, setsPerWeek: round1(g.setsPerWeek), light: g.light })),
+    muscles: muscles.slice(0, TOP_MUSCLES).map((m) => ({ muscle: muscleLabel(m.muscle), group: muscleGroup(m.muscle), setsPerWeek: round1(m.setsPerWeek) })),
+  };
+}
+
+const RECENT_LIMIT = 5;
+const RECENT_MAX = 20;
+
+/** The training log: the latest workouts with each exercise's top set, as Latest entries shows them. */
+export function recentWorkouts(ctx: ToolContext, args: { limit?: number; unit?: Unit }) {
+  const unit = args.unit ?? DEFAULT_UNIT;
+  const limit = clamp(args.limit ?? RECENT_LIMIT, 1, RECENT_MAX);
+  return {
+    context: contextOf(ctx, null, unit),
+    workouts: latestEntries(ctx.training, limit, ctx.timeZone).map(({ workout, day, sets }) => ({
+      date: day,
+      title: workout.title,
+      exercises: sets.map(({ exercise, top, record }) => ({
+        id: exercise.templateId,
+        title: exercise.title,
+        topSet: formatPointSet(top, exercise.type, unit),
+        allTimeRecord: record,
+      })),
+    })),
   };
 }
