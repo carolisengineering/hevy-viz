@@ -126,9 +126,13 @@ Weights are returned in the requested `unit` (`"kg"` by default; `"lb"` gives wh
    - The longest break needs one new pure core function, `longestBreak(days, from, to)`.
 5. **`balance`** `{ range? | from?/to? }`
    - Returns `groups: [{ group, setsPerWeek, light }]`, plus the 10 busiest `muscles: [{ muscle, group, setsPerWeek }]`, plus the light rule ("under half the median group").
-6. **`recent_workouts`** `{ limit? = 5 (max 20), unit? }`
+6. **`recent_workouts`** `{ range? | from?/to?, limit?, unit? }`
    - Returns `[{ date, title, exercises: [{ title, id, topSet, allTimeRecord }] }]`.
    - Uses the same top-set and fallback rules as Latest entries.
+   - **With no window,** it returns the latest `limit` workouts (default 5).
+   - **With a window** (`range`, or `from`/`to`), it returns every workout in the window, newest first, plus `totalInWindow`. "What did I do this month?" then gets the whole month.
+   - **The cap is 40 either way** (the owner's decision, 2026-11-17: they train 25–30 times a month, so a month must fit). When a window holds more, the result says how many it left out and suggests a shorter window. It never passes a cut-off list as complete.
+   - **Size:** about 0.8 KB per workout on the owner's data, so a month is about 20–24 KB. That's above the usual 4 KB on purpose: the question asks for the whole month.
 
 These six cover goals 1 and 2: "Am I getting stronger?" maps to `main_lifts` plus `exercise_progress`, "consistent?" to `consistency`, "balanced?" to `balance`, any exercise to `find_exercises` plus `exercise_progress`, and comparisons to the same tools called twice with `from`/`to`.
 

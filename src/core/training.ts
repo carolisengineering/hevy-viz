@@ -67,11 +67,12 @@ export interface LatestEntry {
 
 const FALLBACK_METRICS: readonly MetricId[] = ["weight", "reps", "duration", "distance"];
 
-/** The `limit` most recent workouts, newest first, each with every exercise's top set. */
-export function latestEntries(training: Training, limit: number, timeZone: string): LatestEntry[] {
-  const latest = training.data.workouts.toSorted((a, b) => Date.parse(b.start_time) - Date.parse(a.start_time)).slice(0, limit);
-  return latest.map((w) => {
-    const day = toLocalDay(w.start_time, timeZone);
+/** The `limit` most recent workouts, in `window` when given one, newest first, each with every exercise's top set. */
+export function latestEntries(training: Training, limit: number, timeZone: string, window?: DayWindow): LatestEntry[] {
+  const dated = training.data.workouts.map((workout) => ({ workout, day: toLocalDay(workout.start_time, timeZone) }));
+  const inWindow = window ? dated.filter(({ day }) => day >= window.from && day <= window.to) : dated;
+  const latest = inWindow.toSorted((a, b) => Date.parse(b.workout.start_time) - Date.parse(a.workout.start_time)).slice(0, limit);
+  return latest.map(({ workout: w, day }) => {
     const sets = w.exercises.flatMap((ex) => {
       const exercise = training.index.get(ex.exercise_template_id);
       if (!exercise) return [];

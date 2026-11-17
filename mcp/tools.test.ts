@@ -384,13 +384,62 @@ describe("balance", () => {
 });
 
 describe("recentWorkouts", () => {
-  it("lists the latest workouts, newest first, five by default and at most 20", () => {
-    expect(recentWorkouts(ctx, {}).workouts).toHaveLength(5);
-    const result = recentWorkouts(ctx, { limit: 99 });
-    expect(result.workouts).toHaveLength(20);
+  /** Workouts on local days in a window, counted from the dataset. */
+  const workoutsIn = (from: string, to: string) =>
+    sample.workouts.filter((wk) => {
+      const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date(wk.start_time));
+      return day >= from && day <= to;
+    }).length;
+
+  it("lists the latest five workouts, newest first, with no window", () => {
+    const result = recentWorkouts(ctx, {});
+    expect(result.workouts).toHaveLength(5);
     expect(result.workouts[0].date).toBe(t.endDay);
+    expect(result.context.window).toBeNull();
+    expect(result).not.toHaveProperty("totalInWindow");
+  });
+
+  it("returns at most 40 workouts", () => {
+    const result = recentWorkouts(ctx, { limit: 99 });
+    expect(result.workouts).toHaveLength(40);
     const dates = result.workouts.map((w) => w.date);
     expect(dates).toEqual(dates.toSorted().reverse());
+  });
+
+  it("returns every workout in a window, newest first", () => {
+    const result = recentWorkouts(ctx, { from: "2026-10-01", to: "2026-10-31" });
+    const expected = workoutsIn("2026-10-01", "2026-10-31");
+    expect(expected).toBeGreaterThan(5);
+    expect(result.workouts).toHaveLength(expected);
+    expect(result.totalInWindow).toBe(expected);
+    expect(result.workouts.every((w) => w.date >= "2026-10-01" && w.date <= "2026-10-31")).toBe(true);
+    expect(result.context.window).toEqual({ from: "2026-10-01", to: "2026-10-31" });
+    expect(result).not.toHaveProperty("note");
+  });
+
+  it("takes a preset range as a window", () => {
+    const w = resolveWindow(t, { range: "90d" });
+    expect(recentWorkouts(ctx, { range: "90d" }).totalInWindow).toBe(workoutsIn(w.from, w.to));
+  });
+
+  it("says how many it left out when a window holds more than the cap", () => {
+    const w = resolveWindow(t, { range: "1y" });
+    const total = workoutsIn(w.from, w.to);
+    expect(total).toBeGreaterThan(40);
+    const result = recentWorkouts(ctx, { range: "1y" });
+    expect(result.workouts).toHaveLength(40);
+    expect(result.totalInWindow).toBe(total);
+    expect(result.note).toBe(`Showing the latest 40 of ${total} workouts in the window; ask for a shorter window to see the rest.`);
+  });
+
+  it("honors a smaller limit inside a window", () => {
+    const result = recentWorkouts(ctx, { from: "2026-10-01", to: "2026-10-31", limit: 3 });
+    expect(result.workouts).toHaveLength(3);
+    expect(result.note).toMatch(/^Showing the latest 3 of \d+ workouts/);
+  });
+
+  it("returns an empty list for a window outside the data", () => {
+    expect(recentWorkouts(ctx, { from: "2030-01-01", to: "2030-01-31" })).toMatchObject({ workouts: [], totalInWindow: 0 });
   });
 
   it("gives each exercise's top set as the log writes it", () => {
@@ -405,7 +454,7 @@ describe("recentWorkouts", () => {
 });
 
 describe("result sizes", () => {
-  // The spec's "typical result" is a default call; recent_workouts at its cap of 20 runs past 4 KB by design.
+  // The spec's "typical result" is a default call; recent_workouts over a month runs past 4 KB by design.
   it("keeps every typical result under 4 KB", () => {
     const results = [
       findExercises(ctx, { limit: 50 }),

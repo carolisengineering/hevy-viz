@@ -258,23 +258,52 @@ export function balance(ctx: ToolContext, args: RangeArgs) {
 }
 
 const RECENT_LIMIT = 5;
-const RECENT_MAX = 20;
+const RECENT_MAX = 40;
 
-/** The training log: the latest workouts with each exercise's top set, as Latest entries shows them. */
-export function recentWorkouts(ctx: ToolContext, args: { limit?: number; unit?: Unit }) {
+export interface RecentWorkoutsArgs extends RangeArgs {
+  limit?: number;
+  unit?: Unit;
+}
+
+export interface RecentWorkoutsResult {
+  context: ResultContext;
+  /** Workouts in the window, when there is one; more than `workouts` holds when the cap cut the list. */
+  totalInWindow?: number;
+  workouts: { date: string; title: string; exercises: { id: string; title: string; topSet: string; allTimeRecord: boolean }[] }[];
+  note?: string;
+}
+
+/**
+ * The training log as Latest entries shows it: each workout with every exercise's top set.
+ * With no window, the latest `limit` (5) workouts. With a window, every workout in it, up to
+ * the cap of 40, plus how many the window holds so a cut-off list never passes as complete.
+ */
+export function recentWorkouts(ctx: ToolContext, args: RecentWorkoutsArgs): RecentWorkoutsResult {
   const unit = args.unit ?? DEFAULT_UNIT;
-  const limit = clamp(args.limit ?? RECENT_LIMIT, 1, RECENT_MAX);
-  return {
-    context: contextOf(ctx, null, unit),
-    workouts: latestEntries(ctx.training, limit, ctx.timeZone).map(({ workout, day, sets }) => ({
-      date: day,
-      title: workout.title,
-      exercises: sets.map(({ exercise, top, record }) => ({
-        id: exercise.templateId,
-        title: exercise.title,
-        topSet: formatPointSet(top, exercise.type, unit),
-        allTimeRecord: record,
-      })),
+  const windowed = args.range != null || args.from != null || args.to != null;
+  const w = windowed ? resolveWindow(ctx.training, args) : null;
+  const limit = clamp(args.limit ?? (windowed ? RECENT_MAX : RECENT_LIMIT), 1, RECENT_MAX);
+  const shown = latestEntries(ctx.training, limit, ctx.timeZone, w ?? undefined);
+  const workouts = shown.map(({ workout, day, sets }) => ({
+    date: day,
+    title: workout.title,
+    exercises: sets.map(({ exercise, top, record }) => ({
+      id: exercise.templateId,
+      title: exercise.title,
+      topSet: formatPointSet(top, exercise.type, unit),
+      allTimeRecord: record,
     })),
+  }));
+  if (!w) return { context: contextOf(ctx, null, unit), workouts };
+  let total = 0;
+  for (const workout of ctx.training.data.workouts) {
+    const day = toLocalDay(workout.start_time, ctx.timeZone);
+    if (day >= w.from && day <= w.to) total += 1;
+  }
+  return {
+    context: contextOf(ctx, w, unit),
+    totalInWindow: total,
+    workouts,
+    ...(total > shown.length ? { note: `Showing the latest ${shown.length} of ${total} workouts in the window; ask for a shorter window to see the rest.` } : {}),
   };
 }

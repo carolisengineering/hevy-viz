@@ -76,6 +76,12 @@ describe("latestEntries", () => {
     expect(entries[0].sets[0]).toMatchObject({ exercise: { templateId: "bench" }, top: { value: 60 }, record: false });
   });
 
+  it("keeps only workouts in a window, when given one", () => {
+    expect(latestEntries(training, 5, "UTC", { from: "2026-10-01", to: "2026-10-02" }).map((e) => e.workout.id)).toEqual(["middle", "first"]);
+    expect(latestEntries(training, 1, "UTC", { from: "2026-10-01", to: "2026-10-02" }).map((e) => e.workout.id)).toEqual(["middle"]);
+    expect(latestEntries(training, 5, "UTC", { from: "2030-01-01", to: "2030-01-31" })).toEqual([]);
+  });
+
   it("marks a first-ever estimated-1RM session as a record", () => {
     const [first] = latestEntries(training, 3, "UTC").slice(-1);
     expect(first.workout.id).toBe("first");
