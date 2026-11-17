@@ -87,3 +87,25 @@ export function latestEntries(training: Training, limit: number, timeZone: strin
     return { workout: w, day, sets };
   });
 }
+
+/** What an exercise records, as the Exercises list filters it. */
+export type ExerciseKind = "weights" | "bodyweight" | "timed" | "distance";
+const KIND_OF: Record<MetricId, ExerciseKind> = { e1rm: "weights", weight: "weights", reps: "bodyweight", duration: "timed", distance: "distance" };
+export const kindOf = (metric: MetricId): ExerciseKind => KIND_OF[metric];
+
+export type ExerciseSort = "sessions" | "recent" | "az";
+
+/**
+ * The Exercises list: titles containing `query` as a plain, case-insensitive substring
+ * (so "(Barbell)" or "+" mean themselves), of one kind or all, sorted.
+ */
+export function matchExercises(
+  exercises: readonly ExerciseProgress[],
+  { query = "", kind = "all", sort = "sessions" }: { query?: string; kind?: ExerciseKind | "all"; sort?: ExerciseSort },
+): ExerciseProgress[] {
+  const needle = query.trim().toLowerCase();
+  const found = exercises.filter((e) => (kind === "all" || kindOf(e.metric) === kind) && e.title.toLowerCase().includes(needle));
+  if (sort === "recent") return found.toSorted((a, b) => b.lastDay.localeCompare(a.lastDay) || a.title.localeCompare(b.title));
+  if (sort === "az") return found.toSorted((a, b) => a.title.localeCompare(b.title));
+  return found; // Training lists exercises most sessions first.
+}
