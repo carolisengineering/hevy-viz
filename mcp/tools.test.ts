@@ -101,6 +101,16 @@ describe("resolveWindow", () => {
     expect(resolveWindow(t, { from: "2030-01-01", to: "2030-02-01" })).toEqual({ from: "2030-01-01", to: "2030-02-01" });
   });
 
+  it("ends a custom window at the end day and starts it no earlier than the first workout", () => {
+    expect(resolveWindow(t, { from: "2026-01-01", to: "2026-12-31" })).toEqual({ from: "2026-01-01", to: t.endDay });
+    expect(resolveWindow(t, { from: "2015-01-01", to: "2025-06-30" })).toEqual({ from: t.firstDay, to: "2025-06-30" });
+  });
+
+  it("gives an empty window, not an error, when a half-given window misses the data", () => {
+    expect(resolveWindow(t, { to: "2020-01-01" })).toEqual({ from: "2020-01-01", to: "2020-01-01" });
+    expect(resolveWindow(t, { from: "2099-01-01" })).toEqual({ from: "2099-01-01", to: "2099-01-01" });
+  });
+
   it("rejects dates that aren't real YYYY-MM-DD days", () => {
     for (const from of ["2026-02-30", "2026-1-5", "Jan 5", "2026-13-01"]) {
       expect(toolError(() => resolveWindow(t, { from })).message).toBe("Dates must be YYYY-MM-DD, like 2026-01-31.");
@@ -227,7 +237,14 @@ describe("exerciseProgress", () => {
 
   it("switches to monthly bests past 104 weeks", () => {
     expect(all.series.by).toBe(weeksTouched(t.firstDay, t.endDay) > 104 ? "month" : "week");
-    expect(exerciseProgress(ctx, { exercise: "squat", from: "2023-01-02", to: "2026-01-05" }).series.by).toBe("month");
+    const long = buildTraining(
+      dataset(
+        ["2023-01-02", "2026-01-05"].map((day, i) => workout(`w${i}`, day, [["squat", [{ weight_kg: 100, reps: 5 }]]])),
+        [template("squat", "weight_reps", "quadriceps")],
+      ),
+      "UTC",
+    );
+    expect(exerciseProgress({ ...ctx, training: long, timeZone: "UTC" }, { exercise: "squat", from: "2023-01-02", to: "2026-01-05" }).series.by).toBe("month");
   });
 
   it("gives each period's best value", () => {
@@ -358,6 +375,15 @@ describe("consistency", () => {
     expect(result.longestBreak!.from >= w.from && result.longestBreak!.to <= w.to).toBe(true);
     expect(result.context).toMatchObject({ window: w, unit: null });
   });
+
+  it("counts no weeks or rest days past the end day or before the first workout", () => {
+    expect(consistency(ctx, { from: "2026-01-01", to: "2026-12-31" })).toEqual(consistency(ctx, { from: "2026-01-01" }));
+    expect(consistency(ctx, { from: "2015-01-01" })).toEqual(consistency(ctx, { range: "all" }));
+  });
+
+  it("finds no break in a window outside the data", () => {
+    expect(consistency(ctx, { from: "2030-01-01", to: "2030-02-01" })).toMatchObject({ sessionsInWindow: 0, longestBreak: null });
+  });
 });
 
 describe("balance", () => {
@@ -374,6 +400,10 @@ describe("balance", () => {
     for (const v of [...result.groups, ...result.muscles].map((x) => x.setsPerWeek)) expect(Math.round(v * 10) / 10).toBe(v);
     const perWeek = result.muscles.map((m) => m.setsPerWeek);
     expect(perWeek).toEqual(perWeek.toSorted((a, b) => b - a));
+  });
+
+  it("counts no weeks past the end day", () => {
+    expect(balance(ctx, { from: "2026-01-01", to: "2026-12-31" })).toEqual(balance(ctx, { from: "2026-01-01" }));
   });
 
   it("gives zero sets for a window outside the data", () => {

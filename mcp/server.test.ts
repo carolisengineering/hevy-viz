@@ -99,6 +99,14 @@ describe("loadTraining", () => {
     expect(loadTraining(file, "America/Chicago", second).ctx.training.data.workouts).toHaveLength(sample.workouts.length);
   });
 
+  it("moves the end day forward when the local day changes, though the file hasn't", () => {
+    write(JSON.stringify({ ...sample, source: "hevy" }), 35);
+    const monday = loadTraining(file, "America/Chicago", undefined, new Date("2026-11-16T18:00:00Z"));
+    expect(monday.ctx.training.endDay).toBe("2026-11-16");
+    expect(loadTraining(file, "America/Chicago", monday, new Date("2026-11-16T23:00:00Z"))).toBe(monday);
+    expect(loadTraining(file, "America/Chicago", monday, new Date("2026-11-19T18:00:00Z")).ctx.training.endDay).toBe("2026-11-19");
+  });
+
   it("drops workouts without a readable start time", () => {
     write(JSON.stringify({ ...sample, workouts: [...sample.workouts, { ...sample.workouts[0], id: "bad", start_time: "not a time" }] }), 40);
     expect(loadTraining(file, "UTC").ctx.training.data.workouts).toHaveLength(sample.workouts.length);

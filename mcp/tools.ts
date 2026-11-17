@@ -54,15 +54,26 @@ function checkDay(day: string): string {
 
 /**
  * The days a call covers. `from` and `to` override `range`; `from` alone runs to the
- * end day and `to` alone starts at the first workout. A window outside the data is fine.
+ * end day and `to` alone starts at the first workout. A custom window is cut to the days
+ * the log covers, since later days haven't happened and earlier ones weren't logged, so
+ * weeks and rest days are only counted where they could be. A window wholly outside the
+ * data is kept as asked (a half-given one shrinks to its one day) and gives empty results.
  */
 export function resolveWindow(training: Training, args: RangeArgs): DayWindow {
-  if (args.from == null && args.to == null) return windowFor(rangeById(args.range ?? DEFAULT_RANGE), training.endDay, training.firstDay);
-  const from = args.from == null ? training.firstDay : checkDay(args.from);
-  const to = args.to == null ? training.endDay : checkDay(args.to);
-  if (from > to) throw new ToolError(`The window starts after it ends: ${from} is after ${to}.`);
-  return { from, to };
+  const { firstDay, endDay } = training;
+  if (args.from == null && args.to == null) return windowFor(rangeById(args.range ?? DEFAULT_RANGE), endDay, firstDay);
+  const given = { from: args.from == null ? null : checkDay(args.from), to: args.to == null ? null : checkDay(args.to) };
+  if (given.from != null && given.to != null && given.from > given.to) {
+    throw new ToolError(`The window starts after it ends: ${given.from} is after ${given.to}.`);
+  }
+  const from = given.from ?? (given.to! < firstDay ? given.to! : firstDay);
+  const to = given.to ?? (given.from! > endDay ? given.from! : endDay);
+  if (!overlapsData(training, { from, to })) return { from, to };
+  return { from: from < firstDay ? firstDay : from, to: to > endDay ? endDay : to };
 }
+
+/** Whether `w` shares a day with the log, from the first workout to the end day. */
+const overlapsData = (training: Training, w: DayWindow): boolean => w.from <= training.endDay && w.to >= training.firstDay;
 
 /** How many candidates an ambiguous name lists. */
 const MAX_CANDIDATES = 10;
@@ -239,7 +250,7 @@ export function consistency(ctx: ToolContext, args: RangeArgs) {
     sessionsPerWeek: stats.sessionsPerWeek,
     weeksTrained: stats.weeksTrained,
     weeksInWindow: stats.weeks,
-    longestBreak: longestBreak(training.days, w),
+    longestBreak: overlapsData(training, w) ? longestBreak(training.days, w) : null,
   };
 }
 

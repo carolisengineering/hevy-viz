@@ -8,7 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { dropUndatedWorkouts } from "../src/core/dataset";
+import { dropUndatedWorkouts, rangeEndDay } from "../src/core/dataset";
 import { buildTraining } from "../src/core/training";
 import type { HevyDataset } from "../src/core/types";
 import { balance, consistency, exerciseProgress, findExercises, mainLifts, recentWorkouts, ToolError, type ToolContext } from "./tools";
@@ -37,11 +37,13 @@ const isDataset = (value: unknown): value is HevyDataset =>
   Array.isArray((value as HevyDataset).exercise_templates);
 
 /**
- * The training model from `file`. Returns `previous` untouched while the file's mtime is
- * the same. A file that can't be read or parsed throws a ToolError; the caller keeps
- * `previous`, so a sync caught half-written only fails the calls made while it runs.
+ * The training model from `file`. Returns `previous` untouched while the file's mtime and
+ * the local day are the same; a new day rebuilds it from the data already loaded, so
+ * "today" moves on in a long-running server just as it does on reloading the dashboard.
+ * A file that can't be read or parsed throws a ToolError; the caller keeps `previous`,
+ * so a sync caught half-written only fails the calls made while it runs.
  */
-export function loadTraining(file: string, timeZone: string, previous?: Loaded): Loaded {
+export function loadTraining(file: string, timeZone: string, previous?: Loaded, now = new Date()): Loaded {
   let mtimeMs: number;
   try {
     mtimeMs = statSync(file).mtimeMs;
@@ -51,7 +53,11 @@ export function loadTraining(file: string, timeZone: string, previous?: Loaded):
     }
     throw new ToolError(UNREADABLE);
   }
-  if (previous && previous.mtimeMs === mtimeMs) return previous;
+  if (previous && previous.mtimeMs === mtimeMs) {
+    const { training } = previous.ctx;
+    if (rangeEndDay(training.data, timeZone, now) === training.endDay) return previous;
+    return { ctx: { ...previous.ctx, training: buildTraining(training.data, timeZone, now) }, mtimeMs };
+  }
 
   let parsed: unknown;
   try {
@@ -62,7 +68,7 @@ export function loadTraining(file: string, timeZone: string, previous?: Loaded):
   if (!isDataset(parsed)) throw new ToolError(UNREADABLE);
   const { data, skipped } = dropUndatedWorkouts(parsed);
   if (skipped > 0) console.error(`hevy-viz: skipped ${skipped} workout(s) without a readable start time`);
-  return { ctx: { training: buildTraining(data, timeZone), timeZone, syncedAt: data.synced_at }, mtimeMs };
+  return { ctx: { training: buildTraining(data, timeZone, now), timeZone, syncedAt: data.synced_at }, mtimeMs };
 }
 
 /** HEVY_VIZ_TZ, or America/Chicago. Throws, naming the variable, when it isn't an IANA zone. */
@@ -79,7 +85,7 @@ export function resolveTimeZone(env: NodeJS.ProcessEnv): string {
 // Argument schemas, shared by the tools that take them.
 const range = {
   range: z.enum(["90d", "1y", "all"]).optional().describe("Preset window ending today: 90d, 1y (default) or all."),
-  from: z.string().optional().describe("First day, YYYY-MM-DD, inclusive. from/to override range; from alone runs to today."),
+  from: z.string().optional().describe("First day, YYYY-MM-DD, inclusive. from/to override range; from alone runs to today. A custom window is cut to the days the log covers; context.window gives the days used."),
   to: z.string().optional().describe("Last day, YYYY-MM-DD, inclusive. to alone starts at the first workout."),
 };
 const unit = { unit: z.enum(["kg", "lb"]).optional().describe("Weight unit for values and text: kg (default, to 0.1) or lb (whole pounds).") };

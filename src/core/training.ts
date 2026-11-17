@@ -22,11 +22,11 @@ export interface Training {
   firstDay: string;
 }
 
-export function buildTraining(data: HevyDataset, timeZone: string): Training {
+export function buildTraining(data: HevyDataset, timeZone: string, now = new Date()): Training {
   const index = progressIndex(data, timeZone);
   const exercises = [...index.values()].sort((a, b) => b.sessions - a.sessions || a.title.localeCompare(b.title));
   const days = trainingDays(data.workouts, timeZone);
-  const endDay = rangeEndDay(data, timeZone);
+  const endDay = rangeEndDay(data, timeZone, now);
   let firstDay = endDay;
   for (const day of days.keys()) if (day < firstDay) firstDay = day;
   return { data, index, exercises, days, endDay, firstDay };
