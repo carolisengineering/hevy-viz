@@ -1,6 +1,6 @@
 // Progress for every exercise, charted by the measure its Hevy type supports.
 // Pure: no DOM, no fetch.
-import { toLocalDay } from "./dates";
+import { MS_PER_DAY, parseDay, toLocalDay } from "./dates";
 import { estimateOneRepMax } from "./metrics";
 import { filterBetween, windowFor, type DateRange, type DayWindow } from "./ranges";
 import type { HevyDataset, HevySet } from "./types";
@@ -229,4 +229,24 @@ export function summarizeIn<T extends { date: string; value: number }>(all: read
     best: records.at(-1),
     lastSession: all.at(-1),
   };
+}
+
+/** A gap between two sessions: `from` and `to` are the sessions on either side. */
+export interface Break {
+  from: string;
+  to: string;
+  /** Days from one session to the next. */
+  days: number;
+}
+
+/** Gaps longer than `maxGapDays` between consecutive points, oldest first. Points must be sorted oldest first. */
+export function longBreaks(points: readonly { date: string }[], maxGapDays = LONG_BREAK_DAYS): Break[] {
+  const breaks: Break[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const from = points[i - 1].date;
+    const to = points[i].date;
+    const days = Math.round((parseDay(to).getTime() - parseDay(from).getTime()) / MS_PER_DAY);
+    if (days > maxGapDays) breaks.push({ from, to, days });
+  }
+  return breaks;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayGrid, monthlySessions, trainingDays, type DayLoad } from "./consistency";
+import { dayGrid, longestBreak, monthlySessions, trainingDays, windowStats, type DayLoad } from "./consistency";
 import { workout } from "./testkit";
 
 const tz = "America/Los_Angeles";
@@ -53,5 +53,58 @@ describe("dayGrid", () => {
 
   it("fills earlier weeks with all seven days", () => {
     expect(grid[0].days).toHaveLength(7);
+  });
+});
+
+describe("windowStats", () => {
+  // Mon 11/2, Wed 11/4 and Mon 11/9 2026.
+  const d = days([
+    ["2026-10-30", 1],
+    ["2026-11-02", 1],
+    ["2026-11-04", 1],
+    ["2026-11-09", 1],
+    ["2026-11-20", 1],
+  ]);
+  const w = { from: "2026-11-02", to: "2026-11-15" };
+
+  it("counts sessions, days and weeks trained in the window", () => {
+    expect(windowStats(d, w)).toEqual({ sessions: 3, trainingDays: 3, weeks: 2, weeksTrained: 2, sessionsPerWeek: 1.5 });
+  });
+
+  it("counts every Monday-first week the window touches", () => {
+    // Sun 11/1 to Tue 11/10 touches three weeks; only the middle two have sessions.
+    expect(windowStats(d, { from: "2026-11-01", to: "2026-11-10" })).toMatchObject({ weeks: 3, weeksTrained: 2, sessionsPerWeek: 1 });
+  });
+
+  it("counts several sessions on one day once as a training day", () => {
+    expect(windowStats(days([["2026-11-03", 2]]), w)).toMatchObject({ sessions: 2, trainingDays: 1, weeksTrained: 1 });
+  });
+
+  it("gives zeros for a window with no sessions", () => {
+    expect(windowStats(d, { from: "2030-01-01", to: "2030-01-31" })).toEqual({ sessions: 0, trainingDays: 0, weeks: 5, weeksTrained: 0, sessionsPerWeek: 0 });
+  });
+});
+
+describe("longestBreak", () => {
+  const d = days([
+    ["2026-11-02", 1],
+    ["2026-11-04", 1],
+    ["2026-11-09", 1],
+  ]);
+
+  it("runs to the window's end when the break is ongoing", () => {
+    expect(longestBreak(d, { from: "2026-11-02", to: "2026-11-15" })).toEqual({ from: "2026-11-10", to: "2026-11-15", days: 6 });
+  });
+
+  it("finds the longest run of rest days between sessions", () => {
+    expect(longestBreak(d, { from: "2026-11-02", to: "2026-11-09" })).toEqual({ from: "2026-11-05", to: "2026-11-08", days: 4 });
+  });
+
+  it("is null when every day has a session", () => {
+    expect(longestBreak(d, { from: "2026-11-02", to: "2026-11-02" })).toBeNull();
+  });
+
+  it("covers the whole window when it has no sessions", () => {
+    expect(longestBreak(d, { from: "2030-01-01", to: "2030-01-10" })).toEqual({ from: "2030-01-01", to: "2030-01-10", days: 10 });
   });
 });
