@@ -86,3 +86,19 @@ test("logs an exercise even when its sets don't give its measure", async ({ page
   await page.goto("/");
   await expect(page.locator(".latest-entries li").first()).toContainText("Bench Press (Barbell) 60 × 15");
 });
+
+test("keeps a long workout title on one line in the log", async ({ page }) => {
+  const data = syncedEndingDaysAgo(1);
+  const latest = data.workouts.reduce((a, b) => (Date.parse(b.start_time) > Date.parse(a.start_time) ? b : a));
+  latest.title = "BP - SC - BC - 2026-11-11";
+  await serveSynced(page, data);
+  await page.goto("/");
+  const title = page.locator(".latest-entries li").first().locator(".log-title");
+  await expect(title).toHaveText(latest.title);
+  const lines = await title.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+  });
+  expect(lines).toBe(1);
+});
