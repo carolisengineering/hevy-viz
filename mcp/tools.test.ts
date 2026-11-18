@@ -204,6 +204,27 @@ const weeksTouched = (from: string, to: string) => (Date.parse(weekStart(to)) - 
 const kg = (v: number) => Number(formatWeight(v, "kg"));
 
 describe("exerciseProgress", () => {
+  describe("names the unit of a time or distance", () => {
+    const cardio = buildTraining(
+      dataset(
+        [workout("w", "2026-10-01", [["plank", [{ duration_seconds: 60 }]], ["row-erg", [{ distance_meters: 2000, duration_seconds: 480 }]]])],
+        [template("plank", "duration", "abdominals"), template("row-erg", "distance_duration", "cardio")],
+      ),
+      "America/Chicago",
+    );
+    const c: ToolContext = { training: cardio, timeZone: "America/Chicago", syncedAt: "2026-11-14T00:00:00Z" };
+
+    it("gives seconds for a timed exercise", () => {
+      expect(exerciseProgress(c, { exercise: "plank" }).unit).toBe("seconds");
+    });
+    it("gives meters for a distance exercise", () => {
+      expect(exerciseProgress(c, { exercise: "row-erg" }).unit).toBe("meters");
+    });
+    it("gives meters for a distance exercise even when lb is asked for", () => {
+      expect(exerciseProgress(c, { exercise: "row-erg", unit: "lb" }).unit).toBe("meters");
+    });
+  });
+
   const all = exerciseProgress(ctx, { exercise: "squat", range: "all" });
 
   it("matches the dashboard's summary for the same exercise and range", () => {

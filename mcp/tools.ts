@@ -106,6 +106,16 @@ function measured(metric: MetricId, value: number, unit: Unit): { value: number;
   return { value: metric === "e1rm" || metric === "weight" ? Number(text) : value, text };
 }
 
+/**
+ * The unit a result's values are in. Like the dashboard's, except that times and distances,
+ * whose text carries its own unit there, are named here: their values are raw seconds and meters.
+ */
+function resultUnit(metric: MetricId, unit: Unit): string {
+  const shown = valueUnit(metric, unit);
+  if (shown) return shown;
+  return metric === "duration" ? "seconds" : "meters";
+}
+
 export interface FindExercisesArgs {
   query?: string;
   kind?: ExerciseKind;
@@ -186,7 +196,7 @@ export function exerciseProgress(ctx: ToolContext, args: ExerciseProgressArgs) {
     id: exercise.templateId,
     title: exercise.title,
     measure: METRIC_LABEL[metric],
-    unit: valueUnit(metric, unit),
+    unit: resultUnit(metric, unit),
     bestEver: point(summary.best),
     latestInWindow: point(summary.current),
     changeInWindow: summary.change == null ? null : measuredChange(metric, summary.change, unit),
