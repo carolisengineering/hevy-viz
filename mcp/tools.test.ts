@@ -170,8 +170,14 @@ describe("findExercises", () => {
     expect(squat.best).toEqual({ value: Number(formatWeight(best.value, "lb")), text: formatWeight(best.value, "lb"), date: best.date });
   });
 
-  it("gives the best in kg to 0.1 by default", () => {
-    const [squat] = findExercises(ctx, { query: "squat" }).exercises;
+  it("gives the best in whole pounds by default", () => {
+    const result = findExercises(ctx, { query: "squat" });
+    expect(Number.isInteger(result.exercises[0].best!.value)).toBe(true);
+    expect(result.context.unit).toBe("lb");
+  });
+
+  it("gives the best in kg to 0.1 when asked", () => {
+    const [squat] = findExercises(ctx, { query: "squat", unit: "kg" }).exercises;
     expect(squat.best!.value * 10).toBeCloseTo(Math.round(squat.best!.value * 10));
     expect(squat.best!.text).toBe(String(squat.best!.value));
   });
@@ -225,7 +231,7 @@ describe("exerciseProgress", () => {
     });
   });
 
-  const all = exerciseProgress(ctx, { exercise: "squat", range: "all" });
+  const all = exerciseProgress(ctx, { exercise: "squat", range: "all", unit: "kg" });
 
   it("matches the dashboard's summary for the same exercise and range", () => {
     const s = summarize(t.index.get("squat")!.points, rangeById("all"), t.endDay);
@@ -270,7 +276,7 @@ describe("exerciseProgress", () => {
 
   it("gives each period's best value", () => {
     for (const range of ["1y", "all"] as const) {
-      const result = exerciseProgress(ctx, { exercise: "squat", range });
+      const result = exerciseProgress(ctx, { exercise: "squat", range, unit: "kg" });
       const history = summarize(t.index.get("squat")!.points, rangeById(range), t.endDay).history;
       const keyOf = (day: string) => (result.series.by === "week" ? weekStart(day) : `${day.slice(0, 7)}-01`);
       expect(result.series.points.length).toBeGreaterThan(0);
@@ -341,7 +347,7 @@ describe("exerciseProgress", () => {
 });
 
 describe("mainLifts", () => {
-  const result = mainLifts(ctx, { range: "all" });
+  const result = mainLifts(ctx, { range: "all", unit: "kg" });
 
   it("lists the dashboard's main lifts in its order", () => {
     expect(result.lifts.map((l) => l.id)).toEqual(mainLiftsIn(t, windowFor(rangeById("all"), t.endDay, t.firstDay)).map((m) => m.lift.templateId));
@@ -501,6 +507,20 @@ describe("recentWorkouts", () => {
       expect(typeof e.allTimeRecord).toBe("boolean");
       expect(t.index.has(e.id)).toBe(true);
     }
+  });
+});
+
+describe("the default unit", () => {
+  it("is lb for every tool that takes a unit, when none is given", () => {
+    expect(findExercises(ctx, {}).context.unit).toBe("lb");
+    expect(exerciseProgress(ctx, { exercise: "squat" }).context.unit).toBe("lb");
+    expect(mainLifts(ctx, {}).context.unit).toBe("lb");
+    expect(recentWorkouts(ctx, {}).context.unit).toBe("lb");
+  });
+
+  it("stays null for the tools that take no unit", () => {
+    expect(consistency(ctx, {}).context.unit).toBeNull();
+    expect(balance(ctx, {}).context.unit).toBeNull();
   });
 });
 

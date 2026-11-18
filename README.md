@@ -20,7 +20,7 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
 - **Exercises:** search, filter by kind and sort hundreds of exercises, with a page and progress chart for each.
 - **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged.
 - Date ranges (90 days / 1 year / all time) that apply to every view.
-- kg or lb, remembered per browser.
+- lb by default, or kg; remembered per browser.
 - A crosshair tooltip with keyboard support (focus the chart, then use ←/→), plus a table view of every chart.
 - Light and dark mode: follow the system, or pick one in the header (remembered per browser).
 - A layout that works on phones.

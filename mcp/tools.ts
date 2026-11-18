@@ -7,7 +7,7 @@ import { muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
 import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
 import { rangeById, weeksIn, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
 import { latestEntries, mainLiftsIn, matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../src/core/training";
-import { formatChange, formatPointSet, formatValue, formatWeight, valueUnit, type Unit } from "../src/format";
+import { DEFAULT_UNIT, formatChange, formatPointSet, formatValue, formatWeight, valueUnit, type Unit } from "../src/format";
 
 /** A problem Claude can fix by changing the arguments. Its message is the one sentence Claude sees. */
 export class ToolError extends Error {
@@ -38,7 +38,6 @@ export interface ResultContext {
 export type RangeArgs = { range?: RangeId; from?: string; to?: string };
 
 const DEFAULT_RANGE: RangeId = "1y";
-const DEFAULT_UNIT: Unit = "kg";
 const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, Math.trunc(n)));
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

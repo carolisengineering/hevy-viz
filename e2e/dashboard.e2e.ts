@@ -22,10 +22,10 @@ test("searching goes to the exercise list", async ({ page }) => {
 
 test("remembers the unit across reloads", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("radio", { name: "kg" })).toHaveAttribute("aria-checked", "true");
-  await page.getByRole("radio", { name: "lb" }).click();
-  await page.reload();
   await expect(page.getByRole("radio", { name: "lb" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radio", { name: "kg" }).click();
+  await page.reload();
+  await expect(page.getByRole("radio", { name: "kg" })).toHaveAttribute("aria-checked", "true");
 });
 
 test("works when the browser blocks storage", async ({ page }) => {
@@ -38,8 +38,9 @@ test("works when the browser blocks storage", async ({ page }) => {
   });
   await page.goto("/#/exercises/bench");
   await expect(page.locator("path.series-line")).toBeVisible();
-  await page.getByRole("radio", { name: "lb" }).click();
   await expect(page.getByRole("radio", { name: "lb" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radio", { name: "kg" }).click();
+  await expect(page.getByRole("radio", { name: "kg" })).toHaveAttribute("aria-checked", "true");
   await page.getByRole("radio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
