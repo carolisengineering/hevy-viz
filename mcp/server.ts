@@ -16,7 +16,7 @@ import { balance, consistency, exerciseProgress, findExercises, mainLifts, recen
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const DEFAULT_DATA = "data/hevy.json";
 const DEFAULT_TIME_ZONE = "America/Chicago";
-const UNREADABLE = "The data file couldn't be read; if a sync is running, try again in a moment.";
+const UNREADABLE = "The data file couldn't be read; if a sync is running, try again in a moment, or run `npm run sync` again.";
 
 /** The data as last loaded, and the file modification time it was loaded at. */
 export interface Loaded {

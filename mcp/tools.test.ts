@@ -70,7 +70,7 @@ describe("resolveExercise", () => {
 
   it("treats regex characters literally and says nothing matches", () => {
     for (const query of ["Pull-Up+", "(.*)"]) {
-      expect(toolError(() => resolveExercise(t, query)).message).toBe(`No exercise matches "${query}".`);
+      expect(toolError(() => resolveExercise(t, query)).message).toBe(`No exercise matches "${query}"; find_exercises lists them.`);
     }
   });
 
@@ -315,7 +315,7 @@ describe("exerciseProgress", () => {
   });
 
   it("throws for an unknown exercise", () => {
-    expect(toolError(() => exerciseProgress(ctx, { exercise: "nope" })).message).toBe('No exercise matches "nope".');
+    expect(toolError(() => exerciseProgress(ctx, { exercise: "nope" })).message).toBe('No exercise matches "nope"; find_exercises lists them.');
   });
 });
 

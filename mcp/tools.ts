@@ -89,7 +89,7 @@ export function resolveExercise(training: Training, query: string): ExerciseProg
   if (byTitle) return byTitle;
   const found = matchExercises(training.exercises, { query: wanted });
   if (found.length === 1) return found[0];
-  if (found.length === 0) throw new ToolError(`No exercise matches "${wanted}".`);
+  if (found.length === 0) throw new ToolError(`No exercise matches "${wanted}"; find_exercises lists them.`);
   const listed = found.slice(0, MAX_CANDIDATES).map((e) => `${e.title} (${e.templateId})`);
   const more = found.length > MAX_CANDIDATES ? `, and ${found.length - MAX_CANDIDATES} more` : "";
   throw new ToolError(`"${wanted}" matches ${found.length} exercises: ${listed.join(", ")}${more}. Ask again with one of the ids.`);

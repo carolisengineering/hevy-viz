@@ -52,7 +52,7 @@ describe("the server over stdio", () => {
   it("returns a tool error for an unknown exercise", async () => {
     const result = await client.callTool({ name: "exercise_progress", arguments: { exercise: "nope" } });
     expect(result.isError).toBe(true);
-    expect((result.content as { text: string }[])[0].text).toBe('No exercise matches "nope".');
+    expect((result.content as { text: string }[])[0].text).toBe('No exercise matches "nope"; find_exercises lists them.');
   });
 
   it("rejects an unknown range", async () => {
@@ -91,7 +91,7 @@ describe("loadTraining", () => {
 
     write("{ truncated", 20);
     expect(() => loadTraining(file, "America/Chicago", second)).toThrow(
-      new ToolError("The data file couldn't be read; if a sync is running, try again in a moment."),
+      new ToolError("The data file couldn't be read; if a sync is running, try again in a moment, or run `npm run sync` again."),
     );
     expect(second.ctx.training.exercises.length).toBeGreaterThan(0);
 
