@@ -5,7 +5,7 @@ import { longestBreak, monthlySessions, windowStats } from "../src/core/consiste
 import { parseDay, toLocalDay, weekStart } from "../src/core/dates";
 import { muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
 import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
-import { rangeById, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
+import { rangeById, weeksIn, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
 import { latestEntries, mainLiftsIn, matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../src/core/training";
 import { formatChange, formatPointSet, formatValue, formatWeight, valueUnit, type Unit } from "../src/format";
 
@@ -149,10 +149,6 @@ function measuredChange(metric: MetricId, delta: number, unit: Unit): { value: n
 
 const MAX_PRS = 20;
 const MAX_WEEKS = 104;
-const MS_PER_WEEK = 7 * 86_400_000;
-
-/** Monday-first weeks `w` touches. */
-const weeksIn = (w: DayWindow): number => (parseDay(weekStart(w.to)).getTime() - parseDay(weekStart(w.from)).getTime()) / MS_PER_WEEK + 1;
 
 export interface ExerciseProgressArgs extends RangeArgs {
   exercise: string;

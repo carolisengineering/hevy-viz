@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterBetween, filterByRange, rangeById, windowFor } from "./ranges";
+import { filterBetween, filterByRange, rangeById, weeksIn, windowFor } from "./ranges";
 
 const pts = (...dates: string[]) => dates.map((date) => ({ date }));
 
@@ -45,5 +45,23 @@ describe("filterBetween", () => {
   });
   it("returns nothing for a window outside the points", () => {
     expect(filterBetween(history, { from: "2030-01-01", to: "2030-02-01" })).toEqual([]);
+  });
+});
+
+describe("weeksIn", () => {
+  it("counts a single day as one week", () => {
+    expect(weeksIn({ from: "2026-11-18", to: "2026-11-18" })).toBe(1);
+  });
+  it("counts Monday to Sunday as one week", () => {
+    expect(weeksIn({ from: "2026-11-16", to: "2026-11-22" })).toBe(1);
+  });
+  it("counts Sunday to Monday as two weeks", () => {
+    expect(weeksIn({ from: "2026-11-22", to: "2026-11-23" })).toBe(2);
+  });
+  it("counts whole weeks across a daylight-saving change", () => {
+    expect(weeksIn({ from: "2026-10-19", to: "2026-11-09" })).toBe(4);
+  });
+  it("counts the 53 weeks a year from Thursday to Thursday touches", () => {
+    expect(weeksIn({ from: "2026-01-01", to: "2026-12-31" })).toBe(53);
   });
 });
