@@ -1,6 +1,5 @@
 // Display formatting shared by every view, the chart and its table.
 import { parseDay } from "./core/dates";
-import type { ChartFormat } from "./charts/progressDraw";
 import { METRIC_LABEL, type MetricId, type ProgressPoint } from "./core/progress";
 
 // Days are UTC midnights (see core/dates), so format in UTC to keep the same date.
@@ -101,6 +100,20 @@ const countFormat = new Intl.NumberFormat("en-US");
 
 /** "1,432" */
 export const formatCount = (n: number): string => countFormat.format(n);
+
+/** How one measure is written on the chart, its table and its tooltip. */
+export interface ChartFormat {
+  /** A stored value as text, without the unit: "172.5", "1:45", "5 km". */
+  value: (v: number) => string;
+  /** Written small after values: "kg", "lb", "reps", or "". */
+  unit: string;
+  /** The set behind a point: "150 × 5". */
+  set: (p: ProgressPoint) => string;
+  /** The measure's name, for the table's column: "Est. 1RM". */
+  measure: string;
+  /** Display units per stored unit (2.2046… for pounds), so axis ticks land on round display values. */
+  scale: number;
+}
 
 /** How a measure is written on its chart and table, for an exercise type and unit. */
 export function chartFormat(metric: MetricId, type: string, unit: Unit): ChartFormat {

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "hevy-viz": {
+      "command": "npx",
+      "args": ["tsx", "mcp/server.ts"],
+      "env": {
+        "HEVY_VIZ_TZ": "${HEVY_VIZ_TZ:-America/Chicago}",
+        "HEVY_VIZ_DATA": "${HEVY_VIZ_DATA:-data/hevy.json}"
+      }
+    }
+  }
+}

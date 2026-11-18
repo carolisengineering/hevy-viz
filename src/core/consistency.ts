@@ -1,6 +1,7 @@
 // How often training happens: per-day load, monthly sessions and the week grid.
 // Pure: no DOM, no fetch.
-import { addDays, toLocalDay, weekStart } from "./dates";
+import { addDays, MS_PER_DAY, parseDay, toLocalDay, weekStart } from "./dates";
+import type { DayWindow } from "./ranges";
 import type { HevyWorkout } from "./types";
 
 export interface DayLoad {
@@ -74,4 +75,54 @@ export function dayGrid(days: ReadonlyMap<string, DayLoad>, endDay: string, week
     grid.push(week);
   }
   return grid;
+}
+
+export interface WindowStats {
+  sessions: number;
+  /** Days with at least one session. */
+  trainingDays: number;
+  /** Monday-first weeks the window touches. */
+  weeks: number;
+  /** Of those weeks, the ones with a session. */
+  weeksTrained: number;
+  /** `sessions / weeks`, rounded to 0.1. */
+  sessionsPerWeek: number;
+}
+
+const daysBetween = (from: string, to: string): number => Math.round((parseDay(to).getTime() - parseDay(from).getTime()) / MS_PER_DAY);
+
+/** How often training happened in `w`. */
+export function windowStats(days: ReadonlyMap<string, DayLoad>, w: DayWindow): WindowStats {
+  let sessions = 0;
+  let trainingDays = 0;
+  const trainedWeeks = new Set<string>();
+  for (const [day, load] of days) {
+    if (day < w.from || day > w.to || load.sessions === 0) continue;
+    sessions += load.sessions;
+    trainingDays += 1;
+    trainedWeeks.add(weekStart(day));
+  }
+  const weeks = daysBetween(weekStart(w.from), weekStart(w.to)) / 7 + 1;
+  return { sessions, trainingDays, weeks, weeksTrained: trainedWeeks.size, sessionsPerWeek: Math.round((sessions / weeks) * 10) / 10 };
+}
+
+/**
+ * The longest run of consecutive days in `w` without a session: `from` and `to` are its
+ * first and last rest days. Null when every day in the window has a session.
+ */
+export function longestBreak(days: ReadonlyMap<string, DayLoad>, w: DayWindow): { from: string; to: string; days: number } | null {
+  let best: { from: string; to: string; days: number } | null = null;
+  let runStart: string | null = null;
+  const close = (lastRest: string) => {
+    if (runStart == null) return;
+    const length = daysBetween(runStart, lastRest) + 1;
+    if (!best || length > best.days) best = { from: runStart, to: lastRest, days: length };
+    runStart = null;
+  };
+  for (let day = w.from; day <= w.to; day = addDays(day, 1)) {
+    if ((days.get(day)?.sessions ?? 0) > 0) close(addDays(day, -1));
+    else runStart ??= day;
+  }
+  close(w.to);
+  return best;
 }

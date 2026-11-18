@@ -4,23 +4,10 @@
 // how to show them.
 import * as d3 from "d3";
 import { addDays, MS_PER_DAY, parseDay } from "../core/dates";
-import type { ProgressPoint } from "../core/progress";
-import { formatDate } from "../format";
+import { LONG_BREAK_DAYS, type ProgressPoint } from "../core/progress";
+import { formatDate, type ChartFormat } from "../format";
 import { STAR_PATH } from "../components/ink";
 
-/** How one measure is written on the chart, its table and its tooltip. */
-export interface ChartFormat {
-  /** A stored value as text, without the unit: "172.5", "1:45", "5 km". */
-  value: (v: number) => string;
-  /** Written small after values: "kg", "lb", "reps", or "". */
-  unit: string;
-  /** The set behind a point: "150 × 5". */
-  set: (p: ProgressPoint) => string;
-  /** The measure's name, for the table's column: "Est. 1RM". */
-  measure: string;
-  /** Display units per stored unit (2.2046… for pounds), so axis ticks land on round display values. */
-  scale: number;
-}
 
 const MARGIN = { top: 22, right: 64, bottom: 30, left: 56 };
 const Y_TICKS = 5;
@@ -33,8 +20,6 @@ const LONE_TICK = 7;
 const TOOLTIP_OFFSET = 12;
 /** Radius of the dot marking a session that sits alone between two long breaks. */
 const LONE_DOT_RADIUS = 3;
-/** A break longer than this many days splits the line, so a layoff stays visible. */
-const MAX_GAP_DAYS = 28;
 
 export interface Frame {
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -163,7 +148,7 @@ export function drawSeries(f: Frame, points: readonly ProgressPoint[], drawIn: b
     f.svg.append("path").attr("class", "series-line").attr("d", `M${cx - LONE_TICK},${cy + 1}L${cx + LONE_TICK},${cy - 1}`);
     return;
   }
-  const { series, bridges } = splitAtGaps(points, MAX_GAP_DAYS);
+  const { series, bridges } = splitAtGaps(points, LONG_BREAK_DAYS);
   f.svg
     .append("g")
     .attr("class", "series-gaps")

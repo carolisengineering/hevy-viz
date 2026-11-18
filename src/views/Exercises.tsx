@@ -4,12 +4,12 @@ import { Segmented } from "../components/Segmented";
 import { Sparkline } from "../components/ink";
 import { muscleLabel } from "../core/muscles";
 import { filterByRange, type DateRange } from "../core/ranges";
-import { METRIC_LABEL, recordsBy, type ExerciseProgress, type MetricId } from "../core/progress";
+import { METRIC_LABEL, recordsBy, type ExerciseProgress } from "../core/progress";
 import { formatCount, formatDate, formatShortDate, formatValue, valueUnit, type Unit } from "../format";
 import { routeHref } from "../hooks/useRoute";
-import type { Training } from "../hooks/useTraining";
+import { matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../core/training";
 
-type Kind = "all" | "weights" | "bodyweight" | "timed" | "distance";
+type Kind = "all" | ExerciseKind;
 const KINDS: readonly { id: Kind; label: string }[] = [
   { id: "all", label: "All" },
   { id: "weights", label: "Weights" },
@@ -19,9 +19,8 @@ const KINDS: readonly { id: Kind; label: string }[] = [
 ];
 /** A kind as one word inside a sentence: "No timed exercises". */
 const KIND_WORD: Record<Exclude<Kind, "all">, string> = { weights: "weight", bodyweight: "bodyweight", timed: "timed", distance: "distance" };
-const KIND_OF: Record<MetricId, Kind> = { e1rm: "weights", weight: "weights", reps: "bodyweight", duration: "timed", distance: "distance" };
 
-type Sort = "sessions" | "recent" | "az";
+type Sort = ExerciseSort;
 const SORTS: readonly { id: Sort; label: string }[] = [
   { id: "sessions", label: "Most sessions" },
   { id: "recent", label: "Most recent" },
@@ -73,16 +72,7 @@ export function Exercises({ training, range, unit, query, onQuery, view, onView,
     return () => window.removeEventListener("scroll", remember);
   }, [scrollMemory]);
 
-  const matches = useMemo(() => {
-    // A plain substring, so "(Barbell)" or "+" mean themselves.
-    const needle = query.trim().toLowerCase();
-    const found = training.exercises.filter(
-      (e) => (kind === "all" || KIND_OF[e.metric] === kind) && e.title.toLowerCase().includes(needle),
-    );
-    if (sort === "recent") return found.toSorted((a, b) => b.lastDay.localeCompare(a.lastDay) || a.title.localeCompare(b.title));
-    if (sort === "az") return found.toSorted((a, b) => a.title.localeCompare(b.title));
-    return found; // Already most sessions first.
-  }, [training.exercises, query, kind, sort]);
+  const matches = useMemo(() => matchExercises(training.exercises, { query, kind, sort }), [training.exercises, query, kind, sort]);
 
   const shown = showAll ? matches : matches.slice(0, FIRST_ROWS);
 

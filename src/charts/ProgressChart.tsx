@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import "./chart.css";
 import type { ProgressPoint } from "../core/progress";
+import type { ChartFormat } from "../format";
 import {
   attachInteraction,
   createFrame,
@@ -11,7 +12,6 @@ import {
   drawSeries,
   hideTooltip,
   resetSvg,
-  type ChartFormat,
   type Cursor,
 } from "./progressDraw";
 

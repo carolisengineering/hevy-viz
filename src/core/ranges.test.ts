@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterByRange, rangeById } from "./ranges";
+import { filterBetween, filterByRange, rangeById, windowFor } from "./ranges";
 
 const pts = (...dates: string[]) => dates.map((date) => ({ date }));
 
@@ -25,5 +25,25 @@ describe("rangeById", () => {
   it("finds a range or throws", () => {
     expect(rangeById("1y").days).toBe(365);
     expect(() => rangeById("2y" as never)).toThrow();
+  });
+});
+
+describe("windowFor", () => {
+  it("counts a range's days back from the end day", () => {
+    expect(windowFor(rangeById("90d"), "2026-11-14")).toEqual({ from: "2026-08-16", to: "2026-11-14" });
+  });
+  it("starts all time at the first day", () => {
+    expect(windowFor(rangeById("all"), "2026-11-14", "2022-08-01")).toEqual({ from: "2022-08-01", to: "2026-11-14" });
+  });
+});
+
+describe("filterBetween", () => {
+  const history = pts("2026-01-01", "2026-02-01", "2026-03-01", "2026-04-01");
+
+  it("keeps both endpoints", () => {
+    expect(filterBetween(history, { from: "2026-02-01", to: "2026-03-01" })).toEqual(pts("2026-02-01", "2026-03-01"));
+  });
+  it("returns nothing for a window outside the points", () => {
+    expect(filterBetween(history, { from: "2030-01-01", to: "2030-02-01" })).toEqual([]);
   });
 });

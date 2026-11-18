@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import sampleJson from "../../public/data/sample.json?raw";
 import { toLocalDay } from "./dates";
 import { estimateOneRepMax } from "./metrics";
-import { bestSet, metricFor, progressIndex, recordsBy, summarize } from "./progress";
+import { bestSet, longBreaks, metricFor, progressIndex, recordsBy, summarize, summarizeIn } from "./progress";
 import { rangeById } from "./ranges";
 import { dataset, template, workout } from "./testkit";
 import type { HevyDataset, HevyWorkout } from "./types";
@@ -197,6 +197,15 @@ describe("summarize", () => {
     expect(summarize(all, ninety, "2025-07-01").prs.map((p) => p.value)).toEqual([120]);
   });
 
+  it("narrows to a custom window, judging PRs against all time", () => {
+    const s = summarizeIn(all, { from: "2025-01-01", to: "2025-12-31" });
+    expect(s.history.map((p) => p.value)).toEqual([100, 120]);
+    expect(s.change).toBe(20);
+    expect(s.prs.map((p) => p.value)).toEqual([100, 120]);
+    expect(s.best).toBe(all[1]);
+    expect(s.lastSession).toBe(all[3]);
+  });
+
   it("summarizes an empty history", () => {
     expect(summarize([], rangeById("all"), "2026-11-14")).toEqual({
       history: [],
@@ -236,5 +245,24 @@ describe("bestSet", () => {
 
   it("returns undefined when no working set has the measure", () => {
     expect(bestSet(w.exercises[0].sets, "duration", "2026-03-02", "w9")).toBeUndefined();
+  });
+});
+
+describe("longBreaks", () => {
+  const at = (...dates: string[]) => dates.map((date) => ({ date }));
+
+  it("finds gaps longer than 28 days between sessions, oldest first", () => {
+    expect(longBreaks(at("2026-01-01", "2026-01-20", "2026-04-01"))).toEqual([{ from: "2026-01-20", to: "2026-04-01", days: 71 }]);
+  });
+
+  it("doesn't count a gap of exactly 28 days", () => {
+    expect(longBreaks(at("2026-01-01", "2026-01-29"))).toEqual([]);
+    expect(longBreaks(at("2026-01-01", "2026-01-30"))).toEqual([{ from: "2026-01-01", to: "2026-01-30", days: 29 }]);
+  });
+
+  it("takes a custom gap and handles short histories", () => {
+    expect(longBreaks(at("2026-01-01", "2026-01-10"), 7)).toEqual([{ from: "2026-01-01", to: "2026-01-10", days: 9 }]);
+    expect(longBreaks([])).toEqual([]);
+    expect(longBreaks(at("2026-01-01"))).toEqual([]);
   });
 });

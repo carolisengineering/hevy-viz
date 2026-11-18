@@ -3,7 +3,8 @@ import { GroupBars } from "../../components/GroupBars";
 import { setsPerWeekByGroup } from "../../core/balance";
 import type { DateRange } from "../../core/ranges";
 import { routeHref } from "../../hooks/useRoute";
-import { TIME_ZONE, type Training } from "../../hooks/useTraining";
+import type { Training } from "../../core/training";
+import { TIME_ZONE } from "../../hooks/useTraining";
 
 /** The six main groups at a glance, with a link to every muscle. */
 export function BalanceBox({ training, range }: { training: Training; range: DateRange }) {

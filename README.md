@@ -46,6 +46,60 @@ npm run dev
 
 If `hevy.json` exists the dashboard uses it; otherwise it falls back to the sample.
 
+## Ask Claude about your training
+
+A small local [MCP](https://modelcontextprotocol.io) server lets Claude answer questions like "is my squat still going up?", "what have I neglected this month?" or "how does this year's bench compare with last year's?". It reads your synced `data/hevy.json` and computes every figure with the same `src/core` code as the dashboard, so an answer in chat matches what the dashboard shows.
+
+### Setup
+
+**Claude Code:**
+1. Run `npm install`, then `npm run sync` (see [Use your own data](#use-your-own-data)).
+2. Open Claude Code in this folder.
+3. Approve the `hevy-viz` server when asked. The committed `.mcp.json` registers it.
+
+**From another folder:**
+
+```bash
+claude mcp add hevy-viz -- /absolute/path/to/hevy-viz/node_modules/.bin/tsx /absolute/path/to/hevy-viz/mcp/server.ts
+```
+
+**Claude desktop app:** add the server to `claude_desktop_config.json` and restart the app:
+
+```json
+{
+  "mcpServers": {
+    "hevy-viz": {
+      "command": "/absolute/path/to/hevy-viz/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/hevy-viz/mcp/server.ts"],
+      "env": { "HEVY_VIZ_TZ": "America/Chicago" }
+    }
+  }
+}
+```
+
+Use the repo's own `tsx`, as above, rather than `npx tsx`. Outside this folder, `npx` can't find it and may try to download it.
+
+### What it can answer
+
+| Tool | Answers |
+|---|---|
+| `find_exercises` | Which exercises you've logged, searched by name, with sessions, last done and all-time best |
+| `exercise_progress` | How one exercise is going: best ever, latest, change, PRs, weekly or monthly bests and long breaks |
+| `main_lifts` | Your main lifts, as on the overview: best set, change, latest estimated 1RM and PRs |
+| `consistency` | Sessions this month against your average, sessions per week, weeks trained and your longest break |
+| `balance` | Working sets per week for each muscle group (light ones flagged) and your busiest muscles |
+| `recent_workouts` | Your training log: the latest workouts, or every workout in a date range (up to 40), with each exercise's top set |
+
+Every tool that looks at a period takes `90d`, `1y` (the default) or `all`, or your own `from` and `to` dates, so Claude can compare this year with last.
+
+### Good to know
+
+- **Freshness:** answers are as current as your last `npm run sync`. Every answer carries the sync time, and Claude mentions it when the data is more than a few days old. A sync while a conversation is open is picked up on the next question.
+- **Time zone:** days are counted in `America/Chicago` unless you set `HEVY_VIZ_TZ` to an [IANA time zone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), for example `export HEVY_VIZ_TZ=Europe/Berlin` before starting Claude Code. A mistyped zone stops the server with a message saying so. The dashboard uses your browser's time zone, so the two agree when both are the same zone.
+- **Other data:** `HEVY_VIZ_DATA` points the server at another file. For example, `HEVY_VIZ_DATA=public/data/sample.json` tries it on the sample. The server never falls back to the sample on its own.
+- **Read-only:** it never changes anything in Hevy and never reads `HEVY_API_KEY`.
+- **Privacy:** the server runs on your machine and makes no network calls, but whatever it returns becomes part of your conversation with Claude and is sent to Anthropic like anything else you type. Answers are kept small, with summaries and short lists rather than raw workouts, but asking for a month of workouts sends a month of workouts.
+
 ## Architecture
 
 ```
@@ -59,6 +113,7 @@ src/core/                   Pure logic, no DOM or fetch; unit tested
   balance.ts                Working sets per week by muscle and by muscle group
   muscles.ts                Muscle → group, overview side and label
   metrics.ts                Estimated 1RM (Epley), weekly sets, exercise frequency
+  training.ts               The training model, main lifts, the log, and the Exercises list's search
 src/hooks/                  Load the dataset; build the training model once; routing; remembered settings
 src/views/                  Overview (tracklist, consistency, balance, log), Exercises, an exercise page, Balance
 src/components/             Header, segmented controls, drawn SVG marks (ink.tsx), bars, table, empty state
@@ -70,17 +125,19 @@ plugins/personal-data.ts    Vite: serves data/hevy.json in dev, blocks it from b
 scripts/sync-hevy.ts        Hevy API → data/hevy.json (paginated)
 scripts/retry.ts            When to retry a rate-limited (429) request
 scripts/generate-sample.ts  Seeded, realistic demo data
+mcp/tools.ts                MCP tool handlers over src/core: no SDK, no I/O
+mcp/server.ts               MCP server: stdio, tool registration, loading and reloading data/hevy.json
 ```
 
 **How data flows**
 
 1. `useDataset` loads `data/hevy.json`, or the sample if you haven't synced, and drops any workout whose start time can't be read.
-2. `useTraining` builds the progress index for every exercise, the per-day training load and the main lifts, in one pass per dataset.
+2. `useTraining` builds the training model (`src/core/training.ts`) once per dataset: the progress index for every exercise and the per-day training load.
 3. `App.tsx` reads the route from the URL hash (`#/`, `#/exercises`, `#/exercises/<id>`, `#/balance`) and hands the training model, range and unit to that view. Changing the range, unit or view only filters and formats.
 
 **Rules the code follows**
 
-- `src/core` has no browser dependencies, so a future MCP server can reuse it.
+- `src/core` has no browser or Node dependencies, so the dashboard and the MCP server share it.
 - A day is a `YYYY-MM-DD` string in the viewer's time zone. Core functions take the time zone as a parameter instead of assuming one.
 - Date ranges end today. The sample is a fixed snapshot, so its ranges end on its last workout day.
 - Personal data stays on your machine: `data/` is git-ignored, only the dev server serves it, and `npm run build` fails if a copy turns up in `public/`.
@@ -96,6 +153,7 @@ scripts/generate-sample.ts  Seeded, realistic demo data
 | `npm run build` | Type-check and build to `dist/` |
 | `npm run sync` | Pull your Hevy data |
 | `npm run sample` | Regenerate sample data |
+| `npm run mcp` | Start the MCP server by hand, to check it starts (Claude Code starts it itself) |
 
 The browser tests need Playwright's Chromium once: `npx playwright install --only-shell chromium`. Each test serves its own data, so your synced `data/hevy.json` never affects the results.
 
@@ -105,4 +163,4 @@ The browser tests need Playwright's Chromium once: `npx playwright install --onl
 - [ ] Training calendar
 - [ ] Apple Health overlay (body weight, resting HR)
 - [ ] Incremental sync via `/v1/workouts/events`
-- [ ] MCP server reusing `src/core`
+- [x] MCP server reusing `src/core`
