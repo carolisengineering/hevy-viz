@@ -5,9 +5,9 @@ import { longestBreak, monthlySessions, windowStats } from "../src/core/consiste
 import { parseDay, toLocalDay, weekStart } from "../src/core/dates";
 import { muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
 import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
-import { rangeById, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
+import { rangeById, weeksIn, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
 import { latestEntries, mainLiftsIn, matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../src/core/training";
-import { formatChange, formatPointSet, formatValue, formatWeight, valueUnit, type Unit } from "../src/format";
+import { DEFAULT_UNIT, formatChange, formatPointSet, formatValue, formatWeight, valueUnit, type Unit } from "../src/format";
 
 /** A problem Claude can fix by changing the arguments. Its message is the one sentence Claude sees. */
 export class ToolError extends Error {
@@ -38,7 +38,6 @@ export interface ResultContext {
 export type RangeArgs = { range?: RangeId; from?: string; to?: string };
 
 const DEFAULT_RANGE: RangeId = "1y";
-const DEFAULT_UNIT: Unit = "kg";
 const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, Math.trunc(n)));
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -89,7 +88,7 @@ export function resolveExercise(training: Training, query: string): ExerciseProg
   if (byTitle) return byTitle;
   const found = matchExercises(training.exercises, { query: wanted });
   if (found.length === 1) return found[0];
-  if (found.length === 0) throw new ToolError(`No exercise matches "${wanted}".`);
+  if (found.length === 0) throw new ToolError(`No exercise matches "${wanted}"; find_exercises lists them.`);
   const listed = found.slice(0, MAX_CANDIDATES).map((e) => `${e.title} (${e.templateId})`);
   const more = found.length > MAX_CANDIDATES ? `, and ${found.length - MAX_CANDIDATES} more` : "";
   throw new ToolError(`"${wanted}" matches ${found.length} exercises: ${listed.join(", ")}${more}. Ask again with one of the ids.`);
@@ -104,6 +103,16 @@ function contextOf(ctx: ToolContext, window: DayWindow | null, unit: Unit | null
 function measured(metric: MetricId, value: number, unit: Unit): { value: number; text: string } {
   const text = formatValue(metric, value, unit);
   return { value: metric === "e1rm" || metric === "weight" ? Number(text) : value, text };
+}
+
+/**
+ * The unit a result's values are in. Like the dashboard's, except that times and distances,
+ * whose text carries its own unit there, are named here: their values are raw seconds and meters.
+ */
+function resultUnit(metric: MetricId, unit: Unit): string {
+  const shown = valueUnit(metric, unit);
+  if (shown) return shown;
+  return metric === "duration" ? "seconds" : "meters";
 }
 
 export interface FindExercisesArgs {
@@ -149,10 +158,6 @@ function measuredChange(metric: MetricId, delta: number, unit: Unit): { value: n
 
 const MAX_PRS = 20;
 const MAX_WEEKS = 104;
-const MS_PER_WEEK = 7 * 86_400_000;
-
-/** Monday-first weeks `w` touches. */
-const weeksIn = (w: DayWindow): number => (parseDay(weekStart(w.to)).getTime() - parseDay(weekStart(w.from)).getTime()) / MS_PER_WEEK + 1;
 
 export interface ExerciseProgressArgs extends RangeArgs {
   exercise: string;
@@ -190,7 +195,7 @@ export function exerciseProgress(ctx: ToolContext, args: ExerciseProgressArgs) {
     id: exercise.templateId,
     title: exercise.title,
     measure: METRIC_LABEL[metric],
-    unit: valueUnit(metric, unit),
+    unit: resultUnit(metric, unit),
     bestEver: point(summary.best),
     latestInWindow: point(summary.current),
     changeInWindow: summary.change == null ? null : measuredChange(metric, summary.change, unit),

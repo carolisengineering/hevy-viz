@@ -1,5 +1,5 @@
 // Date-range filtering for day-keyed series. Pure, no DOM.
-import { addDays } from "./dates";
+import { addDays, MS_PER_DAY, parseDay, weekStart } from "./dates";
 
 export type RangeId = "90d" | "1y" | "all";
 
@@ -35,6 +35,11 @@ export function filterByRange<T extends { date: string }>(points: readonly T[], 
 export interface DayWindow {
   from: string;
   to: string;
+}
+
+/** Monday-first weeks `w` touches. Days are UTC midnights, so daylight saving can't skew the count. */
+export function weeksIn(w: DayWindow): number {
+  return Math.round((parseDay(weekStart(w.to)).getTime() - parseDay(weekStart(w.from)).getTime()) / MS_PER_DAY) / 7 + 1;
 }
 
 /**

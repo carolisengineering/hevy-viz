@@ -99,6 +99,8 @@ All tools are read-only. Each returns one JSON object as text content, plus `str
 
 Weights are returned in the requested `unit` (`"kg"` by default; `"lb"` gives whole pounds) as numbers, plus a `text` field using the dashboard's formatting.
 
+*Changed 2026-11-18:* the default unit is now lb (see `docs/lb-default-and-mcp-follow-ups-design.md`).
+
 1. **`find_exercises`** `{ query?, kind?: "weights"|"bodyweight"|"timed"|"distance", sort?: "sessions"|"recent"|"az", limit? = 20 (max 50), unit? }`
    - Returns: `[{ id, title, muscle, group, measure, sessions, lastDone, best: { value, text, date } | null }]` and `total`.
    - Search is a plain case-insensitive substring, like the dashboard.

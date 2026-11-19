@@ -4,7 +4,7 @@ import { Header } from "./components/Header";
 import { ScribbleDefs } from "./components/ink";
 import { rangeById, type RangeId } from "./core/ranges";
 import type { HevyDataset } from "./core/types";
-import type { Unit } from "./format";
+import { DEFAULT_UNIT, type Unit } from "./format";
 import { useDataset } from "./hooks/useDataset";
 import { usePreference } from "./hooks/usePreference";
 import { useRoute } from "./hooks/useRoute";
@@ -27,7 +27,7 @@ export default function App() {
 function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
   const training = useTraining(data);
   const [rangeId, setRangeId] = useState<RangeId>("all");
-  const [unit, setUnit] = usePreference("hevy-viz:unit", UNITS, "kg");
+  const [unit, setUnit] = usePreference("hevy-viz:unit", UNITS, DEFAULT_UNIT);
   const [theme, setTheme] = useTheme();
   const [route, navigate] = useRoute();
   const [query, setQuery] = useState("");

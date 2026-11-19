@@ -1,7 +1,7 @@
 // How often training happens: per-day load, monthly sessions and the week grid.
 // Pure: no DOM, no fetch.
 import { addDays, MS_PER_DAY, parseDay, toLocalDay, weekStart } from "./dates";
-import type { DayWindow } from "./ranges";
+import { weeksIn, type DayWindow } from "./ranges";
 import type { HevyWorkout } from "./types";
 
 export interface DayLoad {
@@ -102,7 +102,7 @@ export function windowStats(days: ReadonlyMap<string, DayLoad>, w: DayWindow): W
     trainingDays += 1;
     trainedWeeks.add(weekStart(day));
   }
-  const weeks = daysBetween(weekStart(w.from), weekStart(w.to)) / 7 + 1;
+  const weeks = weeksIn(w);
   return { sessions, trainingDays, weeks, weeksTrained: trainedWeeks.size, sessionsPerWeek: Math.round((sessions / weeks) * 10) / 10 };
 }
 

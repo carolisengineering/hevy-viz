@@ -17,18 +17,18 @@ test("lists the main lifts as a tracklist, lower side first", async ({ page }) =
   expect(new URL(page.url()).hash).toBe("#/exercises/squat");
 });
 
-test("converts every tracklist figure when switching to pounds", async ({ page }) => {
+test("converts every tracklist figure when switching to kilograms", async ({ page }) => {
   await page.goto("/");
   const squat = page.locator("table.tracklist tr").filter({ hasText: "Squat (Barbell)" });
   const cells = ["td.best-set", "td.change", "td.current"];
   const before = await Promise.all(cells.map((c) => squat.locator(c).textContent()));
 
-  await page.getByRole("radio", { name: "lb" }).click();
+  await page.getByRole("radio", { name: "kg" }).click();
   for (const [i, c] of cells.entries()) {
     await expect(squat.locator(c)).not.toHaveText(before[i]!);
-    await expect(squat.locator(c)).not.toContainText("kg");
+    await expect(squat.locator(c)).not.toContainText("lb");
   }
-  await expect(page.locator(".tracklist-note")).toContainText("lb");
+  await expect(page.locator(".tracklist-note")).toContainText("kg");
 });
 
 test("shows consistency as figures and a dot grid", async ({ page }) => {
@@ -65,7 +65,7 @@ test("draws rest days in the dot grid so gaps stay visible", async ({ page }) =>
 
 test("says the hand-lettered number is the latest estimate", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".tracklist-note")).toHaveText("best set · change in range · latest est. 1RM kg");
+  await expect(page.locator(".tracklist-note")).toHaveText("best set · change in range · latest est. 1RM lb");
 });
 
 test("logs an exercise even when its sets don't give its measure", async ({ page }) => {
@@ -84,7 +84,7 @@ test("logs an exercise even when its sets don't give its measure", async ({ page
   );
   await serveSynced(page, data);
   await page.goto("/");
-  await expect(page.locator(".latest-entries li").first()).toContainText("Bench Press (Barbell) 60 × 15");
+  await expect(page.locator(".latest-entries li").first()).toContainText("Bench Press (Barbell) 132 × 15"); // 60 kg, shown in the default lb
 });
 
 test("keeps a long workout title on one line in the log", async ({ page }) => {

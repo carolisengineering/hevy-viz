@@ -16,7 +16,7 @@ import { balance, consistency, exerciseProgress, findExercises, mainLifts, recen
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const DEFAULT_DATA = "data/hevy.json";
 const DEFAULT_TIME_ZONE = "America/Chicago";
-const UNREADABLE = "The data file couldn't be read; if a sync is running, try again in a moment.";
+const UNREADABLE = "The data file couldn't be read; if a sync is running, try again in a moment, or run `npm run sync` again.";
 
 /** The data as last loaded, and the file modification time it was loaded at. */
 export interface Loaded {
@@ -88,7 +88,7 @@ const range = {
   from: z.string().optional().describe("First day, YYYY-MM-DD, inclusive. from/to override range; from alone runs to today. A custom window is cut to the days the log covers; context.window gives the days used."),
   to: z.string().optional().describe("Last day, YYYY-MM-DD, inclusive. to alone starts at the first workout."),
 };
-const unit = { unit: z.enum(["kg", "lb"]).optional().describe("Weight unit for values and text: kg (default, to 0.1) or lb (whole pounds).") };
+const unit = { unit: z.enum(["kg", "lb"]).optional().describe("Weight unit for values and text: lb (default, whole pounds) or kg (to 0.1).") };
 
 const annotations = { readOnlyHint: true, openWorldHint: false } as const;
 

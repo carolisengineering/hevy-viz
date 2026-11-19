@@ -12,6 +12,9 @@ export const formatDate = (day: string): string => dateFormat.format(parseDay(da
 
 export type Unit = "kg" | "lb";
 
+/** The unit used when none is chosen or asked for, in the dashboard and the MCP server alike. */
+export const DEFAULT_UNIT: Unit = "lb";
+
 const KG_PER_LB = 0.45359237;
 
 /** A weight rounded for display: 0.1 kg, or whole pounds. */
