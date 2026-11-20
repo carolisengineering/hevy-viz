@@ -125,6 +125,7 @@ Weights are returned in the requested `unit` (`"kg"` by default; `"lb"` gives wh
      - `sessionsPerWeek` (the average);
      - `weeksTrained` against `weeksInWindow`;
      - `longestBreak { days, from, to }`.
+   - *Changed 2026-11-19:* also `minutesInWindow`, `averageMinutesPerTrainingDay`, and with `series: true` a `series` of minutes and training days per period (see `docs/workout-duration-design.md`).
    - The longest break needs one new pure core function, `longestBreak(days, from, to)`.
 5. **`balance`** `{ range? | from?/to? }`
    - Returns `groups: [{ group, setsPerWeek, light }]`, plus the 10 busiest `muscles: [{ muscle, group, setsPerWeek }]`, plus the light rule ("under half the median group").

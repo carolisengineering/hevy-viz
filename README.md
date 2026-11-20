@@ -86,7 +86,7 @@ Use the repo's own `tsx`, as above, rather than `npx tsx`. Outside this folder, 
 | `find_exercises` | Which exercises you've logged, searched by name, with sessions, last done and all-time best |
 | `exercise_progress` | How one exercise is going: best ever, latest, change, PRs, weekly or monthly bests and long breaks |
 | `main_lifts` | Your main lifts, as on the overview: best set, change, latest estimated 1RM and PRs |
-| `consistency` | Sessions this month against your average, sessions per week, weeks trained and your longest break |
+| `consistency` | Sessions this month against your average, sessions per week, weeks trained and your longest break, and training time (total and per training day, optionally week by week) |
 | `balance` | Working sets per week for each muscle group (light ones flagged) and your busiest muscles |
 | `recent_workouts` | Your training log: the latest workouts, or every workout in a date range (up to 40), with each exercise's top set |
 

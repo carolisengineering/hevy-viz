@@ -1,7 +1,7 @@
 // The MCP server's tool handlers: (context, args) → result. No SDK and no I/O here,
 // so every figure comes from src/core exactly as the dashboard computes it.
 import { groupVolumes, setsPerWeekByMuscleIn } from "../src/core/balance";
-import { longestBreak, monthlySessions, windowStats } from "../src/core/consistency";
+import { longestBreak, monthlySessions, timeByPeriod, windowStats, windowTime, type Period } from "../src/core/consistency";
 import { parseDay, toLocalDay, weekStart } from "../src/core/dates";
 import { muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
 import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
@@ -159,6 +159,9 @@ function measuredChange(metric: MetricId, delta: number, unit: Unit): { value: n
 const MAX_PRS = 20;
 const MAX_WEEKS = 104;
 
+/** How a series over `w` is grouped: by Monday-first week, or by calendar month past 104 weeks. */
+export const seriesBy = (w: DayWindow): Period => (weeksIn(w) > MAX_WEEKS ? "month" : "week");
+
 export interface ExerciseProgressArgs extends RangeArgs {
   exercise: string;
   unit?: Unit;
@@ -175,7 +178,7 @@ export function exerciseProgress(ctx: ToolContext, args: ExerciseProgressArgs) {
   const point = (p: ProgressPoint | undefined) => (p ? { ...measured(metric, p.value, unit), set: formatPointSet(p, type, unit), date: p.date } : null);
 
   // Best per Monday-first week, or per calendar month when weeks would be too many to list.
-  const by: "week" | "month" = weeksIn(w) > MAX_WEEKS ? "month" : "week";
+  const by = seriesBy(w);
   const periods = new Map<string, number>();
   for (const p of summary.history) {
     const start = by === "week" ? weekStart(p.date) : `${p.date.slice(0, 7)}-01`;
@@ -240,12 +243,19 @@ export function mainLifts(ctx: ToolContext, args: UnitRangeArgs) {
   };
 }
 
-/** How often training happened: this month against the usual month, and the window's weeks and breaks. */
-export function consistency(ctx: ToolContext, args: RangeArgs) {
+export interface ConsistencyArgs extends RangeArgs {
+  /** Add minutes and training days per week (per month past 104 weeks). */
+  series?: boolean;
+}
+
+/** How often and how long training happened: this month against the usual month, and the window's weeks, breaks and minutes. */
+export function consistency(ctx: ToolContext, args: ConsistencyArgs) {
   const { training } = ctx;
   const w = resolveWindow(training, args);
   const { thisMonth, monthlyAverage } = monthlySessions(training.days, training.endDay);
   const stats = windowStats(training.days, w);
+  const time = windowTime(training.days, w);
+  const by = seriesBy(w);
   return {
     context: contextOf(ctx, w, null),
     thisMonth,
@@ -256,6 +266,12 @@ export function consistency(ctx: ToolContext, args: RangeArgs) {
     weeksTrained: stats.weeksTrained,
     weeksInWindow: stats.weeks,
     longestBreak: overlapsData(training, w) ? longestBreak(training.days, w) : null,
+    minutesInWindow: Math.round(time.minutes),
+    averageMinutesPerTrainingDay: time.averagePerTrainingDay == null ? null : Math.round(time.averagePerTrainingDay),
+    /** [period start, minutes, training days] per period: compact, so two years of weeks stay small. */
+    ...(args.series
+      ? { series: { by, points: timeByPeriod(training.days, w, by).map((p): [string, number, number] => [p.start, Math.round(p.minutes), p.trainingDays]) } }
+      : {}),
   };
 }
 

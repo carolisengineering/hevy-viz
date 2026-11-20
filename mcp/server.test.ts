@@ -55,6 +55,12 @@ describe("the server over stdio", () => {
     expect((result.content as { text: string }[])[0].text).toBe('No exercise matches "nope"; find_exercises lists them.');
   });
 
+  it("passes series through to consistency", async () => {
+    const body = async (args: Record<string, unknown>) => JSON.parse(((await client.callTool({ name: "consistency", arguments: args })).content as { text: string }[])[0].text);
+    expect((await body({ series: true })).series.by).toBe("week");
+    expect(await body({})).not.toHaveProperty("series");
+  });
+
   it("rejects an unknown range", async () => {
     const result = await client.callTool({ name: "consistency", arguments: { range: "2y" } });
     expect(result.isError).toBe(true);

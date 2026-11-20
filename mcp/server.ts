@@ -170,10 +170,13 @@ export function createServer(file: string, timeZone: string): McpServer {
     {
       title: "Consistency",
       description: describe(
-        "Am I training consistently? Sessions this month against the monthly average, and for the window: sessions, training days, sessions per week, weeks trained and the longest run of rest days.",
+        "Am I training consistently? Sessions this month against the monthly average, and for the window: sessions, training days, sessions per week, weeks trained, the longest run of rest days, and training time in minutes (the total, and the average per training day; workouts that overlap on a day count once). With series: true, also minutes and training days per week (per month past 104 weeks); the first and last periods can be partial.",
         timeZone,
       ),
-      inputSchema: range,
+      inputSchema: {
+        ...range,
+        series: z.boolean().optional().describe("Add minutes and training days per week (per month past 104 weeks). Use it for questions about change over time."),
+      },
       annotations,
     },
     run(consistency),
