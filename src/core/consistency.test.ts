@@ -1,19 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { dayGrid, longestBreak, monthlySessions, trainingDays, windowStats, type DayLoad } from "./consistency";
+import { dayGrid, longestBreak, monthlySessions, timeByPeriod, trainingDays, windowStats, windowTime, workoutMinutes, type DayLoad } from "./consistency";
 import { workout } from "./testkit";
 
 const tz = "America/Los_Angeles";
+
+/** A workout with the given UTC start and end, and one set. */
+const timed = (id: string, start: string, end: string) => ({ ...workout(id, "2026-11-03", [["row", [{ reps: 8 }]]]), start_time: start, end_time: end });
 
 describe("trainingDays", () => {
   it("counts sessions and working sets per local day", () => {
     const a = workout("a", "2026-11-03", [["squat", [{ weight_kg: 60, reps: 5, type: "warmup" }, { weight_kg: 100, reps: 5 }]]]);
     const b = workout("b", "2026-11-03", [["row", [{ reps: 8 }, { reps: 8 }, { reps: 8 }]]]);
-    expect(trainingDays([a, b], tz).get("2026-11-03")).toEqual({ sessions: 2, sets: 4 });
+    expect(trainingDays([a, b], tz).get("2026-11-03")).toEqual({ sessions: 2, sets: 4, minutes: 60 });
+  });
+
+  it("counts overlapping workouts' minutes once", () => {
+    const d = trainingDays([timed("a", "2026-11-03T18:00:00Z", "2026-11-03T19:00:00Z"), timed("b", "2026-11-03T18:30:00Z", "2026-11-03T19:15:00Z")], tz);
+    expect(d.get("2026-11-03")!.minutes).toBe(75);
+  });
+
+  it("leaves out the gap between a morning and an evening workout", () => {
+    const d = trainingDays([timed("a", "2026-11-03T15:00:00Z", "2026-11-03T16:00:00Z"), timed("b", "2026-11-03T22:00:00Z", "2026-11-03T22:30:00Z")], tz);
+    expect(d.get("2026-11-03")!.minutes).toBe(90);
+  });
+
+  it("counts a workout past midnight on the day it started", () => {
+    const d = trainingDays([timed("a", "2026-11-04T07:30:00Z", "2026-11-04T08:40:00Z")], tz);
+    expect(d.get("2026-11-03")!.minutes).toBe(70);
+    expect(d.has("2026-11-04")).toBe(false);
+  });
+
+  it("adds no minutes for an unreadable or backwards end time, but still counts the session", () => {
+    const d = trainingDays([timed("a", "2026-11-03T18:00:00Z", "not a time"), timed("b", "2026-11-03T20:00:00Z", "2026-11-03T19:00:00Z")], tz);
+    expect(d.get("2026-11-03")).toMatchObject({ sessions: 2, minutes: 0 });
   });
 });
 
-const days = (entries: [string, number][]): Map<string, DayLoad> =>
-  new Map(entries.map(([day, sessions]) => [day, { sessions, sets: sessions * 3 }]));
+describe("workoutMinutes", () => {
+  it("gives the minutes from start to end", () => {
+    expect(workoutMinutes({ start_time: "2026-11-03T18:00:00Z", end_time: "2026-11-03T18:49:30Z" })).toBe(49.5);
+  });
+
+  it("is null when the end can't be read or comes first", () => {
+    expect(workoutMinutes({ start_time: "2026-11-03T18:00:00Z", end_time: "" })).toBeNull();
+    expect(workoutMinutes({ start_time: "2026-11-03T18:00:00Z", end_time: "2026-11-03T17:00:00Z" })).toBeNull();
+  });
+});
+
+const days = (entries: [string, number, number?][]): Map<string, DayLoad> =>
+  new Map(entries.map(([day, sessions, minutes]) => [day, { sessions, sets: sessions * 3, minutes: minutes ?? 0 }]));
 
 describe("monthlySessions", () => {
   it("compares this month with the average of the complete months since training began", () => {
@@ -36,8 +71,8 @@ describe("monthlySessions", () => {
 
 describe("dayGrid", () => {
   const d = new Map<string, DayLoad>([
-    ["2026-11-10", { sessions: 1, sets: 4 }],
-    ["2026-11-14", { sessions: 1, sets: 2 }],
+    ["2026-11-10", { sessions: 1, sets: 4, minutes: 0 }],
+    ["2026-11-14", { sessions: 1, sets: 2, minutes: 0 }],
   ]);
   const grid = dayGrid(d, "2026-11-14", 2);
 
@@ -106,5 +141,46 @@ describe("longestBreak", () => {
 
   it("covers the whole window when it has no sessions", () => {
     expect(longestBreak(d, { from: "2030-01-01", to: "2030-01-10" })).toEqual({ from: "2030-01-01", to: "2030-01-10", days: 10 });
+  });
+});
+
+describe("windowTime", () => {
+  it("totals the window and averages over the training days with time", () => {
+    const d = days([
+      ["2026-11-01", 1, 30],
+      ["2026-11-02", 1, 60],
+      ["2026-11-03", 2, 90],
+      ["2026-11-05", 1, 0],
+    ]);
+    expect(windowTime(d, { from: "2026-11-02", to: "2026-11-08" })).toEqual({ minutes: 150, averagePerTrainingDay: 75 });
+  });
+
+  it("has no average for a window with no time", () => {
+    expect(windowTime(days([]), { from: "2026-11-02", to: "2026-11-08" })).toEqual({ minutes: 0, averagePerTrainingDay: null });
+  });
+});
+
+describe("timeByPeriod", () => {
+  const d = days([
+    ["2026-09-10", 1, 40],
+    ["2026-11-03", 1, 60],
+    ["2026-11-05", 1, 60],
+    ["2026-11-17", 1, 45],
+  ]);
+
+  it("lists every week the window touches, empty ones as zeros, counting only days inside it", () => {
+    expect(timeByPeriod(d, { from: "2026-11-04", to: "2026-11-18" }, "week")).toEqual([
+      { start: "2026-11-02", minutes: 60, trainingDays: 1 },
+      { start: "2026-11-09", minutes: 0, trainingDays: 0 },
+      { start: "2026-11-16", minutes: 45, trainingDays: 1 },
+    ]);
+  });
+
+  it("lists calendar months", () => {
+    expect(timeByPeriod(d, { from: "2026-09-15", to: "2026-11-18" }, "month")).toEqual([
+      { start: "2026-09-01", minutes: 0, trainingDays: 0 },
+      { start: "2026-10-01", minutes: 0, trainingDays: 0 },
+      { start: "2026-11-01", minutes: 165, trainingDays: 3 },
+    ]);
   });
 });
