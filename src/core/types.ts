@@ -25,6 +25,7 @@ export interface HevyWorkout {
   title: string;
   start_time: string; // ISO 8601
   end_time: string;
+  updated_at?: string; // ISO 8601. Hevy always sends it; the sample data doesn't have it.
   exercises: HevyExercise[];
 }
 
