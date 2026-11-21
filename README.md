@@ -57,7 +57,7 @@ The first sync downloads everything. Later syncs fetch only what changed since t
 | 20 | Hevy rejected the key (401 or 403) |
 | 21 | Still rate-limited after retrying, or Hevy asked for a long wait |
 | 22 | Couldn't reach Hevy (offline, DNS or connection failure) |
-| 23 | Hevy answered with some other error |
+| 23 | Hevy answered with some other error, or with a response the sync doesn't recognize (`npm run sync -- --full` gets past it) |
 | 24 | Couldn't write `data/hevy.json` |
 
 ## Ask Claude about your training

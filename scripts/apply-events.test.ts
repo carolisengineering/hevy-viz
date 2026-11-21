@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { HevyWorkout } from "../src/core/types.ts";
-import { applyEvents, eventsOf, toWorkoutEvent, type WorkoutEvent } from "./apply-events.ts";
+import { applyEvents, eventsOf, fromFullSync, toWorkoutEvent, type WorkoutEvent } from "./apply-events.ts";
 import { UnexpectedResponseError } from "./exitCodes.ts";
 
 const T = Date.parse("2026-11-20T12:00:00Z");
@@ -40,6 +40,13 @@ describe("applyEvents", () => {
     const result = applyEvents([a], [deleted("z", at(1))]);
     expect(ids(result.workouts)).toEqual(["a"]);
     expect(result).toMatchObject({ added: 0, updated: 0, deleted: 0 });
+  });
+
+  it("doesn't count an update whose updated_at is unchanged, but still replaces it", () => {
+    const same = workout("a", a.start_time, at(0), "Resent");
+    const result = applyEvents([a], [updated(same)]);
+    expect(result).toMatchObject({ added: 0, updated: 0, deleted: 0 });
+    expect(result.workouts.map((w) => w.title)).toEqual(["Resent"]);
   });
 
   it("gives the same workouts when applied twice", () => {
@@ -134,8 +141,15 @@ describe("toWorkoutEvent", () => {
   });
 
   it("rejects a deleted event without a string id", () => {
-    expect(() => toWorkoutEvent({ type: "deleted" })).toThrow(UnexpectedResponseError);
-    expect(() => toWorkoutEvent({ type: "deleted", id: 7 })).toThrow(UnexpectedResponseError);
+    expect(() => toWorkoutEvent({ type: "deleted", deleted_at: at(1) })).toThrow(UnexpectedResponseError);
+    expect(() => toWorkoutEvent({ type: "deleted", id: 7, deleted_at: at(1) })).toThrow(UnexpectedResponseError);
+  });
+
+  it("rejects a deleted event without a readable deleted_at", () => {
+    for (const deleted_at of [undefined, 5, null, "garbage", ""]) {
+      expect(() => toWorkoutEvent({ type: "deleted", id: "a", deleted_at })).toThrow(UnexpectedResponseError);
+    }
+    expect(() => toWorkoutEvent({ type: "deleted", id: "a" })).toThrow(/deleted.*type, id/);
   });
 
   it("rejects things that are not objects", () => {
@@ -159,5 +173,13 @@ describe("eventsOf", () => {
   it("throws when events is not an array", () => {
     expect(() => eventsOf({ page_count: 1, events: {} })).toThrow(UnexpectedResponseError);
     expect(() => eventsOf({ page_count: 1, events: "x" })).toThrow(/events/);
+  });
+});
+
+describe("fromFullSync", () => {
+  it("collapses a workout that was downloaded twice and sorts newest first", () => {
+    const old = workout("old", "2026-10-01T10:00:00Z", at(0));
+    const result = fromFullSync([old, a, b, { ...a, title: "again" }]);
+    expect(ids(result)).toEqual(["b", "a", "old"]);
   });
 });

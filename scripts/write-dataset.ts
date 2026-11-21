@@ -3,10 +3,10 @@
 import { rename, rm, writeFile } from "node:fs/promises";
 import type { HevyDataset } from "../src/core/types.ts";
 
-/** Writes `${file}.tmp` beside `file`, then renames it over `file`. On any failure removes the temp file and rethrows. */
+/** Writes a uniquely named `${file}.<pid>.<time>.tmp` beside `file`, then renames it over `file`. On any failure removes the temp file and rethrows. */
 export async function writeDatasetAtomically(file: string, dataset: HevyDataset): Promise<void> {
   const json = JSON.stringify(dataset); // encode first: nothing is touched if this throws
-  const temp = `${file}.tmp`;
+  const temp = `${file}.${process.pid}.${Date.now()}.tmp`;
   try {
     await writeFile(temp, json);
     await rename(temp, file);

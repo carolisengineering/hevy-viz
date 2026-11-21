@@ -94,7 +94,7 @@ Still fetched in full on every sync (8 requests). A new workout can use a newly 
 
 ### 6. Writing the file
 
-- Write to `data/hevy.json.tmp` in the same folder, then `rename` it over `data/hevy.json`. A rename is atomic on the same filesystem, so the MCP server and the dev server see either the old file or the new one.
+- Write to `data/hevy.json.tmp` in the same folder, then `rename` it over `data/hevy.json`. A rename is atomic on the same filesystem, so the MCP server and the dev server see either the old file or the new one. *Changed 2026-11-21:* the temp file name is unique per run (`hevy.json.<pid>.<time>.tmp`), so two syncs at once can't write into the same temp file.
 - Nothing is written until every request has succeeded. A failed sync leaves the old file as it was.
 - `/data/` is already git-ignored, so the temp file needs no new entry.
 

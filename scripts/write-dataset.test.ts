@@ -33,6 +33,7 @@ describe("writeDatasetAtomically", () => {
   it("leaves no temp file behind", async () => {
     const dir = await freshDir();
     await writeDatasetAtomically(join(dir, "hevy.json"), dataset("A"));
+    expect((await readdir(dir)).filter((name) => name.endsWith(".tmp"))).toEqual([]);
     expect(await readdir(dir)).toEqual(["hevy.json"]);
   });
 
@@ -45,6 +46,15 @@ describe("writeDatasetAtomically", () => {
     await expect(writeDatasetAtomically(file, bad)).rejects.toThrow();
     expect(await readFile(file, "utf8")).toBe(before);
     expect(await readdir(dir)).toEqual(["hevy.json"]);
+  });
+
+  it("writes to a temp name that is unique per run", async () => {
+    const dir = await freshDir();
+    const file = join(dir, "hevy.json");
+    // A directory can't be replaced by a file, so the rename fails; spy on the temp name via the error.
+    await mkdir(file);
+    const error = (await writeDatasetAtomically(file, dataset("A")).catch((e) => e)) as { dest?: string; path?: string };
+    expect(`${error.path}`).toMatch(new RegExp(`hevy\\.json\\.${process.pid}\\.\\d+\\.tmp$`));
   });
 
   it("removes the temp file when the rename fails", async () => {

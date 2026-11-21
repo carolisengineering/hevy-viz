@@ -4,7 +4,7 @@
 // The key is a Hevy Pro developer key: https://hevy.com/settings?developer
 import { mkdir, readFile } from "node:fs/promises";
 import type { HevyDataset, HevyExerciseTemplate, HevyWorkout } from "../src/core/types.ts";
-import { applyEvents, eventsOf, toWorkoutEvent } from "./apply-events.ts";
+import { applyEvents, eventsOf, fromFullSync, toWorkoutEvent } from "./apply-events.ts";
 import { HevyHttpError, RateLimitError, SaveError, exitCodeFor } from "./exitCodes.ts";
 import { MAX_RETRIES, planRetry } from "./retry.ts";
 import { planSync } from "./sync-mode.ts";
@@ -42,7 +42,7 @@ async function paginate<T, K extends string = string>(path: string, key: K, page
   for (let page = 1; ; page++) {
     const body = await get<Page<K, T>>(`${path}?page=${page}&pageSize=${pageSize}${extra}`);
     all.push(...(pick ? pick(body) : (body[key] ?? [])));
-    process.stdout.write(`\r${key}: page ${page}/${body.page_count}`);
+    process.stdout.write(body.page_count > 0 ? `\r${key}: page ${page}/${body.page_count}` : `\r${key}: none`);
     if (page >= body.page_count) break;
   }
   process.stdout.write("\n");
@@ -76,7 +76,7 @@ try {
       ? `Synced since ${time}: ${count(result.added)} new, ${count(result.updated)} updated, ${count(result.deleted)} deleted. ${count(workouts.length)} workouts`
       : `No workout changes since ${time}. ${count(workouts.length)} workouts`;
   } else {
-    workouts = await paginate<HevyWorkout>("/workouts", "workouts", 10);
+    workouts = fromFullSync(await paginate<HevyWorkout>("/workouts", "workouts", 10));
     summary = `Full sync (${plan.reason}). Saved ${count(workouts.length)} workouts`;
   }
   // Templates are small and have no change feed, so every sync fetches them all.

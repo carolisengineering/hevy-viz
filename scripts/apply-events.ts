@@ -19,9 +19,8 @@ export function toWorkoutEvent(raw: unknown): WorkoutEvent {
     if (raw.type === "updated" && isObject(raw.workout) && typeof raw.workout.id === "string") {
       return { type: "updated", workout: raw.workout as unknown as HevyWorkout };
     }
-    if (raw.type === "deleted" && typeof raw.id === "string") {
-      // Hevy's deleted shape is unconfirmed; a missing deleted_at becomes "", which reads as an unknown time.
-      return { type: "deleted", id: raw.id, deleted_at: typeof raw.deleted_at === "string" ? raw.deleted_at : "" };
+    if (raw.type === "deleted" && typeof raw.id === "string" && typeof raw.deleted_at === "string" && !Number.isNaN(Date.parse(raw.deleted_at))) {
+      return { type: "deleted", id: raw.id, deleted_at: raw.deleted_at };
     }
   }
   const type = isObject(raw) && typeof raw.type === "string" ? JSON.stringify(raw.type) : "none";
@@ -87,9 +86,11 @@ export function applyEvents(saved: HevyWorkout[], events: WorkoutEvent[]): Apply
   for (const [id, event] of finalEvents) {
     const wasSaved = byId.has(id);
     if (event.type === "updated") {
+      const before = byId.get(id)?.updated_at;
       byId.set(id, event.workout);
-      if (wasSaved) updated++;
-      else added++;
+      // A resent workout with the same updated_at replaces the saved one but isn't a change.
+      if (!wasSaved) added++;
+      else if (before === undefined || before !== event.workout.updated_at) updated++;
     } else if (wasSaved) {
       byId.delete(id);
       deleted++;
@@ -97,4 +98,9 @@ export function applyEvents(saved: HevyWorkout[], events: WorkoutEvent[]): Apply
   }
 
   return { workouts: [...byId.values()].sort(byCreatedDescending), added, updated, deleted };
+}
+
+/** The workouts of a full download: one per id (Hevy's paging can repeat one created mid-download), newest created_at first like an incremental sync. */
+export function fromFullSync(workouts: HevyWorkout[]): HevyWorkout[] {
+  return applyEvents([], workouts.map((workout) => ({ type: "updated", workout }))).workouts;
 }
