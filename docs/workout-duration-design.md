@@ -1,6 +1,6 @@
 # Workout duration in the MCP tools: design
 
-**Status:** proposed, 2026-11-19. Planning only; nothing is built yet.
+**Status:** implemented in PR #10, merged 2026-11-20. Proposed 2026-11-19.
 **Scope:** one small PR. Closes issue #9.
 Choices are the author's unless marked as the owner's.
 
