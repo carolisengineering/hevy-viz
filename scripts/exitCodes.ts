@@ -45,6 +45,7 @@ export const NETWORK_CODES: ReadonlySet<string> = new Set([
 const codeOf = (e: unknown): unknown => (e as { code?: unknown } | null | undefined)?.code;
 
 /** fetch wraps the real failure as `cause`; with several addresses to try it is an AggregateError of them. */
+// Deliberately also counts a connection lost mid-body (undici UND_ERR_SOCKET from res.json()/res.text()) as offline.
 function isNetworkFailure(error: unknown): boolean {
   if (!(error instanceof TypeError)) return false;
   const cause = error.cause;
