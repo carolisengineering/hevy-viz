@@ -70,6 +70,7 @@ test("says the hand-lettered number is the latest estimate", async ({ page }) =>
 
 test("lines up each figure's column header with its figures", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator(".tracklist thead th.current")).toBeVisible(); // the data has loaded
   await page.evaluate(() => document.fonts.ready);
   const rightOfText = (el: Element) => {
     const range = document.createRange();
@@ -88,6 +89,21 @@ test("lines up each figure's column header with its figures", async ({ page }) =
     const [headerRight, figureRight] = [await header.evaluate(rightOfText), await row.locator(figure).evaluate(rightOfText)];
     expect(Math.abs(headerRight - figureRight), column).toBeLessThanOrEqual(2);
   }
+});
+
+test("wraps a long column label instead of widening its column", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".tracklist thead th.current")).toBeVisible(); // the data has loaded
+  await page.evaluate(() => document.fonts.ready);
+  const columnWidths = () =>
+    page.locator(".tracklist thead th").evaluateAll((ths) => ths.map((th) => th.getBoundingClientRect().width));
+  const before = await columnWidths();
+  // Words shorter than any in the labels make a label longer but not its longest word, so no column should move.
+  await page.locator(".tracklist .col-label").evaluateAll((labels) => {
+    for (const label of labels) label.textContent += " in a set in a set in a set";
+  });
+  const after = await columnWidths();
+  after.forEach((width, i) => expect(Math.abs(width - before[i]!), `column ${i + 1}`).toBeLessThanOrEqual(0.5));
 });
 
 test("logs an exercise even when its sets don't give its measure", async ({ page }) => {
