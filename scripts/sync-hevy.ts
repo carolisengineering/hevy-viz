@@ -59,7 +59,7 @@ try {
     await mkdir("data", { recursive: true });
     await writeFile("data/hevy.json", JSON.stringify(dataset));
   } catch (error) {
-    throw new SaveError("Couldn't save data/hevy.json", { cause: error });
+    throw new SaveError(error instanceof Error ? error.message : String(error), { cause: error });
   }
   console.log(`Saved ${workouts.length} workouts → data/hevy.json`);
 } catch (error) {
