@@ -64,5 +64,6 @@ try {
   console.log(`Saved ${workouts.length} workouts → data/hevy.json`);
 } catch (error) {
   console.error(error);
-  process.exit(exitCodeFor(error));
+  // Not process.exit: it can cut off stderr when that is a pipe. Let the process end on its own.
+  process.exitCode = exitCodeFor(error);
 }
