@@ -38,7 +38,6 @@ export function MainLifts({ training, range, unit }: Props) {
         <h2 id="main-lifts-title" className="display">
           Main lifts
         </h2>
-        <p className="tracklist-note quiet">best set · change in range · latest est. 1RM {valueUnit("e1rm", unit)}</p>
       </div>
       {lifts.length === 0 ? (
         <p className="no-lifts">
@@ -47,14 +46,27 @@ export function MainLifts({ training, range, unit }: Props) {
         </p>
       ) : (
         <table className="tracklist">
-          <thead className="visually-hidden">
+          {/* Only the figure columns carry a visible label; the rank, name and sparkline explain themselves. */}
+          <thead>
             <tr>
-              <th scope="col">Rank by sessions in range</th>
-              <th scope="col">Lift</th>
-              <th scope="col">Best set in range</th>
-              <th scope="col">Change in range</th>
-              <th scope="col">Trend</th>
-              <th scope="col">Latest est. 1RM ({unit})</th>
+              <th scope="col">
+                <span className="visually-hidden">Rank by sessions in range</span>
+              </th>
+              <th scope="col">
+                <span className="visually-hidden">Lift</span>
+              </th>
+              <th scope="col" className="best-set num">
+                <span className="col-label">best set</span>
+              </th>
+              <th scope="col" className="change num">
+                <span className="col-label">change in range</span>
+              </th>
+              <th scope="col">
+                <span className="visually-hidden">Trend</span>
+              </th>
+              <th scope="col" className="current num">
+                <span className="col-label">latest est. 1RM {valueUnit("e1rm", unit)}</span>
+              </th>
             </tr>
           </thead>
           {sides.map((s) => (
