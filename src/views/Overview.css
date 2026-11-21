@@ -51,6 +51,27 @@
   height: 50px;
   vertical-align: middle;
 }
+/* Column labels in the margin over the figures, lettered like a note rather than ruled like a table head. */
+.tracklist thead th {
+  position: static;
+  height: auto;
+  padding-top: 4px;
+  padding-bottom: 0;
+  vertical-align: bottom;
+  font-size: 18px;
+  line-height: 1.1;
+  border-bottom: none;
+  background: none;
+}
+/* The figures set each column's width: a label asks only for its longest word, then fills its column and wraps there. */
+.tracklist .col-label {
+  display: block;
+  width: min-content;
+  min-width: 100%;
+}
+.tracklist thead th.current {
+  padding-right: 34px;
+}
 .tracklist tr.side th {
   position: static;
   height: auto;
@@ -251,6 +272,9 @@
   }
   .tracklist td.current {
     width: auto;
+    padding-right: 26px;
+  }
+  .tracklist thead th.current {
     padding-right: 26px;
   }
   .tracklist td.spark,

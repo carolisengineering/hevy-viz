@@ -28,7 +28,7 @@ test("converts every tracklist figure when switching to kilograms", async ({ pag
     await expect(squat.locator(c)).not.toHaveText(before[i]!);
     await expect(squat.locator(c)).not.toContainText("lb");
   }
-  await expect(page.locator(".tracklist-note")).toContainText("kg");
+  await expect(page.locator(".tracklist thead th.current")).toHaveText("latest est. 1RM kg");
 });
 
 test("shows consistency as figures and a dot grid", async ({ page }) => {
@@ -65,7 +65,29 @@ test("draws rest days in the dot grid so gaps stay visible", async ({ page }) =>
 
 test("says the hand-lettered number is the latest estimate", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".tracklist-note")).toHaveText("best set · change in range · latest est. 1RM lb");
+  await expect(page.locator(".tracklist thead th.current")).toHaveText("latest est. 1RM lb");
+});
+
+test("lines up each figure's column header with its figures", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => document.fonts.ready);
+  const rightOfText = (el: Element) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return range.getBoundingClientRect().right;
+  };
+  const row = page.locator("table.tracklist tbody tr:not(.side)").first();
+  for (const [column, figure] of [
+    ["best-set", "td.best-set"],
+    ["change", "td.change"],
+    ["current", "td.current .display"],
+  ] as const) {
+    if (!(await row.locator(figure).isVisible())) continue; // phones drop the best-set column
+    const header = page.locator(`.tracklist thead th.${column}`);
+    await expect(header).toBeVisible();
+    const [headerRight, figureRight] = [await header.evaluate(rightOfText), await row.locator(figure).evaluate(rightOfText)];
+    expect(Math.abs(headerRight - figureRight), column).toBeLessThanOrEqual(2);
+  }
 });
 
 test("logs an exercise even when its sets don't give its measure", async ({ page }) => {
