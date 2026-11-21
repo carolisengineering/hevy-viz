@@ -58,6 +58,14 @@ The first build step is a live check with the owner's key:
 
 If the shape differs, adjust the details below. If the endpoint doesn't work at all, stop and come back to the owner before switching to approach B.
 
+*Confirmed 2026-11-21 with the owner's key:*
+
+- The response is `{ page, page_count, events }`. `updated` events are `{ type, workout }`, and the workout has the same fields as a saved one, including `updated_at`.
+- `pageSize` is at most 10. 11 returns HTTP 400, "pageSize must be less than or equal to 10".
+- Events come newest first. Section 4 doesn't rely on the order.
+- Retention: events since 2023-06-01 fill 144 pages (1,431–1,440 events), against 1,436 saved workouts plus 2 logged since the last sync. Events cover the whole history, so section 2 stands: no age limit.
+- No `deleted` event appeared in the last 30 days, so its shape is still unconfirmed. The sync therefore checks each event: anything that isn't `updated` with a `workout`, or `deleted` with a string `id`, stops the sync with an error and leaves the file alone. A changed shape then can't silently leave deleted workouts behind. *(Author's call.)*
+
 ### 2. When to sync incrementally
 
 - **Incremental** when `data/hevy.json` exists, parses, has `source: "hevy"`, and has a readable `synced_at`.
