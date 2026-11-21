@@ -170,10 +170,13 @@ export function createServer(file: string, timeZone: string): McpServer {
     {
       title: "Consistency",
       description: describe(
-        "Am I training consistently? Sessions this month against the monthly average, and for the window: sessions, training days, sessions per week, weeks trained and the longest run of rest days.",
+        "Am I training consistently? Sessions this month against the monthly average, and for the window: sessions, training days, sessions per week, weeks trained, the longest run of rest days, and training time in minutes (the total, and the average per training day; workouts that overlap on a day count once). With series: true, also minutes and training days per week (per month past 104 weeks); the first and last periods can be partial.",
         timeZone,
       ),
-      inputSchema: range,
+      inputSchema: {
+        ...range,
+        series: z.boolean().optional().describe("Add minutes and training days per week (per month past 104 weeks). Use it for questions about change over time."),
+      },
       annotations,
     },
     run(consistency),
@@ -198,7 +201,7 @@ export function createServer(file: string, timeZone: string): McpServer {
     {
       title: "Recent workouts",
       description: describe(
-        "The training log: workouts newest first, each exercise's top set and whether it was an all-time record. With no window, the latest `limit` (default 5). With range or from/to, every workout in the window up to 40, and totalInWindow; a note says when the list was cut.",
+        "The training log: workouts newest first, each with its length in minutes and each exercise's top set and whether it was an all-time record. With no window, the latest `limit` (default 5). With range or from/to, every workout in the window up to 40, and totalInWindow; a note says when the list was cut.",
         timeZone,
       ),
       inputSchema: { ...range, limit: z.number().int().min(1).optional().describe("How many workouts: 5 by default without a window, 40 at most."), ...unit },

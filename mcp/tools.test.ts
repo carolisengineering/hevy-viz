@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { MAIN_GROUPS } from "../src/core/muscles";
-import { monthlySessions, windowStats } from "../src/core/consistency";
+import { monthlySessions, windowStats, windowTime, workoutMinutes } from "../src/core/consistency";
 import { weekStart } from "../src/core/dates";
 import { recordsBy, summarize } from "../src/core/progress";
 import { rangeById, windowFor } from "../src/core/ranges";
@@ -9,7 +9,7 @@ import { buildTraining, mainLiftsIn } from "../src/core/training";
 import type { HevyDataset } from "../src/core/types";
 import { dataset, template, workout } from "../src/core/testkit";
 import { formatChange, formatWeight } from "../src/format";
-import { balance, consistency, exerciseProgress, findExercises, mainLifts, recentWorkouts, resolveExercise, resolveWindow, ToolError, type ToolContext } from "./tools";
+import { balance, consistency, exerciseProgress, findExercises, mainLifts, recentWorkouts, resolveExercise, resolveWindow, seriesBy, ToolError, type ToolContext } from "./tools";
 
 const sample = JSON.parse(readFileSync(new URL("../public/data/sample.json", import.meta.url), "utf8")) as HevyDataset;
 const t = buildTraining(sample, "America/Chicago");
@@ -411,6 +411,49 @@ describe("consistency", () => {
   it("finds no break in a window outside the data", () => {
     expect(consistency(ctx, { from: "2030-01-01", to: "2030-02-01" })).toMatchObject({ sessionsInWindow: 0, longestBreak: null });
   });
+
+  it("gives training time in whole minutes", () => {
+    const time = windowTime(t.days, w);
+    expect(time.minutes).toBeGreaterThan(0);
+    expect(result.minutesInWindow).toBe(Math.round(time.minutes));
+    expect(result.averageMinutesPerTrainingDay).toBe(Math.round(time.averagePerTrainingDay!));
+  });
+
+  it("returns no series unless asked", () => {
+    expect(result).not.toHaveProperty("series");
+  });
+
+  it("with series, lists every week in the window with whole minutes and training days", () => {
+    const { series, weeksInWindow, trainingDaysInWindow } = consistency(ctx, { range: "90d", series: true });
+    expect(series!.by).toBe("week");
+    expect(series!.points).toHaveLength(weeksInWindow);
+    expect(series!.points[0][0]).toBe(weekStart(w.from));
+    expect(series!.points.reduce((n, p) => n + p[2], 0)).toBe(trainingDaysInWindow);
+    for (const [, minutes] of series!.points) expect(Number.isInteger(minutes)).toBe(true);
+  });
+
+  it("gives zero time and no average for a window outside the data", () => {
+    expect(consistency(ctx, { from: "2030-01-01", to: "2030-02-01" })).toMatchObject({ minutesInWindow: 0, averageMinutesPerTrainingDay: null });
+  });
+
+  it("with series past 104 weeks, lists every calendar month, empty ones as zeros", () => {
+    const squat = [["squat", [{ weight_kg: 100, reps: 5 }]]] as [string, { weight_kg: number; reps: number }[]][];
+    const training = buildTraining(dataset([workout("a", "2024-01-03", squat), workout("b", "2026-03-04", squat)], [template("squat", "weight_reps", "quadriceps")]), "America/Chicago");
+    const long = consistency({ training, timeZone: "America/Chicago", syncedAt: "2026-11-14T00:00:00Z" }, { from: "2024-01-01", to: "2026-03-31", series: true });
+    expect(long.series!.by).toBe("month");
+    expect(long.series!.points).toHaveLength(27);
+    expect(long.series!.points.every(([start]) => start.endsWith("-01"))).toBe(true);
+    expect(long.series!.points[0]).toEqual(["2024-01-01", 60, 1]);
+    expect(long.series!.points[1]).toEqual(["2024-02-01", 0, 0]);
+    expect(long.series!.points.at(-1)).toEqual(["2026-03-01", 60, 1]);
+  });
+});
+
+describe("seriesBy", () => {
+  it("goes by week up to 104 weeks and by month past that", () => {
+    expect(seriesBy({ from: "2024-11-18", to: "2026-11-09" })).toBe("week"); // 104 weeks
+    expect(seriesBy({ from: "2024-11-18", to: "2026-11-16" })).toBe("month"); // 105 weeks
+  });
 });
 
 describe("balance", () => {
@@ -447,6 +490,19 @@ describe("recentWorkouts", () => {
       const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date(wk.start_time));
       return day >= from && day <= to;
     }).length;
+
+  it("gives each workout's length in whole minutes", () => {
+    const latest = sample.workouts.toSorted((a, b) => Date.parse(b.start_time) - Date.parse(a.start_time))[0];
+    const [first] = recentWorkouts(ctx, {}).workouts;
+    expect(first.durationMinutes).toBe(Math.round(workoutMinutes(latest)!));
+  });
+
+  it("gives a null length when the end time can't be read", () => {
+    const bad = { ...workout("bad", "2026-11-03", [["squat", [{ weight_kg: 100, reps: 5 }]]]), end_time: "not a time" };
+    const training = buildTraining(dataset([bad], [template("squat", "weight_reps", "quadriceps")]), "America/Chicago");
+    const [only] = recentWorkouts({ training, timeZone: "America/Chicago", syncedAt: "2026-11-14T00:00:00Z" }, {}).workouts;
+    expect(only.durationMinutes).toBeNull();
+  });
 
   it("lists the latest five workouts, newest first, with no window", () => {
     const result = recentWorkouts(ctx, {});

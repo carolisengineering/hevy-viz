@@ -125,11 +125,13 @@ Weights are returned in the requested `unit` (`"kg"` by default; `"lb"` gives wh
      - `sessionsPerWeek` (the average);
      - `weeksTrained` against `weeksInWindow`;
      - `longestBreak { days, from, to }`.
+   - *Changed 2026-11-19:* also `minutesInWindow`, `averageMinutesPerTrainingDay`, and with `series: true` a `series` of minutes and training days per period (see `docs/workout-duration-design.md`).
    - The longest break needs one new pure core function, `longestBreak(days, from, to)`.
 5. **`balance`** `{ range? | from?/to? }`
    - Returns `groups: [{ group, setsPerWeek, light }]`, plus the 10 busiest `muscles: [{ muscle, group, setsPerWeek }]`, plus the light rule ("under half the median group").
 6. **`recent_workouts`** `{ range? | from?/to?, limit?, unit? }`
    - Returns `[{ date, title, exercises: [{ title, id, topSet, allTimeRecord }] }]`.
+   - *Changed 2026-11-19:* each workout also has `durationMinutes` (see `docs/workout-duration-design.md`).
    - Uses the same top-set and fallback rules as Latest entries.
    - **With no window,** it returns the latest `limit` workouts (default 5).
    - **With a window** (`range`, or `from`/`to`), it returns every workout in the window, newest first, plus `totalInWindow`. "What did I do this month?" then gets the whole month.
