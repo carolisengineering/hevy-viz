@@ -46,6 +46,18 @@ npm run dev
 
 If `hevy.json` exists the dashboard uses it; otherwise it falls back to the sample.
 
+`npm run sync` exits with a code that says why it failed. Kingdom Keys (a home server) runs it nightly, discards the output and reads only this code, so keep the values stable:
+
+| Exit code | Meaning |
+|---|---|
+| 0 | Synced |
+| 1 | Anything else (including no `HEVY_API_KEY` set) |
+| 20 | Hevy rejected the key (401 or 403) |
+| 21 | Still rate-limited after retrying, or Hevy asked for a long wait |
+| 22 | Couldn't reach Hevy (offline, DNS or connection failure) |
+| 23 | Hevy answered with some other error |
+| 24 | Couldn't write `data/hevy.json` |
+
 ## Ask Claude about your training
 
 A small local [MCP](https://modelcontextprotocol.io) server lets Claude answer questions like "is my squat still going up?", "what have I neglected this month?" or "how does this year's bench compare with last year's?". It reads your synced `data/hevy.json` and computes every figure with the same `src/core` code as the dashboard, so an answer in chat matches what the dashboard shows.
