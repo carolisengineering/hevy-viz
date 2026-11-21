@@ -435,6 +435,18 @@ describe("consistency", () => {
   it("gives zero time and no average for a window outside the data", () => {
     expect(consistency(ctx, { from: "2030-01-01", to: "2030-02-01" })).toMatchObject({ minutesInWindow: 0, averageMinutesPerTrainingDay: null });
   });
+
+  it("with series past 104 weeks, lists every calendar month, empty ones as zeros", () => {
+    const squat = [["squat", [{ weight_kg: 100, reps: 5 }]]] as [string, { weight_kg: number; reps: number }[]][];
+    const training = buildTraining(dataset([workout("a", "2024-01-03", squat), workout("b", "2026-03-04", squat)], [template("squat", "weight_reps", "quadriceps")]), "America/Chicago");
+    const long = consistency({ training, timeZone: "America/Chicago", syncedAt: "2026-11-14T00:00:00Z" }, { from: "2024-01-01", to: "2026-03-31", series: true });
+    expect(long.series!.by).toBe("month");
+    expect(long.series!.points).toHaveLength(27);
+    expect(long.series!.points.every(([start]) => start.endsWith("-01"))).toBe(true);
+    expect(long.series!.points[0]).toEqual(["2024-01-01", 60, 1]);
+    expect(long.series!.points[1]).toEqual(["2024-02-01", 0, 0]);
+    expect(long.series!.points.at(-1)).toEqual(["2026-03-01", 60, 1]);
+  });
 });
 
 describe("seriesBy", () => {
