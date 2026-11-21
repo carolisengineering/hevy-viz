@@ -201,7 +201,7 @@ export function createServer(file: string, timeZone: string): McpServer {
     {
       title: "Recent workouts",
       description: describe(
-        "The training log: workouts newest first, each exercise's top set and whether it was an all-time record. With no window, the latest `limit` (default 5). With range or from/to, every workout in the window up to 40, and totalInWindow; a note says when the list was cut.",
+        "The training log: workouts newest first, each with its length in minutes and each exercise's top set and whether it was an all-time record. With no window, the latest `limit` (default 5). With range or from/to, every workout in the window up to 40, and totalInWindow; a note says when the list was cut.",
         timeZone,
       ),
       inputSchema: { ...range, limit: z.number().int().min(1).optional().describe("How many workouts: 5 by default without a window, 40 at most."), ...unit },

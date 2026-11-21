@@ -1,7 +1,7 @@
 // The MCP server's tool handlers: (context, args) → result. No SDK and no I/O here,
 // so every figure comes from src/core exactly as the dashboard computes it.
 import { groupVolumes, setsPerWeekByMuscleIn } from "../src/core/balance";
-import { longestBreak, monthlySessions, timeByPeriod, windowStats, windowTime, type Period } from "../src/core/consistency";
+import { longestBreak, monthlySessions, timeByPeriod, windowStats, windowTime, workoutMinutes, type Period } from "../src/core/consistency";
 import { parseDay, toLocalDay, weekStart } from "../src/core/dates";
 import { muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
 import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
@@ -213,6 +213,7 @@ export function exerciseProgress(ctx: ToolContext, args: ExerciseProgressArgs) {
 }
 
 const round1 = (n: number): number => Math.round(n * 10) / 10;
+const roundOrNull = (n: number | null): number | null => (n == null ? null : Math.round(n));
 
 export interface UnitRangeArgs extends RangeArgs {
   unit?: Unit;
@@ -267,7 +268,7 @@ export function consistency(ctx: ToolContext, args: ConsistencyArgs) {
     weeksInWindow: stats.weeks,
     longestBreak: overlapsData(training, w) ? longestBreak(training.days, w) : null,
     minutesInWindow: Math.round(time.minutes),
-    averageMinutesPerTrainingDay: time.averagePerTrainingDay == null ? null : Math.round(time.averagePerTrainingDay),
+    averageMinutesPerTrainingDay: roundOrNull(time.averagePerTrainingDay),
     /** [period start, minutes, training days] per period: compact, so two years of weeks stay small. */
     ...(args.series
       ? { series: { by, points: timeByPeriod(training.days, w, by).map((p): [string, number, number] => [p.start, Math.round(p.minutes), p.trainingDays]) } }
@@ -301,7 +302,8 @@ export interface RecentWorkoutsResult {
   context: ResultContext;
   /** Workouts in the window, when there is one; more than `workouts` holds when the cap cut the list. */
   totalInWindow?: number;
-  workouts: { date: string; title: string; exercises: { id: string; title: string; topSet: string; allTimeRecord: boolean }[] }[];
+  /** `durationMinutes`: the workout's own length, whole minutes; null when its end can't be read. */
+  workouts: { date: string; title: string; durationMinutes: number | null; exercises: { id: string; title: string; topSet: string; allTimeRecord: boolean }[] }[];
   note?: string;
 }
 
@@ -319,6 +321,7 @@ export function recentWorkouts(ctx: ToolContext, args: RecentWorkoutsArgs): Rece
   const workouts = shown.map(({ workout, day, sets }) => ({
     date: day,
     title: workout.title,
+    durationMinutes: roundOrNull(workoutMinutes(workout)),
     exercises: sets.map(({ exercise, top, record }) => ({
       id: exercise.templateId,
       title: exercise.title,

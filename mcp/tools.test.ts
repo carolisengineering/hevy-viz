@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { MAIN_GROUPS } from "../src/core/muscles";
-import { monthlySessions, windowStats, windowTime } from "../src/core/consistency";
+import { monthlySessions, windowStats, windowTime, workoutMinutes } from "../src/core/consistency";
 import { weekStart } from "../src/core/dates";
 import { recordsBy, summarize } from "../src/core/progress";
 import { rangeById, windowFor } from "../src/core/ranges";
@@ -478,6 +478,19 @@ describe("recentWorkouts", () => {
       const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date(wk.start_time));
       return day >= from && day <= to;
     }).length;
+
+  it("gives each workout's length in whole minutes", () => {
+    const latest = sample.workouts.toSorted((a, b) => Date.parse(b.start_time) - Date.parse(a.start_time))[0];
+    const [first] = recentWorkouts(ctx, {}).workouts;
+    expect(first.durationMinutes).toBe(Math.round(workoutMinutes(latest)!));
+  });
+
+  it("gives a null length when the end time can't be read", () => {
+    const bad = { ...workout("bad", "2026-11-03", [["squat", [{ weight_kg: 100, reps: 5 }]]]), end_time: "not a time" };
+    const training = buildTraining(dataset([bad], [template("squat", "weight_reps", "quadriceps")]), "America/Chicago");
+    const [only] = recentWorkouts({ training, timeZone: "America/Chicago", syncedAt: "2026-11-14T00:00:00Z" }, {}).workouts;
+    expect(only.durationMinutes).toBeNull();
+  });
 
   it("lists the latest five workouts, newest first, with no window", () => {
     const result = recentWorkouts(ctx, {});
