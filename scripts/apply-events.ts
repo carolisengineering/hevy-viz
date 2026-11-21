@@ -1,10 +1,40 @@
 // Merges Hevy workout events into saved workouts. Kept apart from sync-hevy.ts,
 // which runs on import, so it can be tested.
 import type { HevyWorkout } from "../src/core/types.ts";
+import { UnexpectedResponseError } from "./exitCodes.ts";
 
 export type WorkoutEvent =
   | { type: "updated"; workout: HevyWorkout }
   | { type: "deleted"; id: string; deleted_at: string };
+
+const isObject = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
+
+/**
+ * Checks one raw event from `/workouts/events`. Throws before anything is
+ * written when it isn't one we understand. The message names the type and
+ * keys only, never workout contents.
+ */
+export function toWorkoutEvent(raw: unknown): WorkoutEvent {
+  if (isObject(raw)) {
+    if (raw.type === "updated" && isObject(raw.workout) && typeof raw.workout.id === "string") {
+      return { type: "updated", workout: raw.workout as unknown as HevyWorkout };
+    }
+    if (raw.type === "deleted" && typeof raw.id === "string") {
+      // Hevy's deleted shape is unconfirmed; a missing deleted_at becomes "", which reads as an unknown time.
+      return { type: "deleted", id: raw.id, deleted_at: typeof raw.deleted_at === "string" ? raw.deleted_at : "" };
+    }
+  }
+  const type = isObject(raw) && typeof raw.type === "string" ? JSON.stringify(raw.type) : "none";
+  const keys = isObject(raw) ? Object.keys(raw).join(", ") : typeof raw;
+  throw new UnexpectedResponseError(`Unexpected workout event (type: ${type}; keys: ${keys})`);
+}
+
+/** The `events` of one `/workouts/events` page. A changed response shape throws rather than reading as "no events". */
+export function eventsOf(body: { page_count: number; events?: unknown }): unknown[] {
+  if (Array.isArray(body.events)) return body.events;
+  if (body.events === undefined && !(body.page_count > 0)) return [];
+  throw new UnexpectedResponseError(`Unexpected /workouts/events response ("events" is ${body.events === undefined ? "missing" : "not an array"})`);
+}
 
 export interface ApplyResult {
   workouts: HevyWorkout[];
@@ -29,10 +59,10 @@ function supersedes(candidate: WorkoutEvent, current: WorkoutEvent): boolean {
   return Number.isNaN(p) || c >= p;
 }
 
-/** Newest start_time first; an unreadable one last; ties by id. */
-function byStartDescending(x: HevyWorkout, y: HevyWorkout): number {
-  const tx = Date.parse(x.start_time);
-  const ty = Date.parse(y.start_time);
+/** Newest created_at first (the order Hevy's full sync returns); a missing or unreadable one last; ties by id. */
+function byCreatedDescending(x: HevyWorkout, y: HevyWorkout): number {
+  const tx = Date.parse(x.created_at ?? "");
+  const ty = Date.parse(y.created_at ?? "");
   if (Number.isNaN(tx) !== Number.isNaN(ty)) return Number.isNaN(tx) ? 1 : -1;
   if (!Number.isNaN(tx) && tx !== ty) return ty - tx;
   return x.id < y.id ? -1 : x.id > y.id ? 1 : 0;
@@ -66,5 +96,5 @@ export function applyEvents(saved: HevyWorkout[], events: WorkoutEvent[]): Apply
     }
   }
 
-  return { workouts: [...byId.values()].sort(byStartDescending), added, updated, deleted };
+  return { workouts: [...byId.values()].sort(byCreatedDescending), added, updated, deleted };
 }

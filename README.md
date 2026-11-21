@@ -46,6 +46,8 @@ npm run dev
 
 If `hevy.json` exists the dashboard uses it; otherwise it falls back to the sample.
 
+The first sync downloads everything. Later syncs fetch only what changed since the last one (new, edited and deleted workouts), and print how many. To download everything again, run `npm run sync -- --full`. Keep the `--`: without it npm keeps the flag for itself and the script never sees it. Nothing is written to `data/hevy.json` until every request has succeeded, and the file is replaced in one step, so a failed sync leaves the previous data intact.
+
 `npm run sync` exits with a code that says why it failed. Kingdom Keys (a home server) runs it nightly, discards the output and reads only this code, so keep the values stable:
 
 | Exit code | Meaning |
@@ -163,7 +165,7 @@ mcp/server.ts               MCP server: stdio, tool registration, loading and re
 | `npm run test:e2e` | Run browser tests (Playwright) on desktop, phone-sized and dark-mode Chromium; starts the dev server itself |
 | `npm run lint` | Lint with oxlint |
 | `npm run build` | Type-check and build to `dist/` |
-| `npm run sync` | Pull your Hevy data |
+| `npm run sync` | Pull your Hevy data (only changes after the first time; `-- --full` for everything) |
 | `npm run sample` | Regenerate sample data |
 | `npm run mcp` | Start the MCP server by hand, to check it starts (Claude Code starts it itself) |
 
@@ -174,5 +176,5 @@ The browser tests need Playwright's Chromium once: `npx playwright install --onl
 - [ ] Weekly sets per muscle group (heatmap)
 - [ ] Training calendar
 - [ ] Apple Health overlay (body weight, resting HR)
-- [ ] Incremental sync via `/v1/workouts/events`
+- [x] Incremental sync via `/v1/workouts/events`
 - [x] MCP server reusing `src/core`

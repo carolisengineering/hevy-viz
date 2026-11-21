@@ -86,7 +86,7 @@ Put this in a pure module next to `retry.ts`, for example `scripts/apply-events.
 - `updated`: replace the workout with the same id, or add it if new.
 - `deleted`: remove the workout with that id if present.
 - When the same id appears in several events, the latest one wins, by `workout.updated_at` for updates and `deleted_at` for deletions. `HevyWorkout` in `src/core/types.ts` doesn't declare `updated_at` yet, though the saved file has it; add it to the type. Don't rely on the order Hevy returns the events in. *(Author's call: it holds whatever order the live check shows.)*
-- Keep `workouts` sorted newest first by `start_time`, as the full sync returns them, so the file looks the same either way. *(Author's call: no reader depends on the order.)*
+- Keep `workouts` sorted newest first, as the full sync returns them, so the file looks the same either way. *(Author's call: no reader depends on the order.)* *Changed 2026-11-21:* Hevy's full sync orders by `created_at` descending, not `start_time` (found by comparing an incremental sync with a full one); sort by `created_at` so both produce the same file.
 
 ### 5. Exercise templates
 

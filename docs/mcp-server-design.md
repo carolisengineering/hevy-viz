@@ -209,7 +209,7 @@ Arguments are validated with the SDK's schema support (zod).
 ## Future enhancements
 
 - **A "sync now" tool** (the owner wants it later, not in v1). It would pull new workouts from Hevy so answers are current without leaving the conversation.
-  - **Prerequisites:** incremental sync (the README roadmap's `/v1/workouts/events` item), so it fetches only what changed instead of the full history.
+  - **Prerequisites:** incremental sync (the README roadmap's `/v1/workouts/events` item), so it fetches only what changed instead of the full history. *Added 2026-11-21:* incremental sync now exists (`docs/incremental-sync-design.md`), so this prerequisite is met.
   - **What it changes:** the server would need `HEVY_API_KEY` in its environment, and it would make network calls, which relaxes the v1 rule "no network, never reads the key".
   - **Design points for then:** the tool should be explicit (never run implicitly by another tool), report what it fetched, and reuse the sync script's retry handling (`scripts/retry.ts`). The reload-on-change rule already picks up the new file.
 

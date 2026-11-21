@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { HevyWorkout } from "../src/core/types.ts";
-import { applyEvents, type WorkoutEvent } from "./apply-events.ts";
+import { applyEvents, eventsOf, toWorkoutEvent, type WorkoutEvent } from "./apply-events.ts";
+import { UnexpectedResponseError } from "./exitCodes.ts";
 
 const T = Date.parse("2026-11-20T12:00:00Z");
 const at = (minutes: number) => new Date(T + minutes * 60_000).toISOString();
 
-function workout(id: string, start_time: string, updated_at: string, title = id): HevyWorkout {
-  return { id, title, start_time, end_time: start_time, updated_at, exercises: [] };
+// created_at defaults to start_time, so a workout logged live sorts by when it happened.
+function workout(id: string, start_time: string, updated_at: string, title = id, created_at = start_time): HevyWorkout {
+  return { id, title, start_time, end_time: start_time, created_at, updated_at, exercises: [] };
 }
 const updated = (w: HevyWorkout): WorkoutEvent => ({ type: "updated", workout: w });
 const deleted = (id: string, deleted_at: string): WorkoutEvent => ({ type: "deleted", id, deleted_at });
@@ -88,15 +90,74 @@ describe("applyEvents", () => {
     expect(applyEvents([a], [second, first]).workouts.map((w) => w.title)).toEqual(["First"]);
   });
 
-  it("sorts newest first by start_time", () => {
+  it("sorts newest first by created_at", () => {
     const old = workout("old", "2026-10-01T10:00:00Z", at(0));
     const mid = workout("mid", "2026-11-01T11:00:00Z", at(0));
-    const result = applyEvents([a, old], [updated(b), updated(mid)]);
-    expect(ids(result.workouts)).toEqual(["b", "mid", "a", "old"]);
+    expect(ids(applyEvents([a, old], [updated(b), updated(mid)]).workouts)).toEqual(["b", "mid", "a", "old"]);
+    // Logged after the fact: started earlier than "a" but created later, so it sorts first.
+    const late = workout("late", "2026-09-01T10:00:00Z", at(0), "late", "2026-11-05T10:00:00Z");
+    expect(ids(applyEvents([a], [updated(late)]).workouts)).toEqual(["late", "a"]);
   });
 
-  it("sorts a workout with an unreadable start_time last", () => {
-    const bad = workout("bad", "garbage", at(0));
-    expect(ids(applyEvents([a], [updated(bad), updated(b)]).workouts)).toEqual(["b", "a", "bad"]);
+  it("sorts a workout with a missing or unreadable created_at last", () => {
+    const missing = { ...workout("missing", "2026-11-03T10:00:00Z", at(0)), created_at: undefined };
+    const bad = workout("bad", "2026-11-04T10:00:00Z", at(0), "bad", "garbage");
+    expect(ids(applyEvents([a], [updated(bad), updated(missing), updated(b)]).workouts)).toEqual(["b", "a", "bad", "missing"]);
+  });
+});
+
+describe("toWorkoutEvent", () => {
+  it("accepts an updated event", () => {
+    const raw = { type: "updated", workout: a };
+    expect(toWorkoutEvent(raw)).toEqual({ type: "updated", workout: a });
+  });
+
+  it("accepts a deleted event", () => {
+    const raw = { type: "deleted", id: "a", deleted_at: at(3) };
+    expect(toWorkoutEvent(raw)).toEqual({ type: "deleted", id: "a", deleted_at: at(3) });
+  });
+
+  it("rejects an unknown type, naming the type and keys", () => {
+    expect(() => toWorkoutEvent({ type: "moved", id: "a" })).toThrow(UnexpectedResponseError);
+    expect(() => toWorkoutEvent({ type: "moved", id: "a" })).toThrow(/moved.*type, id/);
+  });
+
+  it("rejects an updated event without a workout object", () => {
+    expect(() => toWorkoutEvent({ type: "updated" })).toThrow(UnexpectedResponseError);
+    expect(() => toWorkoutEvent({ type: "updated", workout: "a" })).toThrow(UnexpectedResponseError);
+    expect(() => toWorkoutEvent({ type: "updated", workout: null })).toThrow(UnexpectedResponseError);
+  });
+
+  it("rejects an updated event whose workout has no string id", () => {
+    expect(() => toWorkoutEvent({ type: "updated", workout: { title: "x" } })).toThrow(UnexpectedResponseError);
+    expect(() => toWorkoutEvent({ type: "updated", workout: { id: 7 } })).toThrow(UnexpectedResponseError);
+  });
+
+  it("rejects a deleted event without a string id", () => {
+    expect(() => toWorkoutEvent({ type: "deleted" })).toThrow(UnexpectedResponseError);
+    expect(() => toWorkoutEvent({ type: "deleted", id: 7 })).toThrow(UnexpectedResponseError);
+  });
+
+  it("rejects things that are not objects", () => {
+    for (const raw of [null, undefined, "updated", 5, []]) expect(() => toWorkoutEvent(raw)).toThrow(UnexpectedResponseError);
+  });
+
+  it("never puts workout contents in the message", () => {
+    const secret = { type: "updated", workout: { title: "Private notes", id: 7 } };
+    expect(() => toWorkoutEvent(secret)).toThrow(/updated.*type, workout/);
+    expect(() => toWorkoutEvent(secret)).not.toThrow(/Private notes/);
+  });
+});
+
+describe("eventsOf", () => {
+  it("returns the events array", () => expect(eventsOf({ page_count: 1, events: [1, 2] })).toEqual([1, 2]));
+  it("treats missing events with no pages as none", () => expect(eventsOf({ page_count: 0 })).toEqual([]));
+  it("throws when events is missing but there are pages", () => {
+    expect(() => eventsOf({ page_count: 2 })).toThrow(UnexpectedResponseError);
+    expect(() => eventsOf({ page_count: 2 })).toThrow(/events/);
+  });
+  it("throws when events is not an array", () => {
+    expect(() => eventsOf({ page_count: 1, events: {} })).toThrow(UnexpectedResponseError);
+    expect(() => eventsOf({ page_count: 1, events: "x" })).toThrow(/events/);
   });
 });
