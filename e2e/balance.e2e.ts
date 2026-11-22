@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures.ts";
+import { expect, serveSynced, syncedEndingDaysAgo, test } from "./fixtures.ts";
 
 test("shows group bars and every muscle, busiest first, for the chosen range", async ({ page }) => {
   await page.goto("/#/balance");
@@ -15,4 +15,47 @@ test("shows group bars and every muscle, busiest first, for the chosen range", a
 
   await page.click('button[role=radio]:has-text("90 days")');
   await expect.poll(values).not.toEqual(allTime);
+});
+
+test("shows each group week by week, following the range", async ({ page }) => {
+  await page.goto("/#/balance");
+  const dots = page.locator(".group-grid circle");
+  const columns = async () => (await dots.count()) / 6;
+
+  await page.click('button[role=radio]:has-text("90 days")');
+  await expect(page.getByRole("heading", { name: "Week by week" })).toBeVisible();
+  await expect.poll(columns).toBeGreaterThanOrEqual(13);
+  expect([13, 14]).toContain(await columns());
+
+  await page.click('button[role=radio]:has-text("1 year")');
+  await expect.poll(columns).toBeGreaterThanOrEqual(53);
+  expect([53, 54]).toContain(await columns());
+});
+
+test("draws no grid for a range without sets", async ({ page }) => {
+  await serveSynced(page, syncedEndingDaysAgo(200));
+  await page.goto("/#/balance");
+  await page.click('button[role=radio]:has-text("90 days")');
+  await expect(page.getByText("No working sets in this range.")).toBeVisible();
+  await expect(page.locator(".group-grid")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Week by week" })).toHaveCount(0);
+});
+
+test("keeps group labels readable on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/balance");
+  await page.click('button[role=radio]:has-text("1 year")');
+  const labels = page.locator(".group-grid-label");
+  await expect(labels).toHaveCount(6);
+  const sizes = await labels.evaluateAll((els) => els.map((el) => parseFloat(getComputedStyle(el).fontSize)));
+  for (const size of sizes) expect(size).toBeGreaterThanOrEqual(12);
+  // The dots still get a usable width beside the names.
+  const svgWidth = await page.locator(".group-grid svg").first().evaluate((el) => el.getBoundingClientRect().width);
+  expect(svgWidth).toBeGreaterThan(200);
+  // Month names never run into each other.
+  const spans = await page.locator(".group-grid-ticks span").evaluateAll((els) =>
+    els.filter((el) => getComputedStyle(el).display !== "none").map((el) => el.getBoundingClientRect()).map((r) => [r.left, r.right]),
+  );
+  expect(spans.length).toBeGreaterThanOrEqual(3);
+  for (let i = 1; i < spans.length; i++) expect(spans[i][0]).toBeGreaterThanOrEqual(spans[i - 1][1]);
 });

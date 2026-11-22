@@ -18,7 +18,7 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
   - balance across muscle groups;
   - your latest workouts.
 - **Exercises:** search, filter by kind and sort hundreds of exercises, with a page and progress chart for each.
-- **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged.
+- **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged, and each group week by week.
 - Date ranges (90 days / 1 year / all time) that apply to every view.
 - lb by default, or kg; remembered per browser.
 - A crosshair tooltip with keyboard support (focus the chart, then use ←/→), plus a table view of every chart.
@@ -124,9 +124,9 @@ src/core/                   Pure logic, no DOM or fetch; unit tested
   ranges.ts                 90 days / 1 year / all time, and filtering by them
   progress.ts               Each exercise's measure, best set per day, PRs, range summaries
   consistency.ts            Sessions and sets per day, monthly sessions, the week grid
-  balance.ts                Working sets per week by muscle and by muscle group
+  balance.ts                Working sets per week by muscle and by muscle group, overall and per week
   muscles.ts                Muscle → group, overview side and label
-  metrics.ts                Estimated 1RM (Epley), weekly sets, exercise frequency
+  metrics.ts                Estimated 1RM (Epley), exercise frequency
   training.ts               The training model, main lifts, the log, and the Exercises list's search
 src/hooks/                  Load the dataset; build the training model once; routing; remembered settings
 src/views/                  Overview (tracklist, consistency, balance, log), Exercises, an exercise page, Balance
@@ -173,7 +173,7 @@ The browser tests need Playwright's Chromium once: `npx playwright install --onl
 
 ## Roadmap
 
-- [ ] Weekly sets per muscle group (heatmap)
+- [x] Weekly sets per muscle group (heatmap)
 - [ ] Training calendar
 - [ ] Apple Health overlay (body weight, resting HR)
 - [x] Incremental sync via `/v1/workouts/events`
