@@ -474,6 +474,41 @@ describe("balance", () => {
     expect(empty.muscles).toEqual([]);
     expect(empty.groups.every((g) => g.setsPerWeek === 0)).toBe(true);
   });
+
+  it("adds no series unless asked", () => {
+    expect("series" in balance(ctx, { range: "all" })).toBe(false);
+  });
+
+  it("gives sets per period for the six groups in order", () => {
+    const r = balance(ctx, { range: "90d", series: true });
+    expect(r.series!.groups).toEqual(MAIN_GROUPS);
+    expect(r.series!.by).toBe("week");
+    for (const point of r.series!.points) {
+      expect(point).toHaveLength(7);
+      expect(point[0]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      for (const n of point.slice(1) as number[]) expect(Number.isInteger(n) && n >= 0).toBe(true);
+    }
+    // The series adds up to the per-week averages, which divide by the window's days / 7.
+    const w = resolveWindow(t, { range: "90d" });
+    const weeks = Math.max(1, (Date.parse(w.to) - Date.parse(w.from)) / 86_400_000 / 7);
+    r.groups.forEach((g, i) => {
+      const total = r.series!.points.reduce((sum, p) => sum + (p[i + 1] as number), 0);
+      expect(Math.abs(total - g.setsPerWeek * weeks)).toBeLessThanOrEqual(0.05 * weeks);
+    });
+  });
+
+  it("goes by month for a window past 104 weeks", () => {
+    const long = buildTraining(
+      dataset(
+        ["2023-01-02", "2026-01-05"].map((day, i) => workout(`w${i}`, day, [["squat", [{ weight_kg: 100, reps: 5 }]]])),
+        [template("squat", "weight_reps", "quadriceps")],
+      ),
+      "UTC",
+    );
+    const r = balance({ ...ctx, training: long, timeZone: "UTC" }, { from: "2023-01-02", to: "2026-01-05", series: true });
+    expect(r.series!.by).toBe("month");
+    expect(r.series!.points[0]).toEqual(["2023-01-01", 1, 0, 0, 0, 0, 0]);
+  });
 });
 
 describe("recentWorkouts", () => {

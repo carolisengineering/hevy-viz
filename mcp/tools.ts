@@ -1,9 +1,9 @@
 // The MCP server's tool handlers: (context, args) → result. No SDK and no I/O here,
 // so every figure comes from src/core exactly as the dashboard computes it.
-import { groupVolumes, setsPerWeekByMuscleIn } from "../src/core/balance";
+import { groupVolumes, setsByPeriodAndGroup, setsPerWeekByMuscleIn } from "../src/core/balance";
 import { longestBreak, monthlySessions, timeByPeriod, windowStats, windowTime, workoutMinutes } from "../src/core/consistency";
 import { parseDay, toLocalDay, weekStart } from "../src/core/dates";
-import { muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
+import { MAIN_GROUPS, muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
 import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
 import { rangeById, seriesBy, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
 import { latestEntries, mainLiftsIn, matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../src/core/training";
@@ -274,15 +274,33 @@ export function consistency(ctx: ToolContext, args: ConsistencyArgs) {
 
 const TOP_MUSCLES = 10;
 
+export interface BalanceArgs extends RangeArgs {
+  series?: boolean;
+}
+
+/** One period of the balance series: its first day, then working sets for each of the six main groups. */
+type GroupPoint = [start: string, legs: number, back: number, chest: number, shoulders: number, arms: number, core: number];
+
 /** Where the training goes: working sets per week for the six main groups and the busiest muscles. */
-export function balance(ctx: ToolContext, args: RangeArgs) {
+export function balance(ctx: ToolContext, args: BalanceArgs) {
   const w = resolveWindow(ctx.training, args);
   const muscles = setsPerWeekByMuscleIn(ctx.training.data, ctx.timeZone, w);
+  const by = seriesBy(w);
   return {
     context: contextOf(ctx, w, null),
     rule: "Light means under half the sets per week of the median group.",
     groups: groupVolumes(muscles).map((g) => ({ group: g.group, setsPerWeek: round1(g.setsPerWeek), light: g.light })),
     muscles: muscles.slice(0, TOP_MUSCLES).map((m) => ({ muscle: muscleLabel(m.muscle), group: muscleGroup(m.muscle), setsPerWeek: round1(m.setsPerWeek) })),
+    /** [period start, sets per group in `groups` order] per period: compact, like consistency's series. */
+    ...(args.series
+      ? {
+          series: {
+            by,
+            groups: [...MAIN_GROUPS],
+            points: setsByPeriodAndGroup(ctx.training.data, ctx.timeZone, w, by).map((p) => [p.start, ...p.sets] as GroupPoint),
+          },
+        }
+      : {}),
   };
 }
 
