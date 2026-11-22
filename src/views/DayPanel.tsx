@@ -32,8 +32,9 @@ export function DayPanel({ day, entries, unit, timeZone }: Props) {
                 {minutes != null && ` · ${formatMinutes(minutes)}`}
               </p>
               <ul>
-                {sets.map(({ exercise, top, record }) => (
-                  <li key={exercise.templateId}>
+                {/* Hevy lets a workout list the same exercise twice, so the id alone isn't a unique key. */}
+                {sets.map(({ exercise, top, record }, i) => (
+                  <li key={`${exercise.templateId}-${i}`}>
                     <a href={routeHref({ view: "exercises", exerciseId: exercise.templateId })}>{exercise.title}</a>{" "}
                     <span className="day-set">{formatPointSet(top, exercise.type, unit)}</span>
                     {record && <Star size={15} title="All-time record" />}

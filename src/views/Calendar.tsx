@@ -44,12 +44,16 @@ export function Calendar({ training, range, day, unit }: { training: Training; r
   // On narrow screens the panel moves to the picked day's month. When it leaves a month
   // above, the page shifts up; browsers without scroll anchoring (Safari) then carry the
   // tapped day off screen. Bring it back, without moving focus.
+  // A day opened from a link (a bookmark) starts centered on screen.
   const view = useRef<HTMLElement>(null);
-  const shown = useRef(selected);
+  const shown = useRef(day != null ? null : selected);
   useLayoutEffect(() => {
     if (shown.current === selected) return;
+    const opening = shown.current == null;
     shown.current = selected;
-    if (!wide) view.current?.querySelector('a[aria-current="date"]')?.scrollIntoView({ block: "nearest" });
+    const picked = view.current?.querySelector(".calendar-month .selected");
+    if (opening) picked?.scrollIntoView({ block: "center" });
+    else if (!wide) picked?.scrollIntoView({ block: "nearest" });
   }, [selected, wide]);
 
   return (

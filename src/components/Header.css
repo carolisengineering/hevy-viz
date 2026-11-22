@@ -186,3 +186,13 @@
     justify-content: flex-start;
   }
 }
+
+/* Small phones (under 390px): four tabs still fit on one line. */
+@media (max-width: 389px) {
+  .tabs {
+    gap: 12px;
+  }
+  .tabs a {
+    font-size: 19px;
+  }
+}

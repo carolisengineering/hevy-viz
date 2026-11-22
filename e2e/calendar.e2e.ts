@@ -1,4 +1,4 @@
-import { expect, serveSynced, syncedEndingDaysAgo, test } from "./fixtures.ts";
+import { expect, sample, serveSynced, syncedEndingDaysAgo, test } from "./fixtures.ts";
 
 const captions = (page: import("@playwright/test").Page) => page.locator("table.calendar-month caption");
 
@@ -99,4 +99,36 @@ test("keeps the panel in view on a laptop", async ({ page }) => {
   await expect(page.locator(".day-panel")).toBeVisible();
   await page.locator("table.calendar-month").last().scrollIntoViewIfNeeded();
   await expect(page.locator(".day-panel")).toBeInViewport();
+});
+
+/** The sample with its last workout repeating its exercises `times` times, as Hevy allows. */
+function withLongLastDay(times: number) {
+  const workouts = sample.workouts.toSorted((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time));
+  const last = workouts.at(-1)!;
+  const exercises = Array.from({ length: times }, () => last.exercises).flat().map((ex, index) => ({ ...ex, index }));
+  return { ...sample, workouts: [...workouts.slice(0, -1), { ...last, exercises }] };
+}
+
+test("opens a bookmarked day in view on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/calendar/2025-06-10");
+  const picked = page.locator('table.calendar-month a[aria-current="date"]');
+  await expect(picked).toHaveCount(1);
+  await expect(picked).toBeInViewport();
+});
+
+test("lists a day that repeats an exercise", async ({ page }) => {
+  await serveSynced(page, withLongLastDay(2));
+  await page.goto("/#/calendar");
+  await expect(page.locator(".day-workout li")).toHaveCount(withLongLastDay(2).workouts.at(-1)!.exercises.length);
+});
+
+test("keeps the end of a long day reachable on a laptop", async ({ page }) => {
+  await serveSynced(page, withLongLastDay(10));
+  await page.setViewportSize({ width: 1280, height: 680 });
+  await page.goto("/#/calendar");
+  const last = page.locator(".day-workout li").last();
+  await last.scrollIntoViewIfNeeded();
+  await expect(last).toBeInViewport();
+  await expect(page.locator("table.calendar-month").first()).toBeInViewport();
 });
