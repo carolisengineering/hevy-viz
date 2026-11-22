@@ -1,7 +1,6 @@
 // Pure metric functions. No DOM, no fetch — so the dashboard and a future
 // MCP server can share them.
-import { toLocalDay, weekStart } from "./dates";
-import type { HevyDataset, HevySet, HevyWorkout } from "./types";
+import type { HevySet, HevyWorkout } from "./types";
 
 /** Estimates get unreliable past this many reps; ignore them rather than mislead. */
 const MAX_REPS_FOR_ESTIMATE = 12;
@@ -12,25 +11,6 @@ export function estimateOneRepMax({ weight_kg, reps }: Pick<HevySet, "weight_kg"
   if (reps === 1) return weight_kg;
   if (reps > MAX_REPS_FOR_ESTIMATE) return null;
   return weight_kg * (1 + reps / 30);
-}
-
-const isWorkingSet = (s: HevySet) => s.type !== "warmup";
-
-/** Working sets per primary muscle group per local week: Map<week, Map<muscle, sets>>. */
-export function weeklySetsByMuscle(data: HevyDataset, timeZone: string): Map<string, Map<string, number>> {
-  const muscleOf = new Map(data.exercise_templates.map((t) => [t.id, t.primary_muscle_group]));
-  const out = new Map<string, Map<string, number>>();
-  for (const w of data.workouts) {
-    const week = weekStart(toLocalDay(w.start_time, timeZone));
-    const bucket = out.get(week) ?? new Map<string, number>();
-    for (const ex of w.exercises) {
-      const muscle = muscleOf.get(ex.exercise_template_id) ?? "other";
-      const n = ex.sets.filter(isWorkingSet).length;
-      bucket.set(muscle, (bucket.get(muscle) ?? 0) + n);
-    }
-    out.set(week, bucket);
-  }
-  return out;
 }
 
 export interface ExerciseSummary {

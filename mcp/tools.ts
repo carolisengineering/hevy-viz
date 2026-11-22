@@ -1,11 +1,11 @@
 // The MCP server's tool handlers: (context, args) → result. No SDK and no I/O here,
 // so every figure comes from src/core exactly as the dashboard computes it.
 import { groupVolumes, setsPerWeekByMuscleIn } from "../src/core/balance";
-import { longestBreak, monthlySessions, timeByPeriod, windowStats, windowTime, workoutMinutes, type Period } from "../src/core/consistency";
+import { longestBreak, monthlySessions, timeByPeriod, windowStats, windowTime, workoutMinutes } from "../src/core/consistency";
 import { parseDay, toLocalDay, weekStart } from "../src/core/dates";
 import { muscleGroup, muscleLabel, sideOf } from "../src/core/muscles";
 import { longBreaks, METRIC_LABEL, recordsBy, summarizeIn, type Break, type ExerciseProgress, type MetricId, type ProgressPoint } from "../src/core/progress";
-import { rangeById, weeksIn, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
+import { rangeById, seriesBy, windowFor, type DayWindow, type RangeId } from "../src/core/ranges";
 import { latestEntries, mainLiftsIn, matchExercises, type ExerciseKind, type ExerciseSort, type Training } from "../src/core/training";
 import { DEFAULT_UNIT, formatChange, formatPointSet, formatValue, formatWeight, valueUnit, type Unit } from "../src/format";
 
@@ -157,10 +157,6 @@ function measuredChange(metric: MetricId, delta: number, unit: Unit): { value: n
 }
 
 const MAX_PRS = 20;
-const MAX_WEEKS = 104;
-
-/** How a series over `w` is grouped: by Monday-first week, or by calendar month past 104 weeks. */
-export const seriesBy = (w: DayWindow): Period => (weeksIn(w) > MAX_WEEKS ? "month" : "week");
 
 export interface ExerciseProgressArgs extends RangeArgs {
   exercise: string;

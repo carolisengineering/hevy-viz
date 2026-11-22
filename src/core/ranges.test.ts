@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterBetween, filterByRange, rangeById, weeksIn, windowFor } from "./ranges";
+import { filterBetween, filterByRange, periodsIn, rangeById, seriesBy, weeksIn, windowFor } from "./ranges";
 
 const pts = (...dates: string[]) => dates.map((date) => ({ date }));
 
@@ -63,5 +63,22 @@ describe("weeksIn", () => {
   });
   it("counts the 53 weeks a year from Thursday to Thursday touches", () => {
     expect(weeksIn({ from: "2026-01-01", to: "2026-12-31" })).toBe(53);
+  });
+});
+
+describe("periodsIn", () => {
+  it("lists every Monday a window touches", () => {
+    expect(periodsIn({ from: "2026-11-04", to: "2026-11-16" }, "week")).toEqual(["2026-11-02", "2026-11-09", "2026-11-16"]);
+  });
+
+  it("lists every month a window touches, across a year", () => {
+    expect(periodsIn({ from: "2025-11-20", to: "2026-01-03" }, "month")).toEqual(["2025-11-01", "2025-12-01", "2026-01-01"]);
+  });
+});
+
+describe("seriesBy", () => {
+  it("goes by week up to 104 weeks and by month past that", () => {
+    expect(seriesBy({ from: "2024-11-18", to: "2026-11-09" })).toBe("week"); // 104 weeks
+    expect(seriesBy({ from: "2024-11-18", to: "2026-11-16" })).toBe("month"); // 105 weeks
   });
 });

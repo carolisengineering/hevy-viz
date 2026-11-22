@@ -9,7 +9,7 @@ import { buildTraining, mainLiftsIn } from "../src/core/training";
 import type { HevyDataset } from "../src/core/types";
 import { dataset, template, workout } from "../src/core/testkit";
 import { formatChange, formatWeight } from "../src/format";
-import { balance, consistency, exerciseProgress, findExercises, mainLifts, recentWorkouts, resolveExercise, resolveWindow, seriesBy, ToolError, type ToolContext } from "./tools";
+import { balance, consistency, exerciseProgress, findExercises, mainLifts, recentWorkouts, resolveExercise, resolveWindow, ToolError, type ToolContext } from "./tools";
 
 const sample = JSON.parse(readFileSync(new URL("../public/data/sample.json", import.meta.url), "utf8")) as HevyDataset;
 const t = buildTraining(sample, "America/Chicago");
@@ -446,13 +446,6 @@ describe("consistency", () => {
     expect(long.series!.points[0]).toEqual(["2024-01-01", 60, 1]);
     expect(long.series!.points[1]).toEqual(["2024-02-01", 0, 0]);
     expect(long.series!.points.at(-1)).toEqual(["2026-03-01", 60, 1]);
-  });
-});
-
-describe("seriesBy", () => {
-  it("goes by week up to 104 weeks and by month past that", () => {
-    expect(seriesBy({ from: "2024-11-18", to: "2026-11-09" })).toBe("week"); // 104 weeks
-    expect(seriesBy({ from: "2024-11-18", to: "2026-11-16" })).toBe("month"); // 105 weeks
   });
 });
 
