@@ -1,6 +1,6 @@
 # Week-by-week muscle groups: design
 
-**Status:** proposed, 2026-11-21.
+**Status:** implemented in PR #16, merged 2026-11-21. Proposed 2026-11-21.
 **Scope:** one small PR. Closes the roadmap item "Weekly sets per muscle group (heatmap)".
 Choices are the author's unless marked as the owner's.
 
