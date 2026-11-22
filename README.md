@@ -18,7 +18,7 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
   - balance across muscle groups;
   - your latest workouts.
 - **Exercises:** search, filter by kind and sort hundreds of exercises, with a page and progress chart for each.
-- **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged.
+- **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged, and each group week by week.
 - Date ranges (90 days / 1 year / all time) that apply to every view.
 - lb by default, or kg; remembered per browser.
 - A crosshair tooltip with keyboard support (focus the chart, then use ←/→), plus a table view of every chart.
@@ -101,7 +101,7 @@ Use the repo's own `tsx`, as above, rather than `npx tsx`. Outside this folder, 
 | `exercise_progress` | How one exercise is going: best ever, latest, change, PRs, weekly or monthly bests and long breaks |
 | `main_lifts` | Your main lifts, as on the overview: best set, change, latest estimated 1RM and PRs |
 | `consistency` | Sessions this month against your average, sessions per week, weeks trained and your longest break, and training time (total and per training day, optionally week by week) |
-| `balance` | Working sets per week for each muscle group (light ones flagged) and your busiest muscles |
+| `balance` | Working sets per week for each muscle group (light ones flagged) and your busiest muscles; with `series`, week by week |
 | `recent_workouts` | Your training log: the latest workouts, or every workout in a date range (up to 40), with each workout's length and each exercise's top set |
 
 Every tool that looks at a period takes `90d`, `1y` (the default) or `all`, or your own `from` and `to` dates, so Claude can compare this year with last.
@@ -124,9 +124,9 @@ src/core/                   Pure logic, no DOM or fetch; unit tested
   ranges.ts                 90 days / 1 year / all time, and filtering by them
   progress.ts               Each exercise's measure, best set per day, PRs, range summaries
   consistency.ts            Sessions and sets per day, monthly sessions, the week grid
-  balance.ts                Working sets per week by muscle and by muscle group
+  balance.ts                Working sets per week by muscle and by muscle group, overall and per week
   muscles.ts                Muscle → group, overview side and label
-  metrics.ts                Estimated 1RM (Epley), weekly sets, exercise frequency
+  metrics.ts                Estimated 1RM (Epley), exercise frequency
   training.ts               The training model, main lifts, the log, and the Exercises list's search
 src/hooks/                  Load the dataset; build the training model once; routing; remembered settings
 src/views/                  Overview (tracklist, consistency, balance, log), Exercises, an exercise page, Balance
@@ -173,7 +173,7 @@ The browser tests need Playwright's Chromium once: `npx playwright install --onl
 
 ## Roadmap
 
-- [ ] Weekly sets per muscle group (heatmap)
+- [x] Weekly sets per muscle group (heatmap)
 - [ ] Training calendar
 - [ ] Apple Health overlay (body weight, resting HR)
 - [x] Incremental sync via `/v1/workouts/events`

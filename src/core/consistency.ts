@@ -1,7 +1,7 @@
 // How often training happens: per-day load, monthly sessions and the week grid.
 // Pure: no DOM, no fetch.
 import { addDays, MS_PER_DAY, parseDay, toLocalDay, weekStart } from "./dates";
-import { weeksIn, type DayWindow } from "./ranges";
+import { periodsIn, periodStart, weeksIn, type DayWindow, type Period } from "./ranges";
 import type { HevyWorkout } from "./types";
 
 export interface DayLoad {
@@ -151,17 +151,6 @@ export function windowTime(days: ReadonlyMap<string, DayLoad>, w: DayWindow): { 
   return { minutes, averagePerTrainingDay: timedDays > 0 ? minutes / timedDays : null };
 }
 
-export type Period = "week" | "month";
-
-/** The first day of the period after the one starting on `start`. */
-const nextPeriod = (start: string, by: Period): string => {
-  if (by === "week") return addDays(start, 7);
-  const [year, month] = [Number(start.slice(0, 4)), Number(start.slice(5, 7))];
-  return month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, "0")}-01`;
-};
-
-const periodStart = (day: string, by: Period): string => (by === "week" ? weekStart(day) : `${day.slice(0, 7)}-01`);
-
 /**
  * Minutes and training days per Monday-first week or calendar month, for every period `w`
  * touches, oldest first, empty ones included. Only days inside `w` count, so the first
@@ -173,7 +162,7 @@ export function timeByPeriod(
   by: Period,
 ): { start: string; minutes: number; trainingDays: number }[] {
   const periods = new Map<string, { start: string; minutes: number; trainingDays: number }>();
-  for (let start = periodStart(w.from, by); start <= w.to; start = nextPeriod(start, by)) periods.set(start, { start, minutes: 0, trainingDays: 0 });
+  for (const start of periodsIn(w, by)) periods.set(start, { start, minutes: 0, trainingDays: 0 });
   for (const [day, load] of days) {
     if (day < w.from || day > w.to) continue;
     const period = periods.get(periodStart(day, by))!;

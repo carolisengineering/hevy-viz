@@ -13,6 +13,47 @@
   font-size: 34px;
 }
 
+/* Long week grids: phones get the month grid instead. */
+.phone-only {
+  display: none;
+}
+
+/* Each group week by week: names in a column, one row of dots per group, sharing one scale. */
+.group-grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  column-gap: 14px;
+  margin: 10px 0 34px;
+}
+.group-grid-ticks {
+  grid-column: 2;
+  position: relative;
+  height: 22px;
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+.group-grid-ticks span {
+  position: absolute;
+  bottom: 0;
+}
+.group-grid-label {
+  font-size: 19px;
+  line-height: 1.5;
+}
+.group-grid svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.group-grid circle {
+  fill: var(--ink);
+}
+.group-grid circle.rest {
+  fill: var(--ink-line);
+  opacity: 0.45;
+}
+
 .muscles td {
   font-size: 20px;
 }
@@ -32,6 +73,22 @@
   }
   .muscles td.bar-cell {
     width: 35%;
+  }
+  .wide-only {
+    display: none;
+  }
+  .phone-only {
+    display: block;
+  }
+  .group-grid {
+    column-gap: 10px;
+  }
+  .group-grid-label {
+    font-size: 17px;
+  }
+  /* A year of weeks leaves too little room for every month's name. */
+  .group-grid.dense .group-grid-ticks .minor {
+    display: none;
   }
   .group-bars.large li {
     grid-template-columns: 92px 1fr 48px;

@@ -188,10 +188,13 @@ export function createServer(file: string, timeZone: string): McpServer {
     {
       title: "Balance",
       description: describe(
-        "Am I training in balance? Working sets per week for the six main muscle groups (with the ones that are light flagged) and the ten busiest muscles, over the window.",
+        "Am I training in balance? Working sets per week for the six main muscle groups (with the ones that are light flagged) and the ten busiest muscles, over the window. With series: true, also working sets per week for each of the six groups (per month past 104 weeks), as [period start, Legs, Back, Chest, Shoulders, Arms, Core]; the first and last periods can be partial.",
         timeZone,
       ),
-      inputSchema: range,
+      inputSchema: {
+        ...range,
+        series: z.boolean().optional().describe("Add working sets per week for each main group (per month past 104 weeks). Use it for questions about change over time."),
+      },
       annotations,
     },
     run(balance),
