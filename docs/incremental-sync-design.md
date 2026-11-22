@@ -1,6 +1,6 @@
 # Incremental sync: design
 
-**Status:** proposed, 2026-11-21.
+**Status:** implemented in PR #15, merged 2026-11-21. Proposed 2026-11-21.
 **Scope:** one small PR. Closes the README roadmap item "Incremental sync via `/v1/workouts/events`".
 Choices are the author's unless marked as the owner's.
 
