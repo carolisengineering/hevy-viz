@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calendarMonths, dayEntries, latestTrainingDay } from "./calendar";
+import { calendarMonths, dayEntries, latestTrainingDay, pickDay } from "./calendar";
 import type { DayLoad } from "./consistency";
 import { dataset, template, workout } from "./testkit";
 import { buildTraining, latestEntries } from "./training";
@@ -54,6 +54,20 @@ describe("latestTrainingDay", () => {
   it("finds the latest day with a session in the window", () => {
     expect(latestTrainingDay(days, w)).toBe("2026-11-03");
     expect(latestTrainingDay(days, { from: "2026-12-01", to: "2026-12-31" })).toBeNull();
+  });
+});
+
+describe("pickDay", () => {
+  it("keeps a linked day inside the window, even a rest day", () => {
+    expect(pickDay(days, w, "2026-11-05")).toBe("2026-11-05");
+  });
+
+  it("falls back to the latest training day for a day outside the window", () => {
+    expect(pickDay(days, w, "2026-11-20")).toBe("2026-11-03");
+  });
+
+  it("starts on the latest training day when nothing is linked", () => {
+    expect(pickDay(days, w, undefined)).toBe("2026-11-03");
   });
 });
 

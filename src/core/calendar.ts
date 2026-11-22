@@ -69,6 +69,11 @@ export function latestTrainingDay(days: ReadonlyMap<string, DayLoad>, w: DayWind
   return latest;
 }
 
+/** The day to show: `linked` when it's inside `w` (even a rest day), else the latest training day. */
+export function pickDay(days: ReadonlyMap<string, DayLoad>, w: DayWindow, linked: string | undefined): string | null {
+  return linked != null && linked >= w.from && linked <= w.to ? linked : latestTrainingDay(days, w);
+}
+
 /** A day's workouts, oldest first, each with every exercise's top set, as the training log works them out. */
 export function dayEntries(training: Training, day: string, timeZone: string): LatestEntry[] {
   return latestEntries(training, Infinity, timeZone, { from: day, to: day }).toReversed();

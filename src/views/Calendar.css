@@ -98,3 +98,55 @@
     gap: 28px 32px;
   }
 }
+
+/* The picked day's workouts, as log lines. */
+.day-panel {
+  margin-top: 14px;
+}
+.day-panel .box-head h3 {
+  font-size: 28px;
+}
+.day-workout + .day-workout {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ink-line);
+}
+.day-workout h4 {
+  margin: 0;
+  font-weight: 400;
+  font-size: 21px;
+}
+.day-workout p {
+  margin: 0;
+}
+.day-workout ul {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+.day-workout li {
+  padding: 3px 0;
+  border-bottom: 1px solid var(--grid);
+}
+.day-workout li a {
+  text-decoration: none;
+}
+.day-workout li a:hover {
+  text-decoration: underline;
+}
+.day-workout .ink-star {
+  color: var(--accent);
+  margin-left: 4px;
+  vertical-align: -2px;
+}
+
+@media (min-width: 1000px) {
+  /* The panel stays in view while the months scroll past. */
+  .calendar-side {
+    position: sticky;
+    top: 16px;
+  }
+  .calendar-side .day-panel {
+    margin-top: 0;
+  }
+}

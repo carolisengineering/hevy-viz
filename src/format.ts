@@ -101,6 +101,24 @@ export const formatMonth = (month: string): string => monthFormat.format(parseDa
 /** "Tue, Nov 3, 2026" */
 export const formatFullDate = (day: string): string => fullDateFormat.format(parseDay(day));
 
+const clockFormats = new Map<string, Intl.DateTimeFormat>();
+
+/** "6:42 PM": the time an ISO timestamp shows in `timeZone`. */
+export function formatClock(iso: string, timeZone: string): string {
+  let format = clockFormats.get(timeZone);
+  if (!format) clockFormats.set(timeZone, (format = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone })));
+  // Newer ICU puts a narrow no-break space before AM/PM; write a plain one.
+  return format.format(new Date(iso)).replace(/\s/g, " ");
+}
+
+/** "58 min", "1 h 12 min", "1 h", rounded to whole minutes. */
+export function formatMinutes(minutes: number): string {
+  const total = Math.round(minutes);
+  const [h, m] = [Math.floor(total / 60), total % 60];
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
 /** "Nov 14" */
 export const formatShortDate = (day: string): string => shortDateFormat.format(parseDay(day));
 

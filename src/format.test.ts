@@ -3,12 +3,14 @@ import type { ProgressPoint } from "./core/progress";
 import {
   chartFormat,
   formatChange,
+  formatClock,
   formatCount,
   formatDate,
   formatDistance,
   formatDuration,
   formatFullDate,
   formatLogDate,
+  formatMinutes,
   formatMonth,
   formatPointSet,
   formatShortDate,
@@ -20,6 +22,18 @@ import {
 describe("format", () => {
   it("names a month with its year", () => {
     expect(formatMonth("2026-11")).toBe("November 2026");
+  });
+
+  it("writes a clock time in a time zone", () => {
+    expect(formatClock("2026-11-03T18:42:00Z", "UTC")).toBe("6:42 PM");
+    expect(formatClock("2026-11-03T18:42:00Z", "America/Los_Angeles")).toBe("10:42 AM");
+  });
+
+  it("writes minutes as hours and minutes", () => {
+    expect(formatMinutes(58)).toBe("58 min");
+    expect(formatMinutes(72)).toBe("1 h 12 min");
+    expect(formatMinutes(60)).toBe("1 h");
+    expect(formatMinutes(59.6)).toBe("1 h");
   });
 
   it("writes a full date with its weekday", () => {

@@ -243,7 +243,7 @@ One ballpoint box holding a radio group (date range, kg/lb, theme).
 - **Focus:** the outline goes on the whole field: dashed 2px raspberry, offset 3px.
 
 ### Navigation
-- **Style:** three tabs (Overview, Exercises, Balance) as links in the 22px data hand, 26px apart, each with a 4px bottom border that sits on the header rule.
+- **Style:** four tabs (Overview, Exercises, Balance, Calendar) as links in the 22px data hand, 26px apart, each with a 4px bottom border that sits on the header rule.
 - **States:** the active tab (`aria-current`) gets a raspberry underline, and hover gets a line-ink underline.
 - **Mobile:** 21px tabs, 22px apart, on an edge-to-edge 3px ink rule.
 
@@ -276,6 +276,12 @@ Working sets per week per muscle group: the name, a scribble-filled bar against 
 
 ### Consistency dot grid
 A year of days as dots in an SVG that scales through its viewBox. Dot area grows with working sets. This month's dots are raspberry, and rest days are tiny line-ink dots at 45% so gaps read as empty days.
+
+### Calendar month
+A month as a ruled table: the caption in 28px traced display caps with the month's sessions, single-letter weekday heads in faded ink, and Monday-first rows. Each day is its 16px number above a dot drawn on the Consistency grid's scale, in an 8-unit cell shown at 26px. A training day is a link; rest days get the faint rest dot; days outside the range keep only a faded number. The picked day is ringed in 2px raspberry with 6px corners. From 1000px months flow in columns at least 280px wide; below that they stack in one column up to 520px.
+
+### Day panel
+A ballpoint box headed with the full date. Each workout is its title, then its start time and length in faded ink, then one ruled line per exercise: the exercise as a link and its top set, with a raspberry star for an all-time record. From 1000px it sits in a 400px side column and stays in view (sticky) while the months scroll; below that it opens under the picked day's month.
 
 ### Ledger line
 An exercise's figures read across one ruled line: the best ever leads at 50px, then the other figures in title-size caps with captions beneath, and a 1px grid rule under the whole line.

@@ -92,7 +92,7 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
         ) : route.view === "overview" ? (
           <Overview training={training} range={range} unit={unit} />
         ) : route.view === "calendar" ? (
-          <Calendar training={training} range={range} day={route.day} />
+          <Calendar training={training} range={range} day={route.day} unit={unit} />
         ) : (
           <Balance training={training} range={range} />
         )}
