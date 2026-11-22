@@ -11,6 +11,7 @@ import { useRoute } from "./hooks/useRoute";
 import { useTheme } from "./hooks/useTheme";
 import { useTraining } from "./hooks/useTraining";
 import { Balance } from "./views/Balance";
+import { Calendar } from "./views/Calendar";
 import { ExerciseDetail } from "./views/ExerciseDetail";
 import { Exercises, INITIAL_LIST_VIEW, type ListView } from "./views/Exercises";
 import { Overview } from "./views/Overview";
@@ -90,6 +91,8 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
           />
         ) : route.view === "overview" ? (
           <Overview training={training} range={range} unit={unit} />
+        ) : route.view === "calendar" ? (
+          <Calendar training={training} range={range} day={route.day} unit={unit} />
         ) : (
           <Balance training={training} range={range} />
         )}

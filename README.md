@@ -19,6 +19,7 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
   - your latest workouts.
 - **Exercises:** search, filter by kind and sort hundreds of exercises, with a page and progress chart for each.
 - **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged, and each group week by week.
+- **Calendar:** every month in the range as a calendar, newest first, with a dot for each training day. Pick a day to see its workouts: start time, length, and each exercise's top set.
 - Date ranges (90 days / 1 year / all time) that apply to every view.
 - lb by default, or kg; remembered per browser.
 - A crosshair tooltip with keyboard support (focus the chart, then use ←/→), plus a table view of every chart.
@@ -125,11 +126,12 @@ src/core/                   Pure logic, no DOM or fetch; unit tested
   progress.ts               Each exercise's measure, best set per day, PRs, range summaries
   consistency.ts            Sessions and sets per day, monthly sessions, the week grid
   balance.ts                Working sets per week by muscle and by muscle group, overall and per week
+  calendar.ts               Months laid out as weeks, and a day's workouts
   muscles.ts                Muscle → group, overview side and label
   metrics.ts                Estimated 1RM (Epley), exercise frequency
   training.ts               The training model, main lifts, the log, and the Exercises list's search
 src/hooks/                  Load the dataset; build the training model once; routing; remembered settings
-src/views/                  Overview (tracklist, consistency, balance, log), Exercises, an exercise page, Balance
+src/views/                  Overview (tracklist, consistency, balance, log), Exercises, an exercise page, Balance, Calendar
 src/components/             Header, segmented controls, drawn SVG marks (ink.tsx), bars, table, empty state
 src/charts/                 D3 progress chart: React wrapper + draw steps (progressDraw.ts)
 src/styles/                 Palette tokens (light and dark) and the notebook base styles
@@ -174,7 +176,7 @@ The browser tests need Playwright's Chromium once: `npx playwright install --onl
 ## Roadmap
 
 - [x] Weekly sets per muscle group (heatmap)
-- [ ] Training calendar
+- [x] Training calendar
 - [ ] Apple Health overlay (body weight, resting HR)
 - [x] Incremental sync via `/v1/workouts/events`
 - [x] MCP server reusing `src/core`
