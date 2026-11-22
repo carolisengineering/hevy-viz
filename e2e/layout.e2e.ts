@@ -1,7 +1,7 @@
 // Every view fits its screen: nothing pushes the page sideways.
 import { expect, test } from "./fixtures.ts";
 
-for (const hash of ["#/", "#/exercises", "#/exercises/squat", "#/balance"]) {
+for (const hash of ["#/", "#/exercises", "#/exercises/squat", "#/balance", "#/calendar"]) {
   test(`${hash} never scrolls sideways`, async ({ page }) => {
     await page.goto(`/${hash}`);
     await page.locator("main h2").first().waitFor();

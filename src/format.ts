@@ -92,6 +92,15 @@ export function formatPointSet(p: ProgressPoint, type: string, unit: Unit): stri
 const shortDateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 const weekdayFormat = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" });
 
+const monthFormat = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+const fullDateFormat = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+
+/** "November 2026" for a "YYYY-MM" month. */
+export const formatMonth = (month: string): string => monthFormat.format(parseDay(`${month}-01`));
+
+/** "Tue, Nov 3, 2026" */
+export const formatFullDate = (day: string): string => fullDateFormat.format(parseDay(day));
+
 /** "Nov 14" */
 export const formatShortDate = (day: string): string => shortDateFormat.format(parseDay(day));
 

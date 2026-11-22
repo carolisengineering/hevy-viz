@@ -7,7 +7,9 @@ import {
   formatDate,
   formatDistance,
   formatDuration,
+  formatFullDate,
   formatLogDate,
+  formatMonth,
   formatPointSet,
   formatShortDate,
   formatValue,
@@ -16,6 +18,14 @@ import {
 } from "./format";
 
 describe("format", () => {
+  it("names a month with its year", () => {
+    expect(formatMonth("2026-11")).toBe("November 2026");
+  });
+
+  it("writes a full date with its weekday", () => {
+    expect(formatFullDate("2026-11-03")).toBe("Tue, Nov 3, 2026");
+  });
+
   it("formats a day without shifting it by time zone", () => {
     expect(formatDate("2026-11-14")).toBe("Nov 14, 2026");
     expect(formatDate("2026-01-01")).toBe("Jan 1, 2026");

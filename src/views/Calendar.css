@@ -1,0 +1,100 @@
+/* The calendar: months as ruled tables of days, newest first, with a dot per training day. */
+
+.calendar-summary {
+  margin-bottom: 22px;
+  font-size: 18px;
+}
+
+/* Phones and tablets: one month per row, so the day panel can sit under its month. */
+.calendar-months {
+  display: grid;
+  gap: 28px;
+  max-width: 520px;
+}
+
+.calendar-month {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.calendar-month caption {
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.036em currentColor;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+.calendar-month th {
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--ink-soft);
+  padding: 2px 0;
+}
+.calendar-month td {
+  padding: 2px;
+  text-align: center;
+  vertical-align: top;
+}
+
+/* A day: its number above its dot. A training day is a link around both. */
+.calendar-month td > a,
+.calendar-month td > .day-number {
+  text-decoration: none;
+}
+.calendar-month td > a {
+  display: block;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+.calendar-month td > a:hover {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.calendar-month .selected {
+  border-color: var(--accent);
+}
+.calendar-month td.selected {
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+}
+.day-number {
+  display: block;
+  font-size: 16px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.day-dot {
+  display: block;
+  width: 26px;
+  height: 26px;
+  margin: 0 auto 2px;
+}
+.day-dot circle {
+  fill: var(--ink);
+}
+.day-dot circle.rest {
+  fill: var(--ink-line);
+  opacity: 0.45;
+}
+.calendar-month td.outside .day-number {
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+
+/* Wide screens: months flow in columns, and the day panel gets a column of its own. */
+@media (min-width: 1000px) {
+  .calendar-view {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    column-gap: 36px;
+    align-items: start;
+  }
+  .calendar-months {
+    max-width: none;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 28px 32px;
+  }
+}

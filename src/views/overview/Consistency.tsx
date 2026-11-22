@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { dayDotRadius as radius, REST_DOT_RADIUS as REST_RADIUS } from "../../components/dayDot";
 import { dayGrid, monthlySessions } from "../../core/consistency";
 import type { DateRange } from "../../core/ranges";
 import { formatCount, formatLogDate } from "../../format";
@@ -6,11 +7,6 @@ import type { Training } from "../../core/training";
 
 /** One grid cell, in svg units: 52 weeks draw close to 1:1 in the box. */
 const CELL = 8;
-/** Sets at which a dot reaches full size. */
-const FULL_DOT_SETS = 30;
-/** Area grows with sets, so dot size reads as volume; the biggest dot stays inside its cell. */
-const radius = (sets: number) => 1.5 + 2.1 * Math.sqrt(Math.min(sets, FULL_DOT_SETS) / FULL_DOT_SETS);
-const REST_RADIUS = 1;
 
 /** Sessions this month against the usual month, and a year of training days as dots. */
 export function Consistency({ training, range }: { training: Training; range: DateRange }) {
