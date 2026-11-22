@@ -59,3 +59,26 @@ test("keeps group labels readable on a phone", async ({ page }) => {
   expect(spans.length).toBeGreaterThanOrEqual(3);
   for (let i = 1; i < spans.length; i++) expect(spans[i][0]).toBeGreaterThanOrEqual(spans[i - 1][1]);
 });
+
+test("shows all time by month on a phone when weeks would be too narrow", async ({ page }) => {
+  // The sample spans 104 weeks, past what a phone can show as weeks.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/balance");
+  await page.click('button[role=radio]:has-text("All time")');
+  await expect(page.getByRole("heading", { name: "Month by month" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Week by week" })).toBeHidden();
+  const grid = page.locator(".group-grid").filter({ visible: true });
+  await expect(grid).toHaveCount(1);
+  const svg = grid.locator("svg").first();
+  const columns = await svg.locator("circle").count();
+  const width = await svg.evaluate((el) => el.getBoundingClientRect().width);
+  expect(width / columns).toBeGreaterThanOrEqual(8);
+});
+
+test("keeps all time by week on a wide screen", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/#/balance");
+  await page.click('button[role=radio]:has-text("All time")');
+  await expect(page.getByRole("heading", { name: "Week by week" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Month by month" })).toBeHidden();
+});

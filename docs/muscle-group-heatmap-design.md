@@ -60,6 +60,8 @@ Core        · · · • · · · · · • · · ·
 
 - **Where:** a "Week by week" section on the Balance page, between the group bars and the "Every muscle" table. When the range is All time and the data runs past 104 weeks, the heading is "Month by month".
 - **Columns:** 90 days gives about 13 weeks and 1 year about 53. All time uses weeks or months, by the rule above.
+  - *Changed 2026-11-21, after the final review:* on phones (under 700px), a range that touches more than 54 weeks is drawn by month. At 54 to 104 weeks, the week columns were about 2.7px wide on a 390px screen, so dot size no longer showed volume and gaps disappeared. A year of weeks still shows as weeks, desktop keeps the rule above, and the MCP rule doesn't change.
+  - *Also changed:* in a week grid, January's column is labeled with its year, and the tooltips add the year when the grid spans more than one year.
 - **Cells: author's call, dots and not shading.** I showed shaded squares when we talked. This design uses dots sized by sets instead, because that is how the Overview's Consistency grid already draws volume, with the same ink color and the faint dot for an empty cell. The two grids then read the same way, with no new colors. Revisit this if you'd rather have shading.
 - **Scale:** one scale for the whole grid. The dot area grows with sets, and the busiest cell in the grid gets the full-size dot. With one scale, weekly and monthly grids both fill their cells, and core is never stretched to look like legs.
 - **Labels:** the group names are to the left of the rows, in the same order as the group bars. Month names are above the week columns, and years above the month columns.

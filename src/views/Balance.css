@@ -13,6 +13,11 @@
   font-size: 34px;
 }
 
+/* Long week grids: phones get the month grid instead. */
+.phone-only {
+  display: none;
+}
+
 /* Each group week by week: names in a column, one row of dots per group, sharing one scale. */
 .group-grid {
   display: grid;
@@ -68,6 +73,12 @@
   }
   .muscles td.bar-cell {
     width: 35%;
+  }
+  .wide-only {
+    display: none;
+  }
+  .phone-only {
+    display: block;
   }
   .group-grid {
     column-gap: 10px;

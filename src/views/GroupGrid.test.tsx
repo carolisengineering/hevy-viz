@@ -46,10 +46,26 @@ describe("GroupGrid", () => {
     const long = renderToStaticMarkup(<GroupGrid periods={weeks(53)} by="week" />);
     expect(long).toContain('class="group-grid dense"');
     expect(long).toMatch(/<span class="minor"[^>]*>Dec</);
-    expect(long).toMatch(/<span style="[^"]*">Jan</);
+    expect(long).toMatch(/<span style="[^"]*">2026</);
     const short = renderToStaticMarkup(<GroupGrid periods={weeks(13)} by="week" />);
     expect(short).toContain('class="group-grid"');
     expect(short).not.toContain('class="minor"');
+  });
+
+  it("labels January with its year over the weeks", () => {
+    const periods = ["2025-12-22", "2025-12-29", "2026-01-05", "2026-01-12", "2026-01-19"].map((start) => ({ start, sets: zeros }));
+    const html = renderToStaticMarkup(<GroupGrid periods={periods} by="week" />);
+    expect(html).toContain(">2026<");
+    expect(html).not.toContain(">Jan<");
+  });
+
+  it("names the year in week titles when the grid spans years", () => {
+    const spanning = renderToStaticMarkup(
+      <GroupGrid periods={[{ start: "2025-11-17", sets: [3, 0, 0, 0, 0, 0] }, { start: "2026-11-16", sets: zeros }]} by="week" />,
+    );
+    expect(spanning).toContain("<title>Legs, week of Nov 17, 2025: 3 sets</title>");
+    const oneYear = renderToStaticMarkup(<GroupGrid periods={[{ start: "2026-11-09", sets: [3, 0, 0, 0, 0, 0] }]} by="week" />);
+    expect(oneYear).toContain("<title>Legs, week of Nov 9: 3 sets</title>");
   });
 
   it("labels months", () => {

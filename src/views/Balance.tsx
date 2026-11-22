@@ -1,21 +1,40 @@
 import { useMemo } from "react";
 import "./Balance.css";
 import { GroupBars } from "../components/GroupBars";
-import { groupVolumes, setsByPeriodAndGroup, setsPerWeekByMuscle } from "../core/balance";
+import { groupVolumes, setsByPeriodAndGroup, setsPerWeekByMuscle, type GroupPeriod } from "../core/balance";
 import { muscleGroup, muscleLabel } from "../core/muscles";
-import { seriesBy, windowFor, type DateRange } from "../core/ranges";
+import { seriesBy, weeksIn, windowFor, type DateRange, type Period } from "../core/ranges";
 import type { Training } from "../core/training";
 import { TIME_ZONE } from "../hooks/useTraining";
 import { GroupGrid } from "./GroupGrid";
+
+/** Most weeks a phone draws as weeks: a year always fits; longer ranges go by month there. */
+const PHONE_MAX_WEEKS = 54;
+
+/** The section's heading and its grid. */
+function GroupSection({ periods, by, className }: { periods: GroupPeriod[]; by: Period; className?: string }) {
+  return (
+    <div className={className}>
+      <div className="section-head">
+        <h3 className="display">{by === "week" ? "Week by week" : "Month by month"}</h3>
+        <p className="quiet">dot size = working sets</p>
+      </div>
+      <GroupGrid periods={periods} by={by} />
+    </div>
+  );
+}
 
 /** Where the training goes: the six groups, each group week by week, then every muscle trained in the range. */
 export function Balance({ training, range }: { training: Training; range: DateRange }) {
   const muscles = useMemo(() => setsPerWeekByMuscle(training.data, TIME_ZONE, range, training.endDay), [training, range]);
   const groups = useMemo(() => groupVolumes(muscles), [muscles]);
-  const { periods, by } = useMemo(() => {
+  const grids = useMemo(() => {
     const w = windowFor(range, training.endDay, training.firstDay);
     const by = seriesBy(w);
-    return { periods: setsByPeriodAndGroup(training.data, TIME_ZONE, w, by), by };
+    const main = { by, periods: setsByPeriodAndGroup(training.data, TIME_ZONE, w, by) };
+    // Past a year of weeks, columns get too narrow to read on a phone, so phones get months.
+    const phone = by === "week" && weeksIn(w) > PHONE_MAX_WEEKS ? { by: "month" as const, periods: setsByPeriodAndGroup(training.data, TIME_ZONE, w, "month") } : null;
+    return { main, phone };
   }, [training, range]);
   // One scale for every bar on the page, so the same sets per week draw the same length.
   const max = Math.max(1, ...groups.map((g) => g.setsPerWeek), ...muscles.map((m) => m.setsPerWeek));
@@ -34,11 +53,8 @@ export function Balance({ training, range }: { training: Training; range: DateRa
 
       {muscles.length > 0 && (
         <>
-          <div className="section-head">
-            <h3 className="display">{by === "week" ? "Week by week" : "Month by month"}</h3>
-            <p className="quiet">dot size = working sets</p>
-          </div>
-          <GroupGrid periods={periods} by={by} />
+          <GroupSection {...grids.main} className={grids.phone ? "wide-only" : undefined} />
+          {grids.phone && <GroupSection {...grids.phone} className="phone-only" />}
         </>
       )}
 

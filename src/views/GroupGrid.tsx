@@ -19,20 +19,21 @@ const REST_RADIUS = 1;
 const monthFormat = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });
 const monthYearFormat = new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 
-/** "Legs, week of Nov 9: 14 sets" or "Legs, Oct 2025: 48 sets". */
-function cellTitle(group: string, start: string, by: Period, n: number): string {
-  const when = by === "week" ? `week of ${formatShortDate(start)}` : monthYearFormat.format(parseDay(start));
+/** "Legs, week of Nov 9: 14 sets", "Legs, week of Nov 17, 2025: …" in a grid spanning years, or "Legs, Oct 2025: 48 sets". */
+function cellTitle(group: string, start: string, by: Period, n: number, withYear: boolean): string {
+  const week = `week of ${formatShortDate(start)}${withYear ? `, ${start.slice(0, 4)}` : ""}`;
+  const when = by === "week" ? week : monthYearFormat.format(parseDay(start));
   return `${group}, ${when}: ${n} ${n === 1 ? "set" : "sets"}`;
 }
 
 /**
- * Labels over the columns: the month where a new one starts (weeks) or the year at each
- * January (months). The first column is labeled too, unless the next label is too close.
+ * Labels over the columns: the month where a new one starts (weeks), with January written
+ * as its year, or the year at each January (months). The first column is labeled too, unless the next label is too close.
  * In a dense grid, months off the quarter are marked minor, for narrow screens to drop.
  */
 function ticks(periods: readonly GroupPeriod[], by: Period, dense: boolean): { column: number; text: string; minor: boolean }[] {
   const keyOf = (start: string) => (by === "week" ? start.slice(0, 7) : start.slice(0, 4));
-  const textOf = (start: string) => (by === "week" ? monthFormat.format(parseDay(start)) : start.slice(0, 4));
+  const textOf = (start: string) => (by === "week" && start.slice(5, 7) !== "01" ? monthFormat.format(parseDay(start)) : start.slice(0, 4));
   const changes = periods.flatMap((p, i) => (i > 0 && keyOf(p.start) !== keyOf(periods[i - 1].start) ? [i] : []));
   const tick = (column: number) => {
     const start = periods[column].start;
@@ -51,6 +52,7 @@ export function GroupGrid({ periods, by }: { periods: GroupPeriod[]; by: Period 
   const radius = (sets: number) => 1.5 + 2.1 * Math.sqrt(sets / max);
   const width = { maxWidth: Math.round(columns * CELL * MAX_ZOOM) };
   const dense = by === "week" && columns > DENSE_WEEKS;
+  const spansYears = columns > 0 && periods[0].start.slice(0, 4) !== periods[columns - 1].start.slice(0, 4);
 
   return (
     <div
@@ -74,7 +76,7 @@ export function GroupGrid({ periods, by }: { periods: GroupPeriod[]; by: Period 
               const cx = i * CELL + CELL / 2;
               return n > 0 ? (
                 <circle key={p.start} cx={cx} cy={CELL / 2} r={radius(n)}>
-                  <title>{cellTitle(group, p.start, by, n)}</title>
+                  <title>{cellTitle(group, p.start, by, n, spansYears)}</title>
                 </circle>
               ) : (
                 <circle key={p.start} className="rest" cx={cx} cy={CELL / 2} r={REST_RADIUS} />
