@@ -19,6 +19,11 @@ export class HevyHttpError extends Error {
   }
 }
 
+/** Hevy answered with success, but not with what we expect (e.g. an unknown event). */
+export class UnexpectedResponseError extends Error {
+  name = "UnexpectedResponseError";
+}
+
 /** Gave up waiting out Hevy's rate limit (429). */
 export class RateLimitError extends Error {
   name = "RateLimitError";
@@ -58,6 +63,7 @@ export function exitCodeFor(error: unknown): number {
   if (error instanceof HevyHttpError) {
     return error.status === 401 || error.status === 403 ? EXIT.badKey : EXIT.hevyError;
   }
+  if (error instanceof UnexpectedResponseError) return EXIT.hevyError;
   if (error instanceof RateLimitError) return EXIT.rateLimited;
   if (error instanceof SaveError) return EXIT.saveFailed;
   if (isNetworkFailure(error)) return EXIT.offline;

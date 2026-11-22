@@ -41,7 +41,8 @@ const isDataset = (value: unknown): value is HevyDataset =>
  * the local day are the same; a new day rebuilds it from the data already loaded, so
  * "today" moves on in a long-running server just as it does on reloading the dashboard.
  * A file that can't be read or parsed throws a ToolError; the caller keeps `previous`,
- * so a sync caught half-written only fails the calls made while it runs.
+ * so a hand-edited or damaged file only fails the calls made until it is fixed.
+ * (A sync replaces the file in one rename, so it is never seen half-written.)
  */
 export function loadTraining(file: string, timeZone: string, previous?: Loaded, now = new Date()): Loaded {
   let mtimeMs: number;
