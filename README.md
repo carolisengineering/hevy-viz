@@ -38,12 +38,14 @@ The repo includes a generated sample dataset (`public/data/sample.json`), so the
 
 ### Use your own data
 
-Requires Hevy Pro. Create an API key at <https://hevy.com/settings?developer>, then:
+Requires Hevy Pro. Create an API key at <https://hevy.com/settings?developer>, then copy `.env.example` to `.env`, paste the key after `HEVY_API_KEY=`, and run:
 
 ```bash
-HEVY_API_KEY=your-key npm run sync   # → data/hevy.json (git-ignored, never built into dist/)
+npm run sync   # → data/hevy.json (git-ignored, never built into dist/)
 npm run dev
 ```
+
+`.env` is git-ignored. To pass the key without a file, run `HEVY_API_KEY=your-key npm run sync`. A key set in the environment wins over `.env`.
 
 If `hevy.json` exists the dashboard uses it; otherwise it falls back to the sample.
 

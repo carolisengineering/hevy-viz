@@ -1,15 +1,17 @@
 // Pulls your Hevy history into data/hevy.json (git-ignored, never built into dist/).
 // The first sync downloads everything; later ones fetch only what changed.
-// Usage: HEVY_API_KEY=... npm run sync          (add `-- --full` to download everything again)
-// The key is a Hevy Pro developer key: https://hevy.com/settings?developer
+// Usage: npm run sync                           (add `-- --full` to download everything again)
+// The key is a Hevy Pro developer key (https://hevy.com/settings?developer), read from HEVY_API_KEY
+// in the environment, else from a git-ignored .env in the repo root.
+import { resolveApiKey, REPO_ENV_FILE } from "./api-key.ts";
 import { exitCodeFor } from "./exitCodes.ts";
 import { MAX_RETRIES } from "./retry.ts";
 import { runSync, type SyncProgress, type SyncResult } from "./sync.ts";
 
 const DATA_FILE = "data/hevy.json";
 const count = (n: number) => n.toLocaleString("en-US");
-const apiKey = process.env.HEVY_API_KEY;
-if (!apiKey) {
+const resolved = resolveApiKey(process.env, REPO_ENV_FILE);
+if (!resolved) {
   console.error("Set HEVY_API_KEY (Hevy Pro → Settings → Developer).");
   process.exit(1);
 }
@@ -32,7 +34,7 @@ function summarize(r: SyncResult): string {
 // Kingdom Keys reads the exit code to say why a sync failed (see exitCodes.ts).
 try {
   // Outside public/ so `npm run build` never ships personal data; vite.config.ts serves it in dev.
-  const result = await runSync({ apiKey, file: DATA_FILE, full: process.argv.slice(2).includes("--full"), onProgress });
+  const result = await runSync({ apiKey: resolved.key, file: DATA_FILE, full: process.argv.slice(2).includes("--full"), onProgress });
   console.log(`${summarize(result)} → ${DATA_FILE}`);
 } catch (error) {
   console.error(error);
