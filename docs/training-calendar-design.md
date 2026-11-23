@@ -1,6 +1,6 @@
 # Training calendar: design
 
-**Status:** proposed, 2026-11-22.
+**Status:** implemented, 2026-11-22 (PR #17).
 **Scope:** one PR. Closes the roadmap item "Training calendar".
 Choices are the author's unless marked as the owner's. The owner picked this roadmap item and asked the author to make the calls *(owner, 2026-11-22: "dive in")*.
 
