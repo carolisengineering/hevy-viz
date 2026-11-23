@@ -34,6 +34,16 @@ export class SaveError extends Error {
   name = "SaveError";
 }
 
+/** A sync that may not download everything (`allowFull: false`) needs a full one; `reason` is planSync's. Exits 1 like any other. */
+export class FullSyncNeededError extends Error {
+  name = "FullSyncNeededError";
+  readonly reason: string;
+  constructor(reason: string) {
+    super(`A full sync is needed (${reason})`);
+    this.reason = reason;
+  }
+}
+
 /** Error codes (from Node's fetch, undici and the OS) that mean the network is down or unreachable. */
 export const NETWORK_CODES: ReadonlySet<string> = new Set([
   "ENOTFOUND",
