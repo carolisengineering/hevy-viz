@@ -1,6 +1,6 @@
 # Sync now (MCP tool): design
 
-**Status:** proposed, 2026-11-22.
+**Status:** proposed 2026-11-22. Approved 2026-11-23.
 **Scope:** one PR. Builds the "sync now" item under Future enhancements in `docs/mcp-server-design.md`.
 Choices are the author's unless marked as the owner's.
 
