@@ -1,6 +1,7 @@
 // The hevy-viz MCP server: answers questions about the synced Hevy data over stdio.
-// Read-only and local: it reads data/hevy.json (or HEVY_VIZ_DATA), never the network,
-// and never HEVY_API_KEY. stdout is the protocol channel, so diagnostics go to stderr.
+// The data is read locally from data/hevy.json (or HEVY_VIZ_DATA). Only `sync_now` reads
+// HEVY_API_KEY and calls Hevy, and only when it is called. stdout is the protocol
+// channel, so diagnostics go to stderr.
 import { readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,9 +9,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import { REPO_ENV_FILE } from "../scripts/api-key.ts";
 import { dropUndatedWorkouts, rangeEndDay } from "../src/core/dataset";
 import { buildTraining } from "../src/core/training";
 import type { HevyDataset } from "../src/core/types";
+import { makeSyncNow } from "./sync-tool.ts";
 import { balance, consistency, exerciseProgress, findExercises, mainLifts, recentWorkouts, ToolError, type ToolContext } from "./tools";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -95,12 +98,18 @@ const annotations = { readOnlyHint: true, openWorldHint: false } as const;
 
 /** Every description ends with the same promise and freshness rule. */
 const describe = (what: string, timeZone: string): string =>
-  `${what} Figures match the hevy-viz dashboard; dates are local days in ${timeZone}; data is as of the last sync (context.syncedAt). Mention the sync date if it's more than a few days old.`;
+  `${what} Figures match the hevy-viz dashboard; dates are local days in ${timeZone}; data is as of the last sync (context.syncedAt). If the question is about workouts after context.syncedAt, call sync_now first; otherwise mention the sync date if it's more than a few days old.`;
 
 const text = (body: string, isError = false): CallToolResult => ({ content: [{ type: "text", text: body }], ...(isError ? { isError } : {}) });
 
-/** The server with its six tools, reading `file` (reloaded whenever it changes). */
-export function createServer(file: string, timeZone: string): McpServer {
+export interface ServerOptions {
+  env?: NodeJS.ProcessEnv; // where sync_now looks for HEVY_API_KEY; default process.env
+  envFile?: string; // the .env it falls back to; default the repo root's
+  fetch?: typeof fetch; // default global fetch
+}
+
+/** The server with its seven tools, reading `file` (reloaded whenever it changes). */
+export function createServer(file: string, timeZone: string, options: ServerOptions = {}): McpServer {
   const server = new McpServer({ name: "hevy-viz", version: "1.0.0" });
   let loaded: Loaded | undefined;
 
@@ -212,6 +221,37 @@ export function createServer(file: string, timeZone: string): McpServer {
       annotations,
     },
     run(recentWorkouts),
+  );
+
+  const syncNow = makeSyncNow({
+    file,
+    timeZone,
+    env: options.env ?? process.env,
+    envFile: options.envFile ?? REPO_ENV_FILE,
+    fetch: options.fetch,
+    log: (line) => process.stderr.write(`${line}\n`),
+    onSynced: () => {
+      loaded = undefined;
+    },
+  });
+
+  server.registerTool(
+    "sync_now",
+    {
+      title: "Sync now",
+      description:
+        "Pulls new, edited and deleted workouts from Hevy into the synced data, then returns counts and a one-line summary (use the other tools for details). Call it when the user asks about something that may be after context.syncedAt (today's workout, \"this morning\", \"just now\") or asks to sync. Don't call it on every question; once per conversation is enough unless the user says they've logged something since. It never changes anything in Hevy. It can't do a first or full sync: it says to run `npm run sync` instead.",
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    async (extra): Promise<CallToolResult> => {
+      try {
+        const result = (await syncNow(extra.signal)) as unknown as Record<string, unknown>;
+        return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+      } catch (e) {
+        if (e instanceof ToolError) return text(e.message, true);
+        throw e;
+      }
+    },
   );
 
   return server;
