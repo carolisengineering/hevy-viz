@@ -43,8 +43,10 @@ describe("the server over stdio", () => {
       expect(tool.description).toContain("Figures match the hevy-viz dashboard");
       expect(tool.description).toContain("America/Chicago");
       expect(tool.description).toContain("sync_now");
+      expect(tool.description).toContain('not when context.source is "sample"');
     }
     const sync = tools.find((t) => t.name === "sync_now");
+    expect(sync?.description).toContain('Not for sample data (context.source "sample")');
     expect(sync?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true });
   });
 

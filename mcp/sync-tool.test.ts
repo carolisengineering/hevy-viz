@@ -201,16 +201,26 @@ describe("makeSyncNow", () => {
     ["an inner newline", `${KEY}\nx`],
     ["outer spaces", ` ${KEY}\nx `],
     ["a leading newline and a trailing NUL", `\n${KEY}\u0000`],
-  ])("a key fetch rejects as a header value (%s) never reaches the message or the log", async (_name, badKey) => {
+  ])("a key fetch would reject as a header value (%s) is refused before any request, without repeating it", async (_name, badKey) => {
     const { file } = await seed();
     const own: string[] = [];
     const message = await messageOf(makeSyncNow(deps(file, { env: { HEVY_API_KEY: badKey }, fetch: validatingFetch, log: (l) => own.push(l) }))());
+    expect(message).toBe(
+      "The Hevy API key in the HEVY_API_KEY environment variable has a line break or other invalid character in it. Copy it again from Hevy → Settings → Developer.",
+    );
+    expect(own).toEqual([]);
+  });
+
+  it("an error that quotes the trimmed key, as fetch does, is redacted in the log", async () => {
+    const { file } = await seed();
+    const quotingFetch = (async (_input: string | URL | Request, init?: RequestInit) => {
+      const key = new Headers(init?.headers).get("api-key");
+      throw new TypeError(`invalid header value: "${key}"`);
+    }) as typeof fetch;
+    const own: string[] = [];
+    const message = await messageOf(makeSyncNow(deps(file, { env: { HEVY_API_KEY: ` ${KEY} ` }, fetch: quotingFetch, log: (l) => own.push(l) }))());
     expect(message).toBe("The sync failed unexpectedly; nothing was changed.");
-    expect(own.some((l) => l.startsWith("hevy-viz: ") && l.includes("[redacted]"))).toBe(true);
-    for (const text of [message, ...own]) {
-      expect(text).not.toContain(badKey);
-      expect(text).not.toContain(badKey.trim());
-    }
+    expect(own).toEqual(['hevy-viz: sync failed: invalid header value: "[redacted]"']);
     lines.push(...own);
   });
 

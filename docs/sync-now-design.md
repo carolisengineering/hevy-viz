@@ -93,6 +93,8 @@ Move the body of `scripts/sync-hevy.ts` into an importable module, for example `
   - Offline: "Couldn't reach Hevy. Check the internet connection."
   - Other Hevy error, unexpected response: "Hevy returned an error (HTTP <status>); nothing was changed."
   - Save failed: "Synced, but couldn't write the data file; nothing was changed."
+  - *Changed 2026-11-23:* the bad-key message names where the key came from ("the HEVY_API_KEY environment variable" when it's not from `.env`). Added: "Couldn't read .env in the hevy-viz folder." (an unreadable `.env`), "Hevy returned something unexpected; nothing was changed." (a reply that isn't JSON, or isn't the shape expected), "Sync canceled; nothing was changed." and "The sync failed unexpectedly; nothing was changed." (anything else; the detail goes to stderr with the key removed).
+  - *Changed 2026-11-24:* a key with a line break or NUL inside is refused before any request, here and in `npm run sync`, with "The Hevy API key in <.env | the HEVY_API_KEY environment variable> has a line break or other invalid character in it. Copy it again from Hevy → Settings → Developer." Otherwise `fetch`'s error would quote the key. A byte-order mark at the start of `.env` is ignored.
 - **Rate limits:** the same retry rules as `npm run sync` (`scripts/retry.ts`). The budget is per request (up to 5 retries of up to 60 s each), and a sync makes at least 9 requests, so in a bad case a call can run for many minutes. *(Author's call: it's rare, and a separate set of rules for chat isn't worth the drift.)*
 - **Cancellation:** `runSync` takes an optional `AbortSignal` and passes it to `fetch` and to the retry waits. The tool passes the signal the MCP SDK gives each call, so if the client cancels or times out, the sync stops and writes nothing. Once the write has started, it finishes. *(Author's call: otherwise Claude reports a failure while the server quietly writes the file afterward.)* The command-line wrapper passes no signal and behaves as today.
 
@@ -100,6 +102,7 @@ Move the body of `scripts/sync-hevy.ts` into an importable module, for example `
 
 - **`sync_now`'s description:** it pulls new, edited and deleted workouts from Hevy. Call it when the user asks about something that may be after `context.syncedAt` (today's workout, "this morning", "just now") or asks to sync. Don't call it on every question. One call is enough per conversation unless the user says they've logged something since.
 - **The other six tools' shared freshness sentence** (`describe()` in `mcp/server.ts`) changes from "Mention the sync date if it's more than a few days old" to say that if the question is about workouts after `context.syncedAt`, Claude should call `sync_now` first, and otherwise mention the sync date when it's more than a few days old.
+- *Changed 2026-11-24:* both descriptions now say not to call `sync_now` when `context.source` is `"sample"`, since it would only ask permission and then refuse.
 
 ### 5. Docs
 
