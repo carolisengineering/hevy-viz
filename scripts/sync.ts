@@ -1,6 +1,6 @@
 // Pulls your Hevy history into a data file: the first sync downloads everything,
-// later ones fetch only what changed. Used by `npm run sync` (sync-hevy.ts) and,
-// later, by the MCP server. Never writes to stdout or stderr; progress goes to `onProgress`.
+// later ones fetch only what changed. Used by `npm run sync` (sync-hevy.ts) and by
+// the MCP server's `sync_now`. Never writes to stdout or stderr; progress goes to `onProgress`.
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";

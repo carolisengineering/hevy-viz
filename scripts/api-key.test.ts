@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,6 +33,11 @@ describe("resolveApiKey", () => {
 
   it("a missing .env is fine", () => {
     expect(resolveApiKey({}, envFile)).toBeNull();
+  });
+
+  it("rethrows a read error other than a missing file", () => {
+    mkdirSync(envFile);
+    expect(() => resolveApiKey({}, envFile)).toThrow(expect.objectContaining({ code: "EISDIR" }));
   });
 
   it("reads only HEVY_API_KEY and leaves process.env alone", () => {

@@ -5,7 +5,7 @@
 
 ## Summary
 
-A small local [MCP](https://modelcontextprotocol.io) server lets Claude (in Claude Code or the Claude desktop app) answer questions about the owner's training, such as "is my squat still going up?", "what have I neglected this month?" or "how does this year's bench compare with last year's?". It reads the synced `data/hevy.json` and computes every figure with the same `src/core` functions the dashboard uses, so an answer in chat always matches what the dashboard shows. It is read-only, runs on the owner's machine over stdio, and never calls the Hevy API.
+A small local [MCP](https://modelcontextprotocol.io) server lets Claude (in Claude Code or the Claude desktop app) answer questions about the owner's training, such as "is my squat still going up?", "what have I neglected this month?" or "how does this year's bench compare with last year's?". It reads the synced `data/hevy.json` and computes every figure with the same `src/core` functions the dashboard uses, so an answer in chat always matches what the dashboard shows. It is read-only, runs on the owner's machine over stdio, and never calls the Hevy API. *2026-11-23:* `sync_now` now reads the key and calls Hevy; see docs/sync-now-design.md.
 
 ## Why
 
@@ -33,7 +33,7 @@ A small local [MCP](https://modelcontextprotocol.io) server lets Claude (in Clau
 
 - A number in chat that disagrees with the dashboard for the same exercise, range and unit.
 - Dumping large raw data into the conversation. That is slow and costly, and it sends more personal data than the question needs.
-- Any network access, or the Hevy API key ever being read by the server.
+- Any network access, or the Hevy API key ever being read by the server. *2026-11-23:* `sync_now` now reads the key and calls Hevy; see docs/sync-now-design.md.
 - A server that silently answers from stale or sample data as though it were current.
 
 ## Constraints

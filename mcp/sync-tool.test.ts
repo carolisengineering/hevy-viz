@@ -1,4 +1,4 @@
-import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -120,6 +120,20 @@ describe("makeSyncNow", () => {
     expect(d.onSynced).not.toHaveBeenCalled();
   });
 
+  it("an unreadable .env: fixed message, a logged code, and no request", async () => {
+    const { dir, file } = await seed();
+    const envFile = join(dir, "env-dir");
+    await mkdir(envFile);
+    const { fn, calls } = fakeFetch({});
+    const d = deps(file, { env: {}, envFile, fetch: fn });
+    const message = await messageOf(makeSyncNow(d)());
+    expect(message).toBe("Couldn't read .env in the hevy-viz folder.");
+    expect(message).not.toContain(dir);
+    expect(lines).toEqual(["hevy-viz: couldn't read .env (EISDIR)"]);
+    expect(calls).toHaveLength(0);
+    expect(d.onSynced).not.toHaveBeenCalled();
+  });
+
   it("uses the environment key over .env", async () => {
     const { dir, file } = await seed();
     const envFile = join(dir, ".env");
@@ -204,7 +218,7 @@ describe("makeSyncNow", () => {
     const { file } = await seed();
     const { fn } = fakeFetch({ "/workouts/events": () => new Response("<html>proxy</html>", { status: 200 }) });
     const message = await messageOf(makeSyncNow(deps(file, { fetch: fn }))());
-    expect(message).toBe("The sync failed unexpectedly; nothing was changed.");
+    expect(message).toBe("Hevy returned something unexpected; nothing was changed.");
     expect(message).not.toContain("<html>");
   });
 

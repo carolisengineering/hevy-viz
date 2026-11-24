@@ -56,7 +56,7 @@ The first sync downloads everything. Later syncs fetch only what changed since t
 | Exit code | Meaning |
 |---|---|
 | 0 | Synced |
-| 1 | Anything else (including no `HEVY_API_KEY` set) |
+| 1 | Anything else (including no `HEVY_API_KEY` in the environment or `.env`) |
 | 20 | Hevy rejected the key (401 or 403) |
 | 21 | Still rate-limited after retrying, or Hevy asked for a long wait |
 | 22 | Couldn't reach Hevy (offline, DNS or connection failure) |
@@ -144,11 +144,14 @@ src/styles/                 Palette tokens (light and dark) and the notebook bas
 src/format.ts               Unit- and measure-aware formatting (kg/lb, times, distances, dates)
 src/App.tsx                 Header, range, unit and the view for the current route
 plugins/personal-data.ts    Vite: serves data/hevy.json in dev, blocks it from builds
-scripts/sync-hevy.ts        Hevy API → data/hevy.json (paginated)
+scripts/sync-hevy.ts        Command-line wrapper for `npm run sync`
+scripts/sync.ts             The sync itself (Hevy API → data/hevy.json), shared by `npm run sync` and `sync_now`
+scripts/api-key.ts          The Hevy API key, from the environment or .env
 scripts/retry.ts            When to retry a rate-limited (429) request
 scripts/generate-sample.ts  Seeded, realistic demo data
 mcp/tools.ts                MCP tool handlers over src/core: no SDK, no I/O
-mcp/server.ts               MCP server: stdio, tool registration, loading and reloading data/hevy.json
+mcp/sync-tool.ts            The `sync_now` tool: pulls new, edited and deleted workouts from Hevy
+mcp/server.ts               MCP server: stdio, tool registration, `sync_now`, loading and reloading data/hevy.json
 ```
 
 **How data flows**

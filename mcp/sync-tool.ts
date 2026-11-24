@@ -70,6 +70,8 @@ function toToolError(error: unknown, source: KeySource | undefined, signal?: Abo
   if (error instanceof FullSyncNeededError) {
     return new ToolError(`Can't sync from here: ${error.reason}. Run \`npm run sync\` in the hevy-viz folder.`);
   }
+  // A 200 whose body isn't JSON.
+  if (error instanceof SyntaxError) return new ToolError("Hevy returned something unexpected; nothing was changed.");
   switch (exitCodeFor(error)) {
     case EXIT.badKey: {
       const where = source === "environment" ? "the HEVY_API_KEY environment variable" : ".env";
@@ -93,7 +95,15 @@ export function makeSyncNow(deps: SyncNowDeps): (signal?: AbortSignal) => Promis
   let inFlight: Promise<SyncNowResult> | undefined;
 
   async function sync(signal?: AbortSignal): Promise<SyncNowResult> {
-    const key = resolveApiKey(deps.env, deps.envFile);
+    let key: ReturnType<typeof resolveApiKey>;
+    try {
+      key = resolveApiKey(deps.env, deps.envFile);
+    } catch (error) {
+      // The raw error carries the absolute path to .env, so the tool result gets fixed copy and the log gets only the code.
+      const code = (error as NodeJS.ErrnoException).code;
+      deps.log(`hevy-viz: couldn't read .env (${typeof code === "string" ? code : "unknown error"})`);
+      throw new ToolError("Couldn't read .env in the hevy-viz folder.");
+    }
     if (!key) throw new ToolError("No Hevy API key. Add HEVY_API_KEY to .env in the hevy-viz folder (see .env.example).");
     try {
       const r = await runSync({
