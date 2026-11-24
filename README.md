@@ -38,12 +38,14 @@ The repo includes a generated sample dataset (`public/data/sample.json`), so the
 
 ### Use your own data
 
-Requires Hevy Pro. Create an API key at <https://hevy.com/settings?developer>, then:
+Requires Hevy Pro. Create an API key at <https://hevy.com/settings?developer>, then copy `.env.example` to `.env`, paste the key after `HEVY_API_KEY=`, and run:
 
 ```bash
-HEVY_API_KEY=your-key npm run sync   # → data/hevy.json (git-ignored, never built into dist/)
+npm run sync   # → data/hevy.json (git-ignored, never built into dist/)
 npm run dev
 ```
+
+`.env` is git-ignored. To pass the key without a file, run `HEVY_API_KEY=your-key npm run sync`. A key set in the environment wins over `.env`.
 
 If `hevy.json` exists the dashboard uses it; otherwise it falls back to the sample.
 
@@ -54,7 +56,7 @@ The first sync downloads everything. Later syncs fetch only what changed since t
 | Exit code | Meaning |
 |---|---|
 | 0 | Synced |
-| 1 | Anything else (including no `HEVY_API_KEY` set) |
+| 1 | Anything else (including no `HEVY_API_KEY` in the environment or `.env`) |
 | 20 | Hevy rejected the key (401 or 403) |
 | 21 | Still rate-limited after retrying, or Hevy asked for a long wait |
 | 22 | Couldn't reach Hevy (offline, DNS or connection failure) |
@@ -68,7 +70,7 @@ A small local [MCP](https://modelcontextprotocol.io) server lets Claude answer q
 ### Setup
 
 **Claude Code:**
-1. Run `npm install`, then `npm run sync` (see [Use your own data](#use-your-own-data)).
+1. Run `npm install`, then `npm run sync` (see [Use your own data](#use-your-own-data)). To let Claude sync for you later, put your key in `.env` (copy `.env.example`; the file is git-ignored). The desktop app needs nothing extra.
 2. Open Claude Code in this folder.
 3. Approve the `hevy-viz` server when asked. The committed `.mcp.json` registers it.
 
@@ -77,6 +79,8 @@ A small local [MCP](https://modelcontextprotocol.io) server lets Claude answer q
 ```bash
 claude mcp add hevy-viz -- /absolute/path/to/hevy-viz/node_modules/.bin/tsx /absolute/path/to/hevy-viz/mcp/server.ts
 ```
+
+The ask-before-sync rule only applies in this folder. For the server in another project, add `mcp__hevy-viz__sync_now` under `permissions.ask` in that project's `.claude/settings.json` or in your `~/.claude/settings.json`, or Claude could sync without asking.
 
 **Claude desktop app:** add the server to `claude_desktop_config.json` and restart the app:
 
@@ -104,16 +108,18 @@ Use the repo's own `tsx`, as above, rather than `npx tsx`. Outside this folder, 
 | `consistency` | Sessions this month against your average, sessions per week, weeks trained and your longest break, and training time (total and per training day, optionally week by week) |
 | `balance` | Working sets per week for each muscle group (light ones flagged) and your busiest muscles; with `series`, week by week |
 | `recent_workouts` | Your training log: the latest workouts, or every workout in a date range (up to 40), with each workout's length and each exercise's top set |
+| `sync_now` | Pulls your latest workouts from Hevy, so you can ask about one you just logged |
 
 Every tool that looks at a period takes `90d`, `1y` (the default) or `all`, or your own `from` and `to` dates, so Claude can compare this year with last.
 
 ### Good to know
 
-- **Freshness:** answers are as current as your last `npm run sync`. Every answer carries the sync time, and Claude mentions it when the data is more than a few days old. A sync while a conversation is open is picked up on the next question.
+- **Freshness:** answers are as current as your last sync. Every answer carries the sync time, and Claude mentions it when the data is more than a few days old. A sync while a conversation is open is picked up on the next question. Claude can also sync mid-conversation with `sync_now`; Claude Code asks you first (see below). It only does an incremental sync; for a first or full sync it tells you to run `npm run sync`.
 - **Time zone:** days are counted in `America/Chicago` unless you set `HEVY_VIZ_TZ` to an [IANA time zone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), for example `export HEVY_VIZ_TZ=Europe/Berlin` before starting Claude Code. A mistyped zone stops the server with a message saying so. The dashboard uses your browser's time zone, so the two agree when both are the same zone.
 - **Other data:** `HEVY_VIZ_DATA` points the server at another file. For example, `HEVY_VIZ_DATA=public/data/sample.json` tries it on the sample. The server never falls back to the sample on its own.
-- **Read-only:** it never changes anything in Hevy and never reads `HEVY_API_KEY`.
-- **Privacy:** the server runs on your machine and makes no network calls, but whatever it returns becomes part of your conversation with Claude and is sent to Anthropic like anything else you type. Answers are kept small, with summaries and short lists rather than raw workouts, but asking for a month of workouts sends a month of workouts.
+- **Hevy is never changed:** `sync_now` rewrites the data file the server reads, but nothing in Hevy. Only `sync_now` reads the key (from the `HEVY_API_KEY` environment variable or `.env`) and talks to Hevy, and only to fetch your workouts.
+- **Asking first:** when Claude Code runs in this folder, it asks before each sync (the committed `.claude/settings.json` has the rule). In the desktop app, approval follows that app's own tool settings.
+- **Privacy:** the server runs on your machine and makes network calls only to Hevy, only through `sync_now`. Whatever it returns becomes part of your conversation with Claude and is sent to Anthropic like anything else you type. Answers are kept small, with summaries and short lists rather than raw workouts, but asking for a month of workouts sends a month of workouts.
 
 ## Architecture
 
@@ -138,11 +144,14 @@ src/styles/                 Palette tokens (light and dark) and the notebook bas
 src/format.ts               Unit- and measure-aware formatting (kg/lb, times, distances, dates)
 src/App.tsx                 Header, range, unit and the view for the current route
 plugins/personal-data.ts    Vite: serves data/hevy.json in dev, blocks it from builds
-scripts/sync-hevy.ts        Hevy API → data/hevy.json (paginated)
+scripts/sync-hevy.ts        Command-line wrapper for `npm run sync`
+scripts/sync.ts             The sync itself (Hevy API → data/hevy.json), shared by `npm run sync` and `sync_now`
+scripts/api-key.ts          The Hevy API key, from the environment or .env
 scripts/retry.ts            When to retry a rate-limited (429) request
 scripts/generate-sample.ts  Seeded, realistic demo data
 mcp/tools.ts                MCP tool handlers over src/core: no SDK, no I/O
-mcp/server.ts               MCP server: stdio, tool registration, loading and reloading data/hevy.json
+mcp/sync-tool.ts            The `sync_now` tool: pulls new, edited and deleted workouts from Hevy
+mcp/server.ts               MCP server: stdio, tool registration, `sync_now`, loading and reloading data/hevy.json
 ```
 
 **How data flows**

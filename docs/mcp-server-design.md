@@ -1,11 +1,11 @@
 # MCP server: design
 
-**Status:** proposed, 2026-11-15. Planning only; nothing is built yet.
+**Status:** implemented in PR #6. Proposed 2026-11-15.
 **Owner's direction:** "write the docs with your own picks." Every choice below is the author's call unless marked as the owner's, and each can be overruled.
 
 ## Summary
 
-A small local [MCP](https://modelcontextprotocol.io) server lets Claude (in Claude Code or the Claude desktop app) answer questions about the owner's training, such as "is my squat still going up?", "what have I neglected this month?" or "how does this year's bench compare with last year's?". It reads the synced `data/hevy.json` and computes every figure with the same `src/core` functions the dashboard uses, so an answer in chat always matches what the dashboard shows. It is read-only, runs on the owner's machine over stdio, and never calls the Hevy API.
+A small local [MCP](https://modelcontextprotocol.io) server lets Claude (in Claude Code or the Claude desktop app) answer questions about the owner's training, such as "is my squat still going up?", "what have I neglected this month?" or "how does this year's bench compare with last year's?". It reads the synced `data/hevy.json` and computes every figure with the same `src/core` functions the dashboard uses, so an answer in chat always matches what the dashboard shows. It is read-only, runs on the owner's machine over stdio, and never calls the Hevy API. *2026-11-23:* `sync_now` now reads the key and calls Hevy; see docs/sync-now-design.md.
 
 ## Why
 
@@ -33,7 +33,7 @@ A small local [MCP](https://modelcontextprotocol.io) server lets Claude (in Clau
 
 - A number in chat that disagrees with the dashboard for the same exercise, range and unit.
 - Dumping large raw data into the conversation. That is slow and costly, and it sends more personal data than the question needs.
-- Any network access, or the Hevy API key ever being read by the server.
+- Any network access, or the Hevy API key ever being read by the server. *2026-11-23:* `sync_now` now reads the key and calls Hevy; see docs/sync-now-design.md.
 - A server that silently answers from stale or sample data as though it were current.
 
 ## Constraints
@@ -210,6 +210,7 @@ Arguments are validated with the SDK's schema support (zod).
 
 - **A "sync now" tool** (the owner wants it later, not in v1). It would pull new workouts from Hevy so answers are current without leaving the conversation.
   - **Prerequisites:** incremental sync (the README roadmap's `/v1/workouts/events` item), so it fetches only what changed instead of the full history. *Added 2026-11-21:* incremental sync now exists (`docs/incremental-sync-design.md`), so this prerequisite is met.
+  - *Added 2026-11-23:* built; see docs/sync-now-design.md.
   - **What it changes:** the server would need `HEVY_API_KEY` in its environment, and it would make network calls, which relaxes the v1 rule "no network, never reads the key".
   - **Design points for then:** the tool should be explicit (never run implicitly by another tool), report what it fetched, and reuse the sync script's retry handling (`scripts/retry.ts`). The reload-on-change rule already picks up the new file.
 

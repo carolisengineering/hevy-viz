@@ -7,6 +7,9 @@ dist/
 /data/
 public/data/hevy.json
 
+# Hevy API key for npm run sync and the MCP server's sync_now. Never commit it.
+.env
+
 # Plan-execution scratch
 .impeccable/
 .superpowers/
