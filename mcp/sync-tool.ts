@@ -1,6 +1,6 @@
 // The `sync_now` tool's logic: pull new, edited and deleted workouts from Hevy into the data file.
 // The only place in the MCP server that reads the API key or uses the network.
-import { resolveApiKey, type KeySource } from "../scripts/api-key.ts";
+import { MalformedKeyError, resolveApiKey, type KeySource } from "../scripts/api-key.ts";
 import { EXIT, exitCodeFor, FullSyncNeededError, HevyHttpError } from "../scripts/exitCodes.ts";
 import { runSync, type SyncProgress } from "../scripts/sync.ts";
 import { ToolError } from "./tools.ts";
@@ -99,6 +99,7 @@ export function makeSyncNow(deps: SyncNowDeps): (signal?: AbortSignal) => Promis
     try {
       key = resolveApiKey(deps.env, deps.envFile);
     } catch (error) {
+      if (error instanceof MalformedKeyError) throw new ToolError(error.message);
       // The raw error carries the absolute path to .env, so the tool result gets fixed copy and the log gets only the code.
       const code = (error as NodeJS.ErrnoException).code;
       deps.log(`hevy-viz: couldn't read .env (${typeof code === "string" ? code : "unknown error"})`);

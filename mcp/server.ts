@@ -98,7 +98,7 @@ const annotations = { readOnlyHint: true, openWorldHint: false } as const;
 
 /** Every description ends with the same promise and freshness rule. */
 const describe = (what: string, timeZone: string): string =>
-  `${what} Figures match the hevy-viz dashboard; dates are local days in ${timeZone}; data is as of the last sync (context.syncedAt). If the question is about workouts after context.syncedAt, call sync_now first; otherwise mention the sync date if it's more than a few days old.`;
+  `${what} Figures match the hevy-viz dashboard; dates are local days in ${timeZone}; data is as of the last sync (context.syncedAt). If the question is about workouts after context.syncedAt, call sync_now first (but not when context.source is "sample": generated data can't be synced); otherwise mention the sync date if it's more than a few days old.`;
 
 const text = (body: string, isError = false): CallToolResult => ({ content: [{ type: "text", text: body }], ...(isError ? { isError } : {}) });
 
@@ -240,7 +240,7 @@ export function createServer(file: string, timeZone: string, options: ServerOpti
     {
       title: "Sync now",
       description:
-        "Pulls new, edited and deleted workouts from Hevy into the synced data, then returns counts and a one-line summary (use the other tools for details). Call it when the user asks about something that may be after context.syncedAt (today's workout, \"this morning\", \"just now\") or asks to sync. Don't call it on every question; once per conversation is enough unless the user says they've logged something since. It never changes anything in Hevy. It can't do a first or full sync: it says to run `npm run sync` instead.",
+        "Pulls new, edited and deleted workouts from Hevy into the synced data, then returns counts and a one-line summary (use the other tools for details). Call it when the user asks about something that may be after context.syncedAt (today's workout, \"this morning\", \"just now\") or asks to sync. Not for sample data (context.source \"sample\"): it can't sync that; to use real data, the user runs `npm run sync`. Don't call it on every question; once per conversation is enough unless the user says they've logged something since. It never changes anything in Hevy. It can't do a first or full sync: it says to run `npm run sync` instead.",
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },
     async (extra): Promise<CallToolResult> => {

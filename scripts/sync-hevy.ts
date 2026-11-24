@@ -3,14 +3,22 @@
 // Usage: npm run sync                           (add `-- --full` to download everything again)
 // The key is a Hevy Pro developer key (https://hevy.com/settings?developer), read from HEVY_API_KEY
 // in the environment, else from a git-ignored .env in the repo root.
-import { resolveApiKey, REPO_ENV_FILE } from "./api-key.ts";
+import { MalformedKeyError, resolveApiKey, REPO_ENV_FILE, type ApiKey } from "./api-key.ts";
 import { exitCodeFor } from "./exitCodes.ts";
 import { MAX_RETRIES } from "./retry.ts";
 import { runSync, type SyncProgress, type SyncResult } from "./sync.ts";
 
 const DATA_FILE = "data/hevy.json";
 const count = (n: number) => n.toLocaleString("en-US");
-const resolved = resolveApiKey(process.env, REPO_ENV_FILE);
+let resolved: ApiKey | null;
+try {
+  resolved = resolveApiKey(process.env, REPO_ENV_FILE);
+} catch (error) {
+  if (!(error instanceof MalformedKeyError)) throw error;
+  // Only the message: the key must not reach the terminal.
+  console.error(error.message);
+  process.exit(1);
+}
 if (!resolved) {
   console.error("Set HEVY_API_KEY (Hevy Pro → Settings → Developer).");
   process.exit(1);
