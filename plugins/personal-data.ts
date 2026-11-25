@@ -3,6 +3,7 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 
@@ -19,21 +20,29 @@ export const HEALTH_DATA_FILE = fileURLToPath(new URL("../data/health.json", imp
 /** Where the synced file lived before it moved out of public/. */
 const LEGACY_PUBLIC_FILE = "data/hevy.json";
 
-/** Dev-only: serve the synced file at /data/hevy.json, as if it lived in public/. */
+type Middleware = (req: unknown, res: ServerResponse, next: () => void) => Promise<void>;
+
+/** Answers with `file` as JSON, or falls through to the next handler when it doesn't exist. */
+export function serveJsonFile(file: string): Middleware {
+  return async (_req, res, next) => {
+    try {
+      const body = await readFile(file);
+      res.setHeader("content-type", "application/json");
+      res.end(body);
+    } catch {
+      next(); // Not there yet: the app falls back to the sample, or shows its empty state.
+    }
+  };
+}
+
+/** Dev-only: serve the synced files at /data/hevy.json and /data/health.json, as if they lived in public/. */
 export function servePersonalData(): Plugin {
   return {
     name: "serve-personal-data",
     apply: "serve",
     configureServer(server) {
-      server.middlewares.use("/data/hevy.json", async (_req, res, next) => {
-        try {
-          const body = await readFile(SYNCED_DATA_FILE);
-          res.setHeader("content-type", "application/json");
-          res.end(body);
-        } catch {
-          next(); // Not synced yet: the app falls back to the sample.
-        }
-      });
+      server.middlewares.use("/data/hevy.json", serveJsonFile(SYNCED_DATA_FILE));
+      server.middlewares.use("/data/health.json", serveJsonFile(HEALTH_DATA_FILE));
     },
   };
 }

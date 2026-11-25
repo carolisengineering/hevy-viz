@@ -1,9 +1,9 @@
-// Generates two years of believable training data so the dashboard can be
+// Generates two years of believable training and daily activity data so the dashboard can be
 // demoed publicly without exposing anyone's real workouts.
 // Usage: npm run sample
 import { mkdir, writeFile } from "node:fs/promises";
 import { MS_PER_DAY } from "../src/core/dates.ts";
-import type { HevyDataset, HevyExercise, HevyExerciseTemplate, HevyWorkout } from "../src/core/types.ts";
+import type { HealthDataset, HealthDay, HevyDataset, HevyExercise, HevyExerciseTemplate, HevyWorkout } from "../src/core/types.ts";
 
 /** Seeded linear congruential PRNG so the sample is stable between runs. */
 function makeRng(seed: number): () => number {
@@ -108,3 +108,32 @@ const dataset: HevyDataset = { source: "sample", synced_at: new Date().toISOStri
 await mkdir("public/data", { recursive: true });
 await writeFile("public/data/sample.json", JSON.stringify(dataset));
 console.log(`Saved ${workouts.length} sample workouts → public/data/sample.json`);
+
+// Daily Apple Health figures, from their own seeded generator so the workouts above never change.
+const HEALTH_BEGIN = new Date("2024-11-14T00:00:00Z");
+const HEALTH_END = new Date("2026-11-13T00:00:00Z");
+const WATCH_START = "2025-06-02";
+const NOT_WORN_CHANCE = 1 / 12;
+const healthRand = makeRng(7);
+const between = (lo: number, hi: number) => lo + healthRand() * (hi - lo);
+
+const days: HealthDay[] = [];
+for (let d = new Date(HEALTH_BEGIN); d <= HEALTH_END; d.setUTCDate(d.getUTCDate() + 1)) {
+  const date = d.toISOString().slice(0, 10);
+  const weekend = d.getUTCDay() === 0 || d.getUTCDay() === 6;
+  const trained = TRAINING_WEEKDAYS.includes(d.getUTCDay());
+  const steps = Math.round(between(5500, 9500) * (weekend ? 1.15 : 1));
+  const day: HealthDay = { date, steps, distance_km: Math.round(steps * between(0.00068, 0.00076) * 100) / 100 };
+  if (date >= WATCH_START) {
+    if (healthRand() >= NOT_WORN_CHANCE) {
+      day.exercise_min = Math.round(between(8, 25) + (trained ? between(30, 45) : 0));
+      day.active_kcal = Math.round(day.exercise_min * between(5, 7) + between(150, 250));
+    }
+    day.sleep_min = Math.round(between(380, 500));
+  }
+  days.push(day);
+}
+
+const health: HealthDataset = { source: "sample", imported_at: "2026-11-13T00:00:00.000Z", export_date: "2026-11-13", days };
+await writeFile("public/data/sample-health.json", JSON.stringify(health));
+console.log(`Saved ${days.length} sample health days → public/data/sample-health.json`);

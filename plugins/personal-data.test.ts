@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { blockPublicPersonalData, HEALTH_DATA_FILE, SYNCED_DATA_FILE } from "./personal-data.ts";
+import { blockPublicPersonalData, HEALTH_DATA_FILE, serveJsonFile, servePersonalData, SYNCED_DATA_FILE } from "./personal-data.ts";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
@@ -17,6 +17,43 @@ describe("SYNCED_DATA_FILE", () => {
 describe("HEALTH_DATA_FILE", () => {
   it("points at data/health.json in the repo, wherever the server is started from", () => {
     expect(HEALTH_DATA_FILE).toBe(resolve(repoRoot, "data/health.json"));
+  });
+});
+
+describe("servePersonalData", () => {
+  it("mounts a middleware for each personal file", () => {
+    const mounted: string[] = [];
+    const configure = servePersonalData().configureServer as (s: unknown) => void;
+    configure({ middlewares: { use: (path: string) => mounted.push(path) } });
+    expect(mounted).toEqual(["/data/hevy.json", "/data/health.json"]);
+  });
+});
+
+describe("serveJsonFile", () => {
+  const call = async (file: string) => {
+    const headers: Record<string, string> = {};
+    let body: unknown;
+    let nexted = false;
+    const res = { setHeader: (k: string, v: string) => (headers[k] = v), end: (b: unknown) => (body = b) };
+    await serveJsonFile(file)({}, res as never, () => (nexted = true));
+    return { headers, body, nexted };
+  };
+
+  it("serves the file as JSON", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "hevy-viz-serve-"));
+    try {
+      await writeFile(join(dir, "h.json"), '{"a":1}');
+      const { headers, body, nexted } = await call(join(dir, "h.json"));
+      expect(headers["content-type"]).toBe("application/json");
+      expect(String(body)).toBe('{"a":1}');
+      expect(nexted).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("falls through when the file is missing", async () => {
+    expect((await call("/nonexistent/health.json")).nexted).toBe(true);
   });
 });
 
