@@ -1,6 +1,6 @@
 # Activity history (Apple Health, part 1): design
 
-**Status:** proposed 2026-11-25.
+**Status:** proposed 2026-11-25. Approved 2026-11-25.
 **Scope:** one PR. The first of four Apple Health projects (see Later projects). Replaces the roadmap item "Apple Health overlay (body weight, resting HR)".
 Choices are the author's unless marked as the owner's.
 

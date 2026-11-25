@@ -45,3 +45,21 @@ export interface HevyDataset {
   workouts: HevyWorkout[];
   exercise_templates: HevyExerciseTemplate[];
 }
+
+/** One local (wall-time) day of Apple Health figures. A measure with no data is left out, never 0. */
+export interface HealthDay {
+  date: string; // "YYYY-MM-DD", local wall-time day
+  steps?: number; // whole
+  distance_km?: number; // two decimals
+  active_kcal?: number; // whole
+  exercise_min?: number; // whole
+  sleep_min?: number; // whole
+}
+
+/** The file written by scripts/health/ and read by the Activity tab. */
+export interface HealthDataset {
+  source: "apple-health" | "sample";
+  imported_at: string; // ISO instant
+  export_date: string; // "YYYY-MM-DD"
+  days: HealthDay[]; // ascending by date
+}
