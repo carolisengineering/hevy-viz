@@ -13,6 +13,9 @@ import type { Plugin } from "vite";
  */
 export const SYNCED_DATA_FILE = fileURLToPath(new URL("../data/hevy.json", import.meta.url));
 
+/** Where `npm run health` writes the Apple Health daily figures; same rules as above. */
+export const HEALTH_DATA_FILE = fileURLToPath(new URL("../data/health.json", import.meta.url));
+
 /** Where the synced file lived before it moved out of public/. */
 const LEGACY_PUBLIC_FILE = "data/hevy.json";
 

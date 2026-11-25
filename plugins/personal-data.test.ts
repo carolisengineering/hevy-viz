@@ -4,13 +4,19 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { blockPublicPersonalData, SYNCED_DATA_FILE } from "./personal-data.ts";
+import { blockPublicPersonalData, HEALTH_DATA_FILE, SYNCED_DATA_FILE } from "./personal-data.ts";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
 describe("SYNCED_DATA_FILE", () => {
   it("points at data/hevy.json in the repo, wherever the server is started from", () => {
     expect(SYNCED_DATA_FILE).toBe(resolve(repoRoot, "data/hevy.json"));
+  });
+});
+
+describe("HEALTH_DATA_FILE", () => {
+  it("points at data/health.json in the repo, wherever the server is started from", () => {
+    expect(HEALTH_DATA_FILE).toBe(resolve(repoRoot, "data/health.json"));
   });
 });
 
