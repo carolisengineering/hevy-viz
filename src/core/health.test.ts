@@ -218,8 +218,11 @@ describe("recentStretch", () => {
   });
 
   it("ends on the Hevy end day when it is earlier", () => {
-    const training = buildTraining(hevy("sample", "2026-11-13T00:00:00Z", ["2026-11-10", "2026-11-12"]), "UTC");
-    expect(recentStretch(health("2026-11-13", [], "sample"), training, "UTC").to).toBe("2026-11-12");
+    // The sample's last workout is a week before the export, so only the Hevy end day can give Nov 5.
+    const training = buildTraining(hevy("sample", "2026-11-13T00:00:00Z", ["2026-11-01", "2026-11-05"]), "UTC");
+    const s = recentStretch(health("2026-11-13", [], "sample"), training, "UTC");
+    expect(s.to).toBe("2026-11-05");
+    expect(s.from).toBe("2026-10-09");
   });
 
   it("ends the day before the export beside the Hevy sample", () => {
