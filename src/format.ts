@@ -1,5 +1,6 @@
 // Display formatting shared by every view, the chart and its table.
 import { parseDay } from "./core/dates";
+import type { MeasureId } from "./core/health";
 import { METRIC_LABEL, type MetricId, type ProgressPoint } from "./core/progress";
 
 // Days are UTC midnights (see core/dates), so format in UTC to keep the same date.
@@ -155,4 +156,32 @@ export function chartFormat(metric: MetricId, type: string, unit: Unit): ChartFo
     measure: METRIC_LABEL[metric],
     scale: isWeight && unit === "lb" ? 1 / KG_PER_LB : 1,
   };
+}
+
+const KM_PER_MILE = 1.609344;
+
+/** "8,412", "3.6 mi" or "5.9 km" (lb means miles), "41 min", "512 kcal", "7h05": one day's figure for a health measure. */
+export function formatHealth(measure: MeasureId, value: number, unit: Unit): string {
+  switch (measure) {
+    case "steps":
+      return formatCount(Math.round(value));
+    case "distance":
+      return unit === "lb" ? `${(value / KM_PER_MILE).toFixed(1)} mi` : `${value.toFixed(1)} km`;
+    case "exercise":
+      return `${Math.round(value)} min`;
+    case "calories":
+      return `${formatCount(Math.round(value))} kcal`;
+    case "sleep": {
+      const total = Math.round(value);
+      return `${Math.floor(total / 60)}h${String(total % 60).padStart(2, "0")}`;
+    }
+  }
+}
+
+const shortMonthFormat = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });
+
+/** "Oct", or "Oct 2025" when the month isn't in `currentYear`. */
+export function formatMonthShort(month: string, currentYear: string): string {
+  const name = shortMonthFormat.format(parseDay(`${month}-01`));
+  return month.slice(0, 4) === currentYear ? name : `${name} ${month.slice(0, 4)}`;
 }

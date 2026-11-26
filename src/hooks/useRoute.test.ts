@@ -22,6 +22,12 @@ describe("parseRoute", () => {
     expect(parseRoute("#/calendar/2026-13-45")).toEqual({ view: "calendar" });
   });
 
+  it("reads the activity tab and a measure on it", () => {
+    expect(parseRoute("#/activity")).toEqual({ view: "activity" });
+    expect(parseRoute("#/activity/sleep")).toEqual({ view: "activity", measure: "sleep" });
+    expect(parseRoute("#/activity/junk")).toEqual({ view: "activity" });
+  });
+
   it("falls back to the overview for an empty or unknown hash", () => {
     expect(parseRoute("")).toEqual({ view: "overview" });
     expect(parseRoute("#/nonsense")).toEqual({ view: "overview" });
@@ -40,6 +46,8 @@ describe("routeHref", () => {
     [{ view: "balance" }, "#/balance"],
     [{ view: "calendar" }, "#/calendar"],
     [{ view: "calendar", day: "2026-11-13" }, "#/calendar/2026-11-13"],
+    [{ view: "activity" }, "#/activity"],
+    [{ view: "activity", measure: "sleep" }, "#/activity/sleep"],
   ];
 
   it.each(routes)("writes %j as %s and reads it back", (route, href) => {

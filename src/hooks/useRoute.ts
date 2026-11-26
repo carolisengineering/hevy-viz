@@ -1,12 +1,14 @@
-// Hash routing for the four views: #/, #/exercises, #/exercises/<id>, #/balance, #/calendar, #/calendar/<day>.
+// Hash routing for the views: #/, #/exercises, #/exercises/<id>, #/balance, #/calendar, #/calendar/<day>, #/activity, #/activity/<measure>.
 import { useCallback, useSyncExternalStore } from "react";
 import { addDays, parseDay } from "../core/dates";
+import { MEASURES, type MeasureId } from "../core/health";
 
 export type Route =
   | { view: "overview" }
   | { view: "exercises"; exerciseId?: string }
   | { view: "balance" }
-  | { view: "calendar"; day?: string };
+  | { view: "calendar"; day?: string }
+  | { view: "activity"; measure?: MeasureId };
 
 /** A "YYYY-MM-DD" day that exists on the calendar (so not Feb 30). */
 const isDay = (s: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(parseDay(s).getTime()) && addDays(s, 0) === s;
@@ -24,6 +26,10 @@ export function parseRoute(hash: string): Route {
   const [view, id] = hash.replace(/^#\/?/, "").split("/");
   if (view === "balance") return { view: "balance" };
   if (view === "calendar") return id && isDay(id) ? { view: "calendar", day: id } : { view: "calendar" };
+  if (view === "activity") {
+    const measure = MEASURES.find((m) => m.id === id)?.id;
+    return measure ? { view: "activity", measure } : { view: "activity" };
+  }
   if (view === "exercises") return id ? { view: "exercises", exerciseId: decode(id) } : { view: "exercises" };
   return { view: "overview" };
 }
@@ -36,6 +42,8 @@ export function routeHref(route: Route): string {
       return "#/balance";
     case "calendar":
       return route.day == null ? "#/calendar" : `#/calendar/${route.day}`;
+    case "activity":
+      return route.measure == null ? "#/activity" : `#/activity/${route.measure}`;
     case "exercises":
       return route.exerciseId == null ? "#/exercises" : `#/exercises/${encodeURIComponent(route.exerciseId)}`;
   }

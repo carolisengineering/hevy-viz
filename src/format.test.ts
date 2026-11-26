@@ -9,6 +9,7 @@ import {
   formatDistance,
   formatDuration,
   formatFullDate,
+  formatHealth,
   formatLogDate,
   formatMinutes,
   formatMonth,
@@ -43,6 +44,20 @@ describe("format", () => {
   it("formats a day without shifting it by time zone", () => {
     expect(formatDate("2026-11-14")).toBe("Nov 14, 2026");
     expect(formatDate("2026-01-01")).toBe("Jan 1, 2026");
+  });
+});
+
+describe("formatHealth", () => {
+  it("writes each measure in its own form", () => {
+    expect(formatHealth("steps", 8412, "lb")).toBe("8,412");
+    expect(formatHealth("exercise", 41, "lb")).toBe("41 min");
+    expect(formatHealth("calories", 512, "lb")).toBe("512 kcal");
+    expect(formatHealth("sleep", 425, "lb")).toBe("7h05");
+  });
+
+  it("writes distance in miles for lb and kilometers for kg", () => {
+    expect(formatHealth("distance", 5.8, "lb")).toBe("3.6 mi");
+    expect(formatHealth("distance", 5.9, "kg")).toBe("5.9 km");
   });
 });
 

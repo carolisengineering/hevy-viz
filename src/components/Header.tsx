@@ -12,6 +12,7 @@ const TABS: readonly { view: Route["view"]; label: string }[] = [
   { view: "exercises", label: "Exercises" },
   { view: "balance", label: "Balance" },
   { view: "calendar", label: "Calendar" },
+  { view: "activity", label: "Activity" },
 ];
 
 const RANGE_OPTIONS = RANGES.map((r) => ({ id: r.id, label: r.label }));

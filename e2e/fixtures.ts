@@ -14,6 +14,11 @@ export const sample: HevyDataset = JSON.parse(
   readFileSync(new URL("../public/data/sample.json", import.meta.url), "utf8"),
 );
 
+/** A fresh copy of the committed health sample, for tests that edit it. */
+export function readHealthSample(): HealthDataset {
+  return JSON.parse(readFileSync(new URL("../public/data/sample-health.json", import.meta.url), "utf8"));
+}
+
 /**
  * The sample as if synced from Hevy, moved so its last workout was `daysAgo` days
  * before now. Synced data's ranges end today, so this controls what each range shows.
