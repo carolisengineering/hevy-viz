@@ -20,6 +20,7 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
 - **Exercises:** search, filter by kind and sort hundreds of exercises, with a page and progress chart for each.
 - **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged, and each group week by week.
 - **Calendar:** every month in the range as a calendar, newest first, with a dot for each training day. Pick a day to see its workouts: start time, length, and each exercise's top set.
+- **Activity:** your steps, distance, active calories, exercise minutes and time asleep, month by month, from an Apple Health export. Each measure has a page with a chart, yearly marks and a table. Needs one import (see [Apple Health](#apple-health)).
 - Date ranges (90 days / 1 year / all time) that apply to every view.
 - lb by default, or kg; remembered per browser.
 - A crosshair tooltip with keyboard support (focus the chart, then use ←/→), plus a table view of every chart.
@@ -34,7 +35,7 @@ npm install
 npm run dev
 ```
 
-The repo includes a generated sample dataset (`public/data/sample.json`), so the dashboard works right away. `npm run sample` regenerates it.
+The repo includes a generated sample dataset (`public/data/sample.json`), so the dashboard works right away. It also includes made-up health data (`public/data/sample-health.json`). `npm run sample` regenerates both files.
 
 ### Use your own data
 
@@ -62,6 +63,33 @@ The first sync downloads everything. Later syncs fetch only what changed since t
 | 22 | Couldn't reach Hevy (offline, DNS or connection failure) |
 | 23 | Hevy answered with some other error, or with a response the sync doesn't recognize (`npm run sync -- --full` gets past it) |
 | 24 | Couldn't write `data/hevy.json` |
+
+#### Apple Health
+
+The Activity tab reads a file you make from an Apple Health export. It is optional, and the other tabs work without it.
+
+1. On your iPhone, open Health, tap your picture, then **Export All Health Data**. It takes a few minutes.
+2. AirDrop the zip to your Mac, or save it to Downloads.
+3. Run:
+
+```bash
+npm run health -- ~/Downloads/export.zip   # → data/health.json (git-ignored, never built into dist/)
+npm run dev
+```
+
+The export is a snapshot, so the data is current to the day you exported. To update it, export again and re-run the command. Each run replaces `data/health.json`.
+
+What it does with the export:
+
+- It streams `export.xml` straight out of the zip, without unpacking it. It reads only steps, walking and running distance, sleep and the daily activity summaries. Every other type in the export is skipped and nothing else is kept. Your medical records (`export_cda.xml` and the clinical files) are never opened.
+- iPhone and Watch both count steps, distance and sleep. It keeps the larger of the two for each hour of steps and distance, and counts overlapping sleep once, so nothing is counted twice.
+- Sleep means time asleep. Time in bed and awake time don't count. A night counts toward the day you wake up.
+- Active calories and exercise minutes come from the Watch, so they start the first day you wore one. Days without the Watch are left out rather than shown as zero.
+- It prints progress and a summary of the days and date ranges it wrote, never your figures.
+
+The demo shows made-up health data only when the Hevy data is the sample too. With your own Hevy data and no import, the Activity tab explains how to import.
+
+The MCP server doesn't read health data.
 
 ## Ask Claude about your training
 
@@ -136,19 +164,22 @@ src/core/                   Pure logic, no DOM or fetch; unit tested
   muscles.ts                Muscle → group, overview side and label
   metrics.ts                Estimated 1RM (Epley), exercise frequency
   training.ts               The training model, main lifts, the log, and the Exercises list's search
-src/hooks/                  Load the dataset; build the training model once; routing; remembered settings
-src/views/                  Overview (tracklist, consistency, balance, log), Exercises, an exercise page, Balance, Calendar
-src/components/             Header, segmented controls, drawn SVG marks (ink.tsx), bars, table, empty state
-src/charts/                 D3 progress chart: React wrapper + draw steps (progressDraw.ts)
+  health.ts                 The five Apple Health measures: monthly and yearly averages, the Watch start
+src/hooks/                  Load the dataset and the health data (useHealth); build the training model once; routing; remembered settings
+src/views/                  Overview (tracklist, consistency, balance, log), Exercises, an exercise page, Balance, Calendar, Activity and a page per measure
+src/components/             Header, segmented controls, drawn SVG marks (ink.tsx), bars, tables, empty state, Activity rows and axis
+src/charts/                 D3 progress chart (progressDraw.ts) and Activity chart (activityDraw.ts), each a React wrapper plus draw steps
 src/styles/                 Palette tokens (light and dark) and the notebook base styles
 src/format.ts               Unit- and measure-aware formatting (kg/lb, times, distances, dates)
 src/App.tsx                 Header, range, unit and the view for the current route
-plugins/personal-data.ts    Vite: serves data/hevy.json in dev, blocks it from builds
+plugins/personal-data.ts    Vite: serves data/hevy.json and data/health.json in dev, blocks hevy.json from builds
 scripts/sync-hevy.ts        Command-line wrapper for `npm run sync`
 scripts/sync.ts             The sync itself (Hevy API → data/hevy.json), shared by `npm run sync` and `sync_now`
 scripts/api-key.ts          The Hevy API key, from the environment or .env
 scripts/retry.ts            When to retry a rate-limited (429) request
-scripts/generate-sample.ts  Seeded, realistic demo data
+scripts/import-health.ts    Command-line wrapper for `npm run health`
+scripts/health/             The Apple Health importer: read-export.ts streams the zip, aggregate.ts turns records into days
+scripts/generate-sample.ts  Seeded, realistic demo data (Hevy and health)
 mcp/tools.ts                MCP tool handlers over src/core: no SDK, no I/O
 mcp/sync-tool.ts            The `sync_now` tool: pulls new, edited and deleted workouts from Hevy
 mcp/server.ts               MCP server: stdio, tool registration, `sync_now`, loading and reloading data/hevy.json
@@ -157,15 +188,16 @@ mcp/server.ts               MCP server: stdio, tool registration, `sync_now`, lo
 **How data flows**
 
 1. `useDataset` loads `data/hevy.json`, or the sample if you haven't synced, and drops any workout whose start time can't be read.
-2. `useTraining` builds the training model (`src/core/training.ts`) once per dataset: the progress index for every exercise and the per-day training load.
-3. `App.tsx` reads the route from the URL hash (`#/`, `#/exercises`, `#/exercises/<id>`, `#/balance`) and hands the training model, range and unit to that view. Changing the range, unit or view only filters and formats.
+2. `useHealth` loads `data/health.json` (or the health sample, only when the Hevy data is the sample too) on its own, so a missing health file never affects the other tabs.
+3. `useTraining` builds the training model (`src/core/training.ts`) once per dataset: the progress index for every exercise and the per-day training load.
+4. `App.tsx` reads the route from the URL hash (`#/`, `#/exercises`, `#/exercises/<id>`, `#/balance`, `#/calendar`, `#/calendar/<day>`, `#/activity`, `#/activity/<measure>`) and hands the training model, range and unit to that view (Activity also gets the health data). Changing the range, unit or view only filters and formats.
 
 **Rules the code follows**
 
 - `src/core` has no browser or Node dependencies, so the dashboard and the MCP server share it.
 - A day is a `YYYY-MM-DD` string in the viewer's time zone. Core functions take the time zone as a parameter instead of assuming one.
-- Date ranges end today. The sample is a fixed snapshot, so its ranges end on its last workout day.
-- Personal data stays on your machine: `data/` is git-ignored, only the dev server serves it, and `npm run build` fails if a copy turns up in `public/`.
+- Date ranges end today. The sample is a fixed snapshot, so its ranges end on its last workout day. The Activity tab's ranges end on the export date when that is earlier.
+- Personal data stays on your machine: `data/` is git-ignored, only the dev server serves it, and `npm run build` fails if `hevy.json` turns up in `public/`.
 
 ## Scripts
 
@@ -177,15 +209,19 @@ mcp/server.ts               MCP server: stdio, tool registration, `sync_now`, lo
 | `npm run lint` | Lint with oxlint |
 | `npm run build` | Type-check and build to `dist/` |
 | `npm run sync` | Pull your Hevy data (only changes after the first time; `-- --full` for everything) |
-| `npm run sample` | Regenerate sample data |
+| `npm run health -- <export.zip>` | Turn an Apple Health export into `data/health.json` |
+| `npm run sample` | Regenerate sample data (Hevy and health) |
 | `npm run mcp` | Start the MCP server by hand, to check it starts (Claude Code starts it itself) |
 
-The browser tests need Playwright's Chromium once: `npx playwright install --only-shell chromium`. Each test serves its own data, so your synced `data/hevy.json` never affects the results.
+The browser tests need Playwright's Chromium once: `npx playwright install --only-shell chromium`. Each test serves its own data, so your synced `data/hevy.json` and `data/health.json` never affect the results.
 
 ## Roadmap
 
 - [x] Weekly sets per muscle group (heatmap)
 - [x] Training calendar
-- [ ] Apple Health overlay (body weight, resting HR)
+- [x] Activity history from Apple Health (steps, distance, calories, exercise, sleep)
+- [ ] Recent stretch report card
+- [ ] All activity on the calendar
+- [ ] Sleep and activity against lifting
 - [x] Incremental sync via `/v1/workouts/events`
 - [x] MCP server reusing `src/core`
