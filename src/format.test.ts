@@ -10,6 +10,8 @@ import {
   formatDuration,
   formatFullDate,
   formatHealth,
+  formatYearLabel,
+  healthFormat,
   formatLogDate,
   formatMinutes,
   formatMonth,
@@ -144,5 +146,31 @@ describe("chartFormat", () => {
   it("writes times as clock time with no unit", () => {
     const f = chartFormat("duration", "duration", "kg");
     expect([f.measure, f.unit, f.value(105), f.scale]).toEqual(["Longest", "", "1:45", 1]);
+  });
+});
+
+describe("healthFormat", () => {
+  it("writes distance in the header's unit with ticks on round display values", () => {
+    const mi = healthFormat("distance", "lb");
+    expect([mi.unit, mi.value(5.8), mi.scale]).toEqual(["mi", "3.6", 1 / 1.609344]);
+    const km = healthFormat("distance", "kg");
+    expect([km.unit, km.value(5.8), km.scale]).toEqual(["km", "5.8", 1]);
+  });
+
+  it("matches formatHealth for the rest, with the unit apart", () => {
+    expect([healthFormat("steps", "lb").value(8412.4), healthFormat("steps", "lb").unit]).toEqual(["8,412", ""]);
+    expect([healthFormat("exercise", "lb").value(41.2), healthFormat("exercise", "lb").unit]).toEqual(["41", "min"]);
+    expect([healthFormat("calories", "lb").value(512.4), healthFormat("calories", "lb").unit]).toEqual(["512", "kcal"]);
+    const sleep = healthFormat("sleep", "lb");
+    expect([sleep.value(425), sleep.unit, sleep.scale]).toEqual(["7h05", "", 1 / 60]);
+  });
+});
+
+describe("formatYearLabel", () => {
+  it("names a whole year by itself and a partial one by where it starts or ends", () => {
+    expect(formatYearLabel({ year: "2025" })).toBe("2025");
+    expect(formatYearLabel({ year: "2026", partialTo: "2026-11-13" })).toBe("2026, to Nov 13");
+    expect(formatYearLabel({ year: "2025", partialFrom: "2025-11-14" })).toBe("2025, from Nov 14");
+    expect(formatYearLabel({ year: "2026", partialFrom: "2026-05-01", partialTo: "2026-08-31" })).toBe("2026, May 1 to Aug 31");
   });
 });

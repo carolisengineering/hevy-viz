@@ -51,16 +51,31 @@ export function monthlyAverages(days: readonly HealthDay[], measure: MeasureId, 
   return groupAverages(valuesIn(days, measure, w), 7).map(({ key, value, days }) => ({ month: key, value, days }));
 }
 
-/** Average per calendar year; `partialTo` is the window's end when it falls inside that year. */
+export interface YearAverage {
+  year: string;
+  value: number;
+  days: number;
+  partialFrom?: string;
+  partialTo?: string;
+}
+
+/**
+ * Average per calendar year. `partialTo` is the window's end when it falls inside that year,
+ * and `partialFrom` where the year's coverage starts when that is after its first day: the window's
+ * start, or the measure's own first day when that is later (exercise before the Watch).
+ */
 export function yearlyAverages(
   days: readonly HealthDay[],
   measure: MeasureId,
   w: DayWindow,
-): { year: string; value: number; days: number; partialTo?: string }[] {
+): YearAverage[] {
+  const first = firstDayOf(days, measure);
+  const from = first != null && first > w.from ? first : w.from;
   return groupAverages(valuesIn(days, measure, w), 4).map(({ key, value, days }) => ({
     year: key,
     value,
     days,
+    ...(from.slice(0, 4) === key && from > `${key}-01-01` && { partialFrom: from }),
     ...(w.to.slice(0, 4) === key && w.to < `${key}-12-31` && { partialTo: w.to }),
   }));
 }

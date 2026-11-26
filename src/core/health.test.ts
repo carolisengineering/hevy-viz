@@ -55,7 +55,7 @@ describe("monthlyAverages", () => {
 
 describe("yearlyAverages", () => {
   it("marks the current partial year with partialTo", () => {
-    const days = [day("2025-06-01", 1000), day("2025-06-02", 3000), day("2026-02-01", 4000)];
+    const days = [day("2025-01-01", 1000), day("2025-06-02", 3000), day("2026-02-01", 4000)];
     const got = yearlyAverages(days, "steps", { from: "2025-01-01", to: "2026-11-25" });
     expect(got).toEqual([
       { year: "2025", value: 2000, days: 2 },
@@ -63,8 +63,36 @@ describe("yearlyAverages", () => {
     ]);
   });
 
+  it("marks a year cut at the start of the window with partialFrom", () => {
+    const days = [day("2025-11-14", 1000), day("2026-02-01", 4000)];
+    const got = yearlyAverages(days, "steps", { from: "2025-11-14", to: "2026-11-13" });
+    expect(got).toEqual([
+      { year: "2025", value: 1000, days: 1, partialFrom: "2025-11-14" },
+      { year: "2026", value: 4000, days: 1, partialTo: "2026-11-13" },
+    ]);
+  });
+
+  it("marks both ends when the window sits inside one year", () => {
+    const got = yearlyAverages([day("2026-05-01", 1000)], "steps", { from: "2026-05-01", to: "2026-08-31" });
+    expect(got).toEqual([{ year: "2026", value: 1000, days: 1, partialFrom: "2026-05-01", partialTo: "2026-08-31" }]);
+  });
+
+  it("does not mark a year that starts on Jan 1", () => {
+    const got = yearlyAverages([day("2025-01-01", 1000)], "steps", { from: "2025-01-01", to: "2026-11-13" });
+    expect(got[0]).toEqual({ year: "2025", value: 1000, days: 1 });
+  });
+
+  it("starts a year where the measure's own data starts when that is after the window's start", () => {
+    const days = [day("2025-03-01", 5000), day("2025-06-02", 5000, 30), day("2026-01-05", 5000, 50)];
+    const got = yearlyAverages(days, "exercise", { from: "2025-01-01", to: "2026-12-31" });
+    expect(got).toEqual([
+      { year: "2025", value: 30, days: 1, partialFrom: "2025-06-02" },
+      { year: "2026", value: 50, days: 1 },
+    ]);
+  });
+
   it("does not mark a year that ends on Dec 31", () => {
-    const got = yearlyAverages([day("2025-06-01", 1000)], "steps", { from: "2025-01-01", to: "2025-12-31" });
+    const got = yearlyAverages([day("2025-01-01", 1000)], "steps", { from: "2025-01-01", to: "2025-12-31" });
     expect(got).toEqual([{ year: "2025", value: 1000, days: 1 }]);
   });
 });

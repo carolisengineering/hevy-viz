@@ -1,6 +1,7 @@
 /* The activity tab: one ruled row per measure, all on the same timeline. */
 
-.activity-view {
+.activity-view,
+.activity-detail {
   max-width: 960px;
 }
 .activity-asof {
@@ -140,6 +141,16 @@
 .activity-empty code {
   font-family: inherit;
   border-bottom: 2px solid var(--accent);
+}
+
+/* The year table is its own box under the chart. */
+.activity-detail .box + .box {
+  margin-top: 24px;
+}
+
+/* The year column reads as one phrase ("2026, to Nov 13"), even on a phone. */
+.activity-detail td:first-child {
+  white-space: nowrap;
 }
 
 /* Phones: the label and the latest value share a line; the chart runs full width under them. */

@@ -12,6 +12,7 @@ import { useRoute } from "./hooks/useRoute";
 import { useTheme } from "./hooks/useTheme";
 import { useTraining } from "./hooks/useTraining";
 import { Activity } from "./views/Activity";
+import { ActivityDetail } from "./views/ActivityDetail";
 import { Balance } from "./views/Balance";
 import { Calendar } from "./views/Calendar";
 import { ExerciseDetail } from "./views/ExerciseDetail";
@@ -96,6 +97,15 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
           <Overview training={training} range={range} unit={unit} />
         ) : route.view === "calendar" ? (
           <Calendar training={training} range={range} day={route.day} unit={unit} />
+        ) : route.view === "activity" && route.measure != null ? (
+          <ActivityDetail
+            training={training}
+            health={health}
+            measure={route.measure}
+            range={range}
+            unit={unit}
+            onShowAll={() => setRangeId("all")}
+          />
         ) : route.view === "activity" ? (
           <Activity training={training} health={health} range={range} unit={unit} />
         ) : (

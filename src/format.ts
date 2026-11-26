@@ -160,13 +160,16 @@ export function chartFormat(metric: MetricId, type: string, unit: Unit): ChartFo
 
 const KM_PER_MILE = 1.609344;
 
+/** A distance in km as the header's unit shows it, to 0.1: miles for lb, km for kg. One conversion for the table and the chart. */
+const distanceText = (km: number, unit: Unit): string => (unit === "lb" ? km / KM_PER_MILE : km).toFixed(1);
+
 /** "8,412", "3.6 mi" or "5.9 km" (lb means miles), "41 min", "512 kcal", "7h05": one day's figure for a health measure. */
 export function formatHealth(measure: MeasureId, value: number, unit: Unit): string {
   switch (measure) {
     case "steps":
       return formatCount(Math.round(value));
     case "distance":
-      return unit === "lb" ? `${(value / KM_PER_MILE).toFixed(1)} mi` : `${value.toFixed(1)} km`;
+      return `${distanceText(value, unit)} ${unit === "lb" ? "mi" : "km"}`;
     case "exercise":
       return `${Math.round(value)} min`;
     case "calories":
@@ -184,4 +187,34 @@ const shortMonthFormat = new Intl.DateTimeFormat("en-US", { month: "short", time
 export function formatMonthShort(month: string, currentYear: string): string {
   const name = shortMonthFormat.format(parseDay(`${month}-01`));
   return month.slice(0, 4) === currentYear ? name : `${name} ${month.slice(0, 4)}`;
+}
+
+/** "2025", "2026, to Nov 13", "2025, from Nov 14", or "2026, May 1 to Aug 31" for a year the range cuts at both ends. */
+export function formatYearLabel(y: { year: string; partialFrom?: string; partialTo?: string }): string {
+  const { year, partialFrom: from, partialTo: to } = y;
+  if (from && to) return `${year}, ${formatShortDate(from)} to ${formatShortDate(to)}`;
+  if (from) return `${year}, from ${formatShortDate(from)}`;
+  if (to) return `${year}, to ${formatShortDate(to)}`;
+  return year;
+}
+
+/**
+ * How a health measure is written on its detail chart: values in stored units (km, minutes) become
+ * the header unit's display value with the unit apart, and `scale` puts axis ticks on round display
+ * values (miles, hours). No set text: a point is a month's average.
+ */
+export function healthFormat(measure: MeasureId, unit: Unit): ChartFormat {
+  const base = { set: () => "", measure: "", scale: 1 };
+  switch (measure) {
+    case "distance":
+      return { ...base, value: (v) => distanceText(v, unit), unit: unit === "lb" ? "mi" : "km", scale: unit === "lb" ? 1 / KM_PER_MILE : 1 };
+    case "exercise":
+      return { ...base, value: (v) => String(Math.round(v)), unit: "min" };
+    case "calories":
+      return { ...base, value: (v) => formatCount(Math.round(v)), unit: "kcal" };
+    case "sleep":
+      return { ...base, value: (v) => formatHealth("sleep", v, unit), unit: "", scale: 1 / 60 };
+    case "steps":
+      return { ...base, value: (v) => formatCount(Math.round(v)), unit: "" };
+  }
 }
