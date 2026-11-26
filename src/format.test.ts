@@ -221,6 +221,13 @@ describe("stretch text", () => {
 
   it("names the stretch's dates across New Year", () => {
     const s: RecentStretch = { from: "2026-12-20", to: "2027-01-16", usualFrom: "2025-12-20", usualTo: "2026-12-19", rows: [] };
-    expect(stretchDates(s)).toBe("Dec 20 – Jan 16");
+    expect(stretchDates(s, "2027")).toBe("Dec 20 – Jan 16");
+    expect(stretchDates(s, "2028")).toBe("Dec 20 – Jan 16, 2027");
+  });
+
+  it("adds the year when the stretch ended in an earlier year", () => {
+    const s: RecentStretch = { from: "2025-10-16", to: "2025-11-12", usualFrom: "2024-10-16", usualTo: "2025-10-15", rows: [] };
+    expect(stretchDates(s, "2025")).toBe("Oct 16 – Nov 12");
+    expect(stretchDates(s, "2026")).toBe("Oct 16 – Nov 12, 2025");
   });
 });

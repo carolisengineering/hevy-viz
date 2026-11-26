@@ -365,3 +365,15 @@ test("has no card without health data", async ({ page }) => {
   await expect(page.getByText("npm run health")).toBeVisible();
   await expect(card(page)).toHaveCount(0);
 });
+
+test("gives the year when the export is from an earlier year", async ({ page }) => {
+  const health = readHealthSample();
+  health.source = "apple-health";
+  health.export_date = "2025-11-13";
+  health.days = health.days.filter((d) => d.date <= health.export_date);
+  await serveSynced(page, syncedEndingDaysAgo(0));
+  await serveHealth(page, health);
+  await page.goto("/#/activity");
+  await expect(card(page).locator(".box-head")).toContainText("Oct 16 – Nov 12, 2025");
+  await expect(card(page).locator("caption")).toContainText("Oct 16 – Nov 12, 2025");
+});

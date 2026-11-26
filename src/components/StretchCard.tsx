@@ -4,11 +4,13 @@ import { STRETCH_LABELS, stretchComparison, stretchDates, stretchValue, type Uni
 interface Props {
   stretch: RecentStretch;
   unit: Unit;
+  /** "2026": a stretch that ended in an earlier year gives its year. */
+  currentYear: string;
 }
 
 /** The last four weeks against the year before them, one row per measure. The range picker doesn't change it. */
-export function StretchCard({ stretch, unit }: Props) {
-  const dates = stretchDates(stretch);
+export function StretchCard({ stretch, unit, currentYear }: Props) {
+  const dates = stretchDates(stretch, currentYear);
   return (
     <section className="box stretch" aria-labelledby="stretch-title">
       <div className="box-head">

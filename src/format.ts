@@ -253,5 +253,8 @@ export function stretchComparison(row: StretchRow, _unit: Unit): string {
   return `${Math.round(Math.abs(percent))}% ${percent > 0 ? "above" : "below"}`;
 }
 
-/** "Oct 24 – Nov 20" */
-export const stretchDates = (s: RecentStretch): string => `${formatShortDate(s.from)} – ${formatShortDate(s.to)}`;
+/** "Oct 24 – Nov 20", or "Oct 24 – Nov 20, 2025" when the stretch ended before `currentYear`, so an old export never reads as recent. */
+export function stretchDates(s: RecentStretch, currentYear: string): string {
+  const dates = `${formatShortDate(s.from)} – ${formatShortDate(s.to)}`;
+  return s.to.slice(0, 4) === currentYear ? dates : `${dates}, ${s.to.slice(0, 4)}`;
+}

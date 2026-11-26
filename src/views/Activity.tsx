@@ -3,9 +3,11 @@ import { useMemo } from "react";
 import { ActivityAxis } from "../components/ActivityAxis";
 import { ActivityRow } from "../components/ActivityRow";
 import { StretchCard } from "../components/StretchCard";
+import { toLocalDay } from "../core/dates";
 import { healthEndDay, healthWindow, MEASURES, recentStretch } from "../core/health";
 import type { DateRange } from "../core/ranges";
 import type { Training } from "../core/training";
+import type { HealthDataset } from "../core/types";
 import { formatDate, type Unit } from "../format";
 import type { HealthState } from "../hooks/useHealth";
 import { TIME_ZONE } from "../hooks/useTraining";
@@ -17,6 +19,15 @@ interface Props {
   unit: Unit;
   /** Whether the Hevy data is the sample, whose end day says nothing about a real health export. */
   hevyIsSample: boolean;
+}
+
+/**
+ * The viewer's year: today's, or the sample's own for the demo, whose dates are a fixed snapshot.
+ * A real Hevy dataset already ends today; the Hevy sample beside a real export does not.
+ */
+function currentYear(training: Training, healthSource: HealthDataset["source"]): string {
+  const today = healthSource === "sample" ? training.endDay : toLocalDay(new Date().toISOString(), TIME_ZONE);
+  return today.slice(0, 4);
 }
 
 /** Five measures from Apple Health, each a row of monthly averages on one shared timeline. */
@@ -43,7 +54,7 @@ export function Activity({ training, health, range, unit, hevyIsSample }: Props)
     const w = healthWindow(range, healthEndDay(training.endDay, data, hevyIsSample), data.days);
     body = (
       <>
-        {stretch && <StretchCard stretch={stretch} unit={unit} />}
+        {stretch && <StretchCard stretch={stretch} unit={unit} currentYear={currentYear(training, data.source)} />}
         <p className="activity-asof">Apple Health data as of {formatDate(data.export_date)}</p>
         <div className="activity-rows">
           {MEASURES.map((m) => (

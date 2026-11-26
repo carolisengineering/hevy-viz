@@ -312,6 +312,12 @@ describe("recentStretch", () => {
     expect(fresh.status).not.toBe("not-synced");
   });
 
+  it("asks for a sync when the sync time can't be read", () => {
+    for (const synced of ["", "not a date"]) {
+      expect(row(recentStretch(health("2026-11-21"), realTraining(["2025-01-01"], synced), "UTC"), "training").status).toBe("not-synced");
+    }
+  });
+
   it("compares the sync day in the viewer's time zone", () => {
     const zone = "America/Los_Angeles";
     const status = (synced: string) =>

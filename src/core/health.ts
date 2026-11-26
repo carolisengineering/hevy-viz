@@ -157,7 +157,9 @@ function meanIn(days: readonly HealthDay[], measure: MeasureId, w: DayWindow): {
 }
 
 function trainingRow(training: Training, s: Omit<RecentStretch, "rows">, timeZone: string): StretchRow {
-  if (training.data.source === "hevy" && toLocalDay(training.data.synced_at, timeZone) < s.to) {
+  // A sync time that can't be read is treated as no sync, rather than crashing the tab.
+  const synced = training.data.synced_at;
+  if (training.data.source === "hevy" && (Number.isNaN(Date.parse(synced)) || toLocalDay(synced, timeZone) < s.to)) {
     return { id: "training", recent: null, usual: null, status: "not-synced" };
   }
   const count = (from: string, to: string) => {
