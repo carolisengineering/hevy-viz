@@ -1,5 +1,5 @@
 // Shared setup for the browser tests: each test chooses its own data, so your
-// synced data/hevy.json (if any) never affects results, and every test fails
+// synced data/hevy.json and data/health.json (if any) never affect results, and every test fails
 // on browser errors, including ResizeObserver loop errors that never reach the console.
 import { readFileSync } from "node:fs";
 import { expect, test as base, type Page } from "@playwright/test";

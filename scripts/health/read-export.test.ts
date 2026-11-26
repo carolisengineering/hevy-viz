@@ -8,7 +8,7 @@ import { ExportReadError, exportXmlLines, importLines, parseLine } from "./read-
 const device = (model: string) =>
   `device="&lt;&lt;HKDevice: 0x1&gt;, name:Apple Watch, manufacturer:Apple Inc., model:${model}, hardware:Watch6,1&gt;"`;
 const step = (extra = "", unit = "count") =>
-  `<Record type="HKQuantityTypeIdentifierStepCount" sourceName="Carol's Watch" ${extra} unit="${unit}" startDate="2025-03-04 09:00:00 -0600" endDate="2025-03-04 09:10:00 -0600" value="412"/>`;
+  `<Record type="HKQuantityTypeIdentifierStepCount" sourceName="Test Watch" ${extra} unit="${unit}" startDate="2025-03-04 09:00:00 -0600" endDate="2025-03-04 09:10:00 -0600" value="412"/>`;
 const sleepLine = (value: string) =>
   `<Record type="HKCategoryTypeIdentifierSleepAnalysis" sourceName="Watch" startDate="2025-03-03 23:00:00 -0600" endDate="2025-03-04 06:00:00 -0600" value="${value}"/>`;
 
@@ -21,7 +21,7 @@ describe("parseLine", () => {
     expect(parseLine(`  ${step(device("Watch"))}`)).toEqual({
       kind: "quantity",
       type: "steps",
-      source: "Carol's Watch",
+      source: "Test Watch",
       watch: true,
       start: "2025-03-04 09:00:00",
       end: "2025-03-04 09:10:00",
@@ -109,7 +109,7 @@ describe("importLines", () => {
     `<HealthData locale="en_US">`,
     ` <ExportDate value="2026-11-25 10:30:00 -0600"/>`,
     ` ${step(device("Watch"))}`,
-    ` <Record type="HKQuantityTypeIdentifierDistanceWalkingRunning" sourceName="Carol's Watch" ${device("Watch")} unit="mi" startDate="2025-03-04 09:00:00 -0600" endDate="2025-03-04 09:10:00 -0600" value="1"/>`,
+    ` <Record type="HKQuantityTypeIdentifierDistanceWalkingRunning" sourceName="Test Watch" ${device("Watch")} unit="mi" startDate="2025-03-04 09:00:00 -0600" endDate="2025-03-04 09:10:00 -0600" value="1"/>`,
     ` ${sleepLine("HKCategoryValueSleepAnalysisAsleepCore")}`,
     ` ${sleepLine("HKCategoryValueSleepAnalysisInBed")}`,
     ` <Record type="HKQuantityTypeIdentifierHeartRate" unit="count/min" startDate="2025-03-04 09:00:00 -0600" endDate="2025-03-04 09:00:00 -0600" value="60"/>`,
@@ -129,6 +129,16 @@ describe("importLines", () => {
       days: [{ date: "2025-03-04", steps: 412, distance_km: 1.61, active_kcal: 500, exercise_min: 30, sleep_min: 420 }],
     });
     expect(progress.at(-1)).toBe(doc.length);
+  });
+
+  it("refuses an export with no ExportDate line, naming no values", async () => {
+    await expect(importLines(gen(doc.filter((l) => !l.includes("<ExportDate"))), new Date())).rejects.toThrow(
+      "The export has no export date, so nothing was written.",
+    );
+  });
+
+  it("refuses an export with no wanted records", async () => {
+    await expect(importLines(gen([doc[0]!, doc[2]!]), new Date())).rejects.toThrow("The export has no days of data, so nothing was written.");
   });
 
   it("lets a parse error propagate with the line number", async () => {

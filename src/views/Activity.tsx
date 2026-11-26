@@ -12,10 +12,12 @@ interface Props {
   health: HealthState;
   range: DateRange;
   unit: Unit;
+  /** Whether the Hevy data is the sample, whose end day says nothing about a real health export. */
+  hevyIsSample: boolean;
 }
 
 /** Five measures from Apple Health, each a row of monthly averages on one shared timeline. */
-export function Activity({ training, health, range, unit }: Props) {
+export function Activity({ training, health, range, unit, hevyIsSample }: Props) {
   let body;
   if (health.status === "loading") {
     body = <p className="quiet">Loading…</p>;
@@ -33,7 +35,7 @@ export function Activity({ training, health, range, unit }: Props) {
     );
   } else {
     const { data } = health;
-    const w = healthWindow(range, healthEndDay(training.endDay, data), data.days);
+    const w = healthWindow(range, healthEndDay(training.endDay, data, hevyIsSample), data.days);
     body = (
       <>
         <p className="activity-asof">Apple Health data as of {formatDate(data.export_date)}</p>

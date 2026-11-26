@@ -22,7 +22,7 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
 - **Calendar:** every month in the range as a calendar, newest first, with a dot for each training day. Pick a day to see its workouts: start time, length, and each exercise's top set.
 - **Activity:** your steps, distance, active calories, exercise minutes and time asleep, month by month, from an Apple Health export. Each measure has a page with a chart, yearly marks and a table. Needs one import (see [Apple Health](#apple-health)).
 - Date ranges (90 days / 1 year / all time) that apply to every view.
-- lb by default, or kg; remembered per browser.
+- lb by default, or kg; remembered per browser. Distance on the Activity tab follows it (lb shows miles, kg shows kilometers).
 - A crosshair tooltip with keyboard support (focus the chart, then use ←/→), plus a table view of every chart.
 - Light and dark mode: follow the system, or pick one in the header (remembered per browser).
 - A layout that works on phones.
@@ -172,7 +172,7 @@ src/charts/                 D3 progress chart (progressDraw.ts) and Activity cha
 src/styles/                 Palette tokens (light and dark) and the notebook base styles
 src/format.ts               Unit- and measure-aware formatting (kg/lb, times, distances, dates)
 src/App.tsx                 Header, range, unit and the view for the current route
-plugins/personal-data.ts    Vite: serves data/hevy.json and data/health.json in dev, blocks hevy.json from builds
+plugins/personal-data.ts    Vite: serves data/hevy.json and data/health.json in dev, blocks hevy.json and health.json from builds
 scripts/sync-hevy.ts        Command-line wrapper for `npm run sync`
 scripts/sync.ts             The sync itself (Hevy API → data/hevy.json), shared by `npm run sync` and `sync_now`
 scripts/api-key.ts          The Hevy API key, from the environment or .env
@@ -196,8 +196,8 @@ mcp/server.ts               MCP server: stdio, tool registration, `sync_now`, lo
 
 - `src/core` has no browser or Node dependencies, so the dashboard and the MCP server share it.
 - A day is a `YYYY-MM-DD` string in the viewer's time zone. Core functions take the time zone as a parameter instead of assuming one.
-- Date ranges end today. The sample is a fixed snapshot, so its ranges end on its last workout day. The Activity tab's ranges end on the export date when that is earlier.
-- Personal data stays on your machine: `data/` is git-ignored, only the dev server serves it, and `npm run build` fails if `hevy.json` turns up in `public/`.
+- Date ranges end today. The sample is a fixed snapshot, so its ranges end on its last workout day. The Activity tab's ranges end on the Apple Health export date when that is earlier (or always, for an imported export beside the Hevy sample).
+- Personal data stays on your machine: `data/` is git-ignored, only the dev server serves it, and `npm run build` fails if `hevy.json` or `health.json` turns up in `public/`.
 
 ## Scripts
 
@@ -213,7 +213,7 @@ mcp/server.ts               MCP server: stdio, tool registration, `sync_now`, lo
 | `npm run sample` | Regenerate sample data (Hevy and health) |
 | `npm run mcp` | Start the MCP server by hand, to check it starts (Claude Code starts it itself) |
 
-The browser tests need Playwright's Chromium once: `npx playwright install --only-shell chromium`. Each test serves its own data, so your synced `data/hevy.json` and `data/health.json` never affect the results.
+The browser tests need Playwright's Chromium once: `npx playwright install --only-shell chromium`. Each test serves its own data, so your own `data/hevy.json` (synced) and `data/health.json` (imported) never affect the results.
 
 ## Roadmap
 

@@ -48,7 +48,13 @@ export function ActivityRow({ measure, days, window: w, unit }: Props) {
     const a = averages.find((v) => v.month === month);
     return a ? { left: ((column.get(month)! + 0.5) / months.length) * 100, top: (y(a.value) / H) * 100 } : null;
   };
-  const lone = averages.length === 1 ? point(averages[0].month) : null;
+  // A month with no neighbor draws no line segment, so it gets a dot of its own.
+  const has = new Set(averages.map((a) => a.month));
+  const loneMonths = averages.filter((a) => {
+    const i = column.get(a.month)!;
+    return !has.has(months[i - 1] ?? "") && !has.has(months[i + 1] ?? "");
+  });
+  const lones = loneMonths.map((a) => ({ month: a.month, ...point(a.month)! }));
   const mark = latest ? point(latest.month) : null;
   // The dashed average starts where this measure's data does inside the window.
   const averageFrom = averages.length ? (column.get(averages[0].month)! / months.length) * W : 0;
@@ -56,6 +62,9 @@ export function ActivityRow({ measure, days, window: w, unit }: Props) {
   // "before your Watch": exercise and calories start with the Watch, so the stretch before their first day
   // (or the whole window, when it ends first) is not missing data. It is said under the row's name.
   const beforeWatch = (measure.id === "exercise" || measure.id === "calories") && first != null && w.from < first;
+  // Any other measure that starts inside the window says so, so the blank stretch before it is not a mystery.
+  const startsLater = !beforeWatch && measure.id !== "exercise" && measure.id !== "calories" && first != null && w.from < first;
+  const startsText = startsLater ? `starts ${formatMonthShort(first.slice(0, 7), "")}` : null;
 
   const latestText = latest ? formatHealth(measure.id, latest.value, unit) : null;
   const latestMonth = latest ? formatMonthShort(latest.month, currentYear) : null;
@@ -64,6 +73,7 @@ export function ActivityRow({ measure, days, window: w, unit }: Props) {
     latest ? `${latestMonth}: ${latestText}` : "no complete month yet",
     average == null ? "no data in this range" : `average ${formatHealth(measure.id, average, unit)} in this range`,
     ...(beforeWatch ? ["range starts before your Watch data"] : []),
+    ...(startsText ? [`range ${startsText}`] : []),
   ].join(", ");
 
   return (
@@ -71,6 +81,7 @@ export function ActivityRow({ measure, days, window: w, unit }: Props) {
       <span className="activity-name">
         <span className="activity-label">{measure.label}</span>
         {beforeWatch && <span className="activity-sub">before your Watch</span>}
+        {startsText && <span className="activity-sub">{startsText}</span>}
       </span>
       <span className="activity-chart">
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
@@ -87,7 +98,9 @@ export function ActivityRow({ measure, days, window: w, unit }: Props) {
           )}
           {d && <path className="activity-line" d={d} vectorEffect="non-scaling-stroke" />}
         </svg>
-        {lone && <span className="activity-dot" style={{ left: `${lone.left}%`, top: `${lone.top}%` }} />}
+        {lones.map((l) => (
+          <span key={l.month} className="activity-dot" style={{ left: `${l.left}%`, top: `${l.top}%` }} />
+        ))}
         {mark && <span className="activity-mark" style={{ left: `${mark.left}%`, top: `${mark.top}%` }} />}
         {average == null && !beforeWatch && <span className="activity-note">No data in this range</span>}
       </span>

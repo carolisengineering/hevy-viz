@@ -112,7 +112,11 @@ export async function importLines(lines: AsyncIterable<string>, now: Date, onPro
     else if (parsed) aggregator.add(parsed);
     onProgress?.(lineNumber);
   }
-  return { source: "apple-health", imported_at: now.toISOString(), export_date: exportDate, days: aggregator.days() };
+  const days = aggregator.days();
+  // Refuse rather than write a file the views can't use, or one that blanks a good import.
+  if (!exportDate) throw new Error("The export has no export date, so nothing was written.");
+  if (days.length === 0) throw new Error("The export has no days of data, so nothing was written.");
+  return { source: "apple-health", imported_at: now.toISOString(), export_date: exportDate, days };
 }
 
 /** The lines of apple_health_export/export.xml inside `zipPath`, streamed through `unzip -p`. Rejects with ExportReadError if unzip fails or the entry is missing. */

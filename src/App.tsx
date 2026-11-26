@@ -104,10 +104,11 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
             measure={route.measure}
             range={range}
             unit={unit}
+            hevyIsSample={data.source === "sample"}
             onShowAll={() => setRangeId("all")}
           />
         ) : route.view === "activity" ? (
-          <Activity training={training} health={health} range={range} unit={unit} />
+          <Activity training={training} health={health} range={range} unit={unit} hevyIsSample={data.source === "sample"} />
         ) : (
           <Balance training={training} range={range} />
         )}

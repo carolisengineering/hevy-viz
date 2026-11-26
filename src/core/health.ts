@@ -104,10 +104,13 @@ export function healthWindow(range: DateRange, endDay: string, days: readonly He
 }
 
 /**
- * The end day for health views: the earlier of the Hevy end day and the export's date.
- * The export is a manual file that can be weeks older than today, and days after it
- * have no data yet, so they must not count as complete months or extend a partial year.
+ * The end day for health views. Normally the earlier of the Hevy end day and the export's date:
+ * the export is a manual file that can be weeks older than today, and days after it have no data
+ * yet, so they must not count as complete months or extend a partial year. The exception is a real
+ * export beside the Hevy sample, whose end day is frozen at the sample's last workout and says
+ * nothing about the export; there the view ends on the export date.
  */
-export function healthEndDay(hevyEndDay: string, data: HealthDataset): string {
+export function healthEndDay(hevyEndDay: string, data: HealthDataset, hevyIsSample: boolean): string {
+  if (hevyIsSample && data.source === "apple-health") return data.export_date;
   return hevyEndDay < data.export_date ? hevyEndDay : data.export_date;
 }
