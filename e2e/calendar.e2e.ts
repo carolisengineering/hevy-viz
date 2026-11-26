@@ -24,13 +24,13 @@ test("shows the empty state for a range without sessions", async ({ page }) => {
   await expect(page.locator("table.calendar-month")).toHaveCount(0);
 });
 
-test("fits four tabs on a phone", async ({ page }) => {
+test("fits five tabs on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/calendar");
-  await expect(page.locator(".tabs a")).toHaveCount(4);
+  await expect(page.locator(".tabs a")).toHaveCount(5);
   await page.evaluate(() => document.fonts.ready);
   const rights = await page.locator(".tabs a").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right));
-  expect(rights).toHaveLength(4);
+  expect(rights).toHaveLength(5);
   for (const right of rights) expect(right).toBeLessThanOrEqual(390);
 });
 

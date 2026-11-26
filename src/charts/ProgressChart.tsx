@@ -10,6 +10,7 @@ import {
   drawGrid,
   drawPrMarkers,
   drawSeries,
+  exerciseTooltip,
   hideTooltip,
   resetSvg,
   type Cursor,
@@ -35,6 +36,7 @@ export function ProgressChart({ points, prs, format, label, height = 340 }: Prop
     const wrap = wrapRef.current!;
     const svgEl = svgRef.current!;
     const tip = tipRef.current!;
+    const prDates = new Set(prs.map((p) => p.date));
     // Lives across resizes; resets only when the data changes.
     const cursor: Cursor = { index: points.length - 1 };
     // The pen draws the line once per data change, not on every resize.
@@ -56,7 +58,7 @@ export function ProgressChart({ points, prs, format, label, height = 340 }: Prop
       drawIn = false;
       drawPrMarkers(frame, prs);
       drawEndLabel(frame, last, format);
-      const hit = attachInteraction(frame, points, prs, tip, cursor, format, label);
+      const hit = attachInteraction(frame, points, tip, cursor, label, "sessions", exerciseTooltip(prDates, format));
       // Refocusing reshows the tooltip at the cursor's new position.
       if (hadFocus) hit.focus({ preventScroll: true });
     };

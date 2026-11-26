@@ -12,6 +12,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "sync": "tsx scripts/sync-hevy.ts",
+    "health": "tsx scripts/import-health.ts",
     "sample": "tsx scripts/generate-sample.ts",
     "mcp": "tsx mcp/server.ts",
     "test": "vitest run",

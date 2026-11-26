@@ -14,12 +14,13 @@ web
 
 ## Product Purpose
 
-Shows a lifter's full Hevy history, with no 3-month or 1-year limit, so they can answer four questions:
+Shows a lifter's full Hevy history, and their activity and sleep from Apple Health, with no 3-month or 1-year limit, so they can answer five questions:
 
 1. **Am I getting stronger?** Progress on specific exercises over time: estimated 1RM, best sets, PRs.
 2. **Am I training consistently?** Frequency, gaps, and how one period compares to another.
 3. **Is my training balanced?** Volume by muscle group and neglected areas.
 4. **What's the history of this exercise?** Find any exercise, whatever its type, and see its history.
+5. **How active am I, and how am I sleeping, over the years?** Steps, distance, active calories, exercise minutes and time asleep, from an Apple Health export.
 
 Success: the owner can answer any of these in seconds, on either device, without the dashboard hiding most of their data.
 
@@ -30,7 +31,8 @@ Hevy's own charts are limited by time window and focus on one exercise at a time
 ## Operating Context
 
 - Data comes from `npm run sync` (Hevy public API, needs Hevy Pro) into `data/hevy.json`, read by a local dev server. It is a snapshot, refreshed when the owner runs sync.
-- The public demo uses `public/data/sample.json`, a fixed snapshot ending 2026-11-13.
+- Everyday activity and sleep come from a manual Apple Health export, imported with `npm run health` into `data/health.json`. It is current to the last import, and is read the same way as the Hevy file.
+- The public demo uses `public/data/sample.json` and made-up health data in `public/data/sample-health.json`, fixed snapshots ending 2026-11-13.
 
 ## Capabilities and Constraints
 
@@ -39,7 +41,7 @@ Hevy's own charts are limited by time window and focus on one exercise at a time
 - **Units:** the data is in kilograms; no unit preference exists yet.
 - `src/core` is pure, has no DOM, and is shared with a planned MCP server.
 - Personal data never ships in a build.
-- **Dates:** days are local to the viewer's time zone, and ranges end today (the sample ends on its last workout).
+- **Dates:** days are local to the viewer's time zone, and ranges end today (the sample ends on its last workout). The Activity tab's ranges end on the export date when that is earlier.
 - **Tests:** Vitest unit tests and Playwright browser tests (`e2e/`) gate changes.
 - **Undecided:** whether a personal build is ever deployed, and which time zone scripts use.
 

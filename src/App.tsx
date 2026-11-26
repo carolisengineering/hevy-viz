@@ -5,11 +5,14 @@ import { ScribbleDefs } from "./components/ink";
 import { rangeById, type RangeId } from "./core/ranges";
 import type { HevyDataset } from "./core/types";
 import { DEFAULT_UNIT, type Unit } from "./format";
+import { useHealth } from "./hooks/useHealth";
 import { useDataset } from "./hooks/useDataset";
 import { usePreference } from "./hooks/usePreference";
 import { useRoute } from "./hooks/useRoute";
 import { useTheme } from "./hooks/useTheme";
 import { useTraining } from "./hooks/useTraining";
+import { Activity } from "./views/Activity";
+import { ActivityDetail } from "./views/ActivityDetail";
 import { Balance } from "./views/Balance";
 import { Calendar } from "./views/Calendar";
 import { ExerciseDetail } from "./views/ExerciseDetail";
@@ -27,6 +30,7 @@ export default function App() {
 
 function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
   const training = useTraining(data);
+  const health = useHealth(data.source === "sample");
   const [rangeId, setRangeId] = useState<RangeId>("all");
   const [unit, setUnit] = usePreference("hevy-viz:unit", UNITS, DEFAULT_UNIT);
   const [theme, setTheme] = useTheme();
@@ -93,6 +97,17 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
           <Overview training={training} range={range} unit={unit} />
         ) : route.view === "calendar" ? (
           <Calendar training={training} range={range} day={route.day} unit={unit} />
+        ) : route.view === "activity" && route.measure != null ? (
+          <ActivityDetail
+            training={training}
+            health={health}
+            measure={route.measure}
+            range={range}
+            unit={unit}
+            onShowAll={() => setRangeId("all")}
+          />
+        ) : route.view === "activity" ? (
+          <Activity training={training} health={health} range={range} unit={unit} />
         ) : (
           <Balance training={training} range={range} />
         )}

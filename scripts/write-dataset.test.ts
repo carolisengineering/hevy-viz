@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { HevyDataset } from "../src/core/types.ts";
-import { writeDatasetAtomically } from "./write-dataset.ts";
+import { writeDatasetAtomically, writeJsonAtomically } from "./write-dataset.ts";
 
 const dataset = (synced_at: string): HevyDataset => ({ source: "hevy", synced_at, workouts: [], exercise_templates: [] });
 const made: string[] = [];
@@ -64,5 +64,27 @@ describe("writeDatasetAtomically", () => {
     await mkdir(file);
     await expect(writeDatasetAtomically(file, dataset("A"))).rejects.toThrow();
     expect(await readdir(dir)).toEqual(["hevy.json"]);
+  });
+});
+
+describe("writeJsonAtomically", () => {
+  it("writes any JSON value", async () => {
+    const file = join(await freshDir(), "health.json");
+    await writeJsonAtomically(file, { days: [{ date: "2025-03-04", steps: 5 }] });
+    expect(JSON.parse(await readFile(file, "utf8"))).toEqual({ days: [{ date: "2025-03-04", steps: 5 }] });
+  });
+
+  it("leaves no temp file when encoding fails", async () => {
+    const dir = await freshDir();
+    await expect(writeJsonAtomically(join(dir, "x.json"), { n: 1n })).rejects.toThrow();
+    expect(await readdir(dir)).toEqual([]);
+  });
+
+  it("removes the temp file when the rename fails", async () => {
+    const dir = await freshDir();
+    const file = join(dir, "x.json");
+    await mkdir(file);
+    await expect(writeJsonAtomically(file, [1, 2])).rejects.toThrow();
+    expect(await readdir(dir)).toEqual(["x.json"]);
   });
 });

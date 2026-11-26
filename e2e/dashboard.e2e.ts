@@ -4,7 +4,7 @@ import { expect, test } from "./fixtures.ts";
 test("switches views with the header tabs", async ({ page }) => {
   await page.goto("/");
   const tabs = page.getByRole("navigation", { name: "Views" }).getByRole("link");
-  await expect(tabs).toHaveText(["Overview", "Exercises", "Balance", "Calendar"]);
+  await expect(tabs).toHaveText(["Overview", "Exercises", "Balance", "Calendar", "Activity"]);
   await expect(tabs.first()).toHaveAttribute("aria-current", "page");
 
   await tabs.filter({ hasText: "Exercises" }).click();

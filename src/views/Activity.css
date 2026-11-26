@@ -1,0 +1,178 @@
+/* The activity tab: one ruled row per measure, all on the same timeline. */
+
+.activity-view,
+.activity-detail {
+  max-width: 960px;
+}
+.activity-asof {
+  margin-bottom: 14px;
+  color: var(--ink-soft);
+  font-size: 18px;
+}
+
+.activity-rows {
+  border-top: 2px solid var(--ink);
+}
+
+.activity-row {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) 110px;
+  grid-template-areas: "label chart value";
+  align-items: center;
+  gap: 4px 16px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--ink-line);
+  text-decoration: none;
+}
+.activity-row:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.activity-row:focus-visible {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
+
+.activity-name {
+  grid-area: label;
+  display: grid;
+}
+.activity-label {
+  font-size: 20px;
+}
+.activity-sub {
+  color: var(--ink-soft);
+  font-size: 16px;
+}
+.activity-chart {
+  grid-area: chart;
+  position: relative;
+  display: block;
+  height: 44px;
+}
+.activity-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.activity-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.activity-average {
+  stroke: var(--ink-line);
+  stroke-width: 1.5;
+}
+.activity-dot,
+.activity-mark {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.activity-dot {
+  background: var(--ink);
+}
+/* The month the figure on the right is from: a raspberry ring on the line. */
+.activity-mark {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent);
+  background: var(--paper);
+}
+.activity-note {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  font-size: 17px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.activity-value {
+  grid-area: value;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+.activity-value strong {
+  font-weight: 400;
+  font-size: 24px;
+}
+.activity-when {
+  color: var(--ink-soft);
+  font-size: 16px;
+}
+
+.activity-axis {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) 110px;
+  gap: 0 16px;
+  padding: 2px 6px 0;
+}
+.activity-ticks {
+  grid-column: 2;
+  position: relative;
+  height: 24px;
+  border-top: 1px solid var(--grid);
+}
+.activity-tick {
+  position: absolute;
+  top: 2px;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1.2;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.activity-empty {
+  max-width: 520px;
+  display: grid;
+  gap: 8px;
+}
+.activity-empty code {
+  font-family: inherit;
+  border-bottom: 2px solid var(--accent);
+}
+
+/* The year table is its own box under the chart. */
+.activity-detail .box + .box {
+  margin-top: 24px;
+}
+
+/* The year column reads as one phrase ("2026, to Nov 13"), even on a phone. */
+.activity-detail td:first-child {
+  white-space: nowrap;
+}
+
+/* Phones: the label and the latest value share a line; the chart runs full width under them. */
+@media (max-width: 699px) {
+  .activity-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "label value"
+      "chart chart";
+  }
+  .activity-axis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .activity-ticks {
+    grid-column: 1;
+  }
+  .activity-value {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .activity-label {
+    font-size: 19px;
+  }
+}

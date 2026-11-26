@@ -9,7 +9,14 @@ import { formatDate, type ChartFormat } from "../format";
 import { STAR_PATH } from "../components/ink";
 
 
-const MARGIN = { top: 22, right: 64, bottom: 30, left: 56 };
+export interface Margin {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+/** Room on the right is for the exercise chart's end label. */
+export const MARGIN: Margin = { top: 22, right: 64, bottom: 30, left: 56 };
 const Y_TICKS = 5;
 /** Roughly one x-axis label per this many pixels. */
 const PX_PER_X_TICK = 110;
@@ -19,18 +26,22 @@ const STAR_SIZE = 18;
 const LONE_TICK = 7;
 const TOOLTIP_OFFSET = 12;
 /** Radius of the dot marking a session that sits alone between two long breaks. */
-const LONE_DOT_RADIUS = 3;
+export const LONE_DOT_RADIUS = 3;
 
 export interface Frame {
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
   width: number;
   height: number;
+  margin: Margin;
   x: d3.ScaleTime<number, number>;
   y: d3.ScaleLinear<number, number>;
 }
 
-const xOf = (f: Frame, p: ProgressPoint) => f.x(parseDay(p.date));
-const yOf = (f: Frame, p: ProgressPoint) => f.y(p.value);
+/** What the frame, grid and axes need of a point: a day and a value. */
+export type DatedValue = Pick<ProgressPoint, "date" | "value">;
+
+export const xOf = (f: Frame, p: DatedValue) => f.x(parseDay(p.date));
+export const yOf = (f: Frame, p: DatedValue) => f.y(p.value);
 
 /** Sizes the svg and removes everything drawn in it. */
 export function resetSvg(svgEl: SVGSVGElement, width: number, height: number): Frame["svg"] {
@@ -40,7 +51,13 @@ export function resetSvg(svgEl: SVGSVGElement, width: number, height: number): F
 }
 
 /** Resets the svg and fits scales to `points`, which must not be empty. */
-export function createFrame(svgEl: SVGSVGElement, width: number, height: number, points: readonly ProgressPoint[]): Frame {
+export function createFrame(
+  svgEl: SVGSVGElement,
+  width: number,
+  height: number,
+  points: readonly DatedValue[],
+  margin: Margin = MARGIN,
+): Frame {
   const svg = resetSvg(svgEl, width, height);
   const first = points[0].date;
   const last = points.at(-1)!.date;
@@ -49,7 +66,7 @@ export function createFrame(svgEl: SVGSVGElement, width: number, height: number,
   const x = d3
     .scaleUtc()
     .domain([parseDay(from), parseDay(to)])
-    .range([MARGIN.left, width - MARGIN.right]);
+    .range([margin.left, width - margin.right]);
 
   // Lines don't need a zero baseline; fit the data so progress is visible.
   const lo = d3.min(points, (d) => d.value)!;
@@ -58,8 +75,8 @@ export function createFrame(svgEl: SVGSVGElement, width: number, height: number,
   const y = d3
     .scaleLinear()
     .domain([Math.max(0, lo - pad), hi + pad])
-    .range([height - MARGIN.bottom, MARGIN.top]);
-  return { svg, width, height, x, y };
+    .range([height - margin.bottom, margin.top]);
+  return { svg, width, height, margin, x, y };
 }
 
 /** Y ticks at round values in display units, returned in stored units. */
@@ -76,8 +93,8 @@ export function drawGrid(f: Frame, format: ChartFormat): void {
     .selectAll("line")
     .data(yTicks(f, format))
     .join("line")
-    .attr("x1", MARGIN.left)
-    .attr("x2", f.width - MARGIN.right)
+    .attr("x1", f.margin.left)
+    .attr("x2", f.width - f.margin.right)
     .attr("y1", (d) => f.y(d))
     .attr("y2", (d) => f.y(d));
 }
@@ -87,13 +104,13 @@ export function drawAxes(f: Frame, format: ChartFormat): void {
   f.svg
     .append("g")
     .attr("class", "axis")
-    .attr("transform", `translate(0,${f.height - MARGIN.bottom})`)
+    .attr("transform", `translate(0,${f.height - f.margin.bottom})`)
     .call(d3.axisBottom(f.x).ticks(xTicks).tickSize(0).tickPadding(10))
     .call((g) => g.select(".domain").remove());
   f.svg
     .append("g")
     .attr("class", "axis")
-    .attr("transform", `translate(${MARGIN.left},0)`)
+    .attr("transform", `translate(${f.margin.left},0)`)
     .call(
       d3
         .axisLeft(f.y)
@@ -107,8 +124,8 @@ export function drawAxes(f: Frame, format: ChartFormat): void {
     f.svg
       .append("text")
       .attr("class", "axis-unit")
-      .attr("x", MARGIN.left - 8)
-      .attr("y", MARGIN.top - 10)
+      .attr("x", f.margin.left - 8)
+      .attr("y", f.margin.top - 10)
       .attr("text-anchor", "end")
       .text(format.unit);
   }
@@ -213,36 +230,56 @@ export interface Cursor {
   index: number;
 }
 
-/** Crosshair, focus ring, tooltip, and keyboard stepping over sessions. Returns the focusable hit area. */
-export function attachInteraction(
+/** Fills the tooltip for one point. Text nodes only (no HTML parsing of data). */
+export type TooltipRenderer<T> = (tip: HTMLElement, p: T) => void;
+
+/** The value as a tooltip's headline: the number in the display hand with its unit written small. */
+export function valueHeadline(format: ChartFormat, value: number): HTMLElement {
+  const strong = document.createElement("strong");
+  strong.append(format.value(value));
+  if (format.unit) {
+    const unit = document.createElement("span");
+    unit.className = "unit";
+    unit.textContent = ` ${format.unit}`;
+    strong.append(unit);
+  }
+  return strong;
+}
+
+/**
+ * Crosshair, focus ring, tooltip, and keyboard stepping over points. `noun` is what the arrow keys
+ * step through ("sessions", "months"). Hovering moves the keyboard position too, so ←/→ continue
+ * from where the pointer was. Returns the focusable hit area.
+ */
+export function attachInteraction<T extends DatedValue>(
   f: Frame,
-  points: readonly ProgressPoint[],
-  prs: readonly ProgressPoint[],
+  points: readonly T[],
   tip: HTMLElement,
   cursor: Cursor,
-  format: ChartFormat,
   label: string,
+  noun: string,
+  render: TooltipRenderer<T>,
 ): SVGRectElement {
   const hair = f.svg
     .append("line")
     .attr("class", "crosshair")
-    .attr("y1", MARGIN.top)
-    .attr("y2", f.height - MARGIN.bottom)
+    .attr("y1", f.margin.top)
+    .attr("y2", f.height - f.margin.bottom)
     .style("opacity", 0);
   const focus = f.svg.append("circle").attr("class", "focus-ring").attr("r", FOCUS_RADIUS).style("opacity", 0);
-  const prDates = new Set(prs.map((p) => p.date));
-  const bisect = d3.bisector((p: ProgressPoint) => parseDay(p.date)).center;
+  const bisect = d3.bisector((p: T) => parseDay(p.date)).center;
 
   const show = (i: number) => {
     const p = points[i];
     const cx = xOf(f, p);
     hair.attr("x1", cx).attr("x2", cx).style("opacity", 1);
     focus.attr("cx", cx).attr("cy", yOf(f, p)).style("opacity", 1);
-    renderTooltip(tip, p, prDates.has(p.date), format);
+    render(tip, p);
+    tip.style.opacity = "1";
     const tipW = tip.offsetWidth;
     const fitsRight = cx + TOOLTIP_OFFSET + tipW <= f.width;
     tip.style.left = `${fitsRight ? cx + TOOLTIP_OFFSET : cx - TOOLTIP_OFFSET - tipW}px`;
-    tip.style.top = `${MARGIN.top}px`;
+    tip.style.top = `${f.margin.top}px`;
   };
   const hide = () => {
     hair.style("opacity", 0);
@@ -253,13 +290,16 @@ export function attachInteraction(
   return f.svg
     .append("rect")
     .attr("class", "hit")
-    .attr("x", MARGIN.left)
-    .attr("y", MARGIN.top)
-    .attr("width", f.width - MARGIN.left - MARGIN.right)
-    .attr("height", f.height - MARGIN.top - MARGIN.bottom)
+    .attr("x", f.margin.left)
+    .attr("y", f.margin.top)
+    .attr("width", f.width - f.margin.left - f.margin.right)
+    .attr("height", f.height - f.margin.top - f.margin.bottom)
     .attr("tabindex", 0)
-    .attr("aria-label", `${label} chart. Use arrow keys to step through sessions.`)
-    .on("pointermove", (e: PointerEvent) => show(bisect(points, f.x.invert(d3.pointer(e)[0]))))
+    .attr("aria-label", `${label} chart. Use arrow keys to step through ${noun}.`)
+    .on("pointermove", (e: PointerEvent) => {
+      cursor.index = bisect(points, f.x.invert(d3.pointer(e)[0]));
+      show(cursor.index);
+    })
     .on("pointerleave blur", hide)
     .on("focus", () => show(cursor.index))
     .on("keydown", (e: KeyboardEvent) => {
@@ -272,23 +312,16 @@ export function attachInteraction(
     .node()!;
 }
 
-/** Fills the tooltip with text nodes only (no HTML parsing of data). */
-function renderTooltip(tip: HTMLElement, p: ProgressPoint, isPr: boolean, format: ChartFormat): void {
-  const value = document.createElement("strong");
-  value.append(format.value(p.value));
-  if (format.unit) {
-    const unit = document.createElement("span");
-    unit.className = "unit";
-    unit.textContent = ` ${format.unit}`;
-    value.append(unit);
-  }
-  const detail = document.createElement("div");
-  detail.textContent = `${format.set(p)}${isPr ? " · PR" : ""}`;
-  const date = document.createElement("div");
-  date.className = "quiet";
-  date.textContent = formatDate(p.date);
-  tip.replaceChildren(value, detail, date);
-  tip.style.opacity = "1";
+/** The exercise chart's tooltip: the value, the set behind it, the date. */
+export function exerciseTooltip(prDates: ReadonlySet<string>, format: ChartFormat): TooltipRenderer<ProgressPoint> {
+  return (tip, p) => {
+    const detail = document.createElement("div");
+    detail.textContent = `${format.set(p)}${prDates.has(p.date) ? " · PR" : ""}`;
+    const date = document.createElement("div");
+    date.className = "quiet";
+    date.textContent = formatDate(p.date);
+    tip.replaceChildren(valueHeadline(format, p.value), detail, date);
+  };
 }
 
 export function hideTooltip(tip: HTMLElement): void {

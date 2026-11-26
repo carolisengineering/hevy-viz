@@ -81,6 +81,8 @@
 
 /* An exercise's page. */
 .back {
+  /* Above the page title: its tall hand-lettered glyphs reach up over this link and would take the click. */
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
