@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
+import sampleHealthJson from "../../public/data/sample-health.json";
+import sampleHevyJson from "../../public/data/sample.json";
+import { addDays } from "./dates";
 import { RANGES } from "./ranges";
-import type { HealthDataset, HealthDay } from "./types";
+import { buildTraining } from "./training";
+import type { HealthDataset, HealthDay, HevyDataset } from "./types";
 import {
   firstDayOf,
   healthEndDay,
@@ -8,6 +12,7 @@ import {
   latestCompleteMonth,
   MEASURES,
   monthlyAverages,
+  recentStretch,
   windowAverage,
   yearlyAverages,
 } from "./health";
@@ -172,5 +177,170 @@ describe("healthEndDay", () => {
     expect(latestCompleteMonth(d.days, "steps", end)).toEqual({ month: "2026-11", value: 2000, days: 1 });
     const years = yearlyAverages(d.days, "steps", { from: "2026-01-01", to: end });
     expect(years.at(-1)?.partialTo).toBe("2026-12-02");
+  });
+});
+
+describe("recentStretch", () => {
+  /** One HealthDay per date from `from` to `to`, with what `fill` returns for it (`i` counts from 0). */
+  const span = (from: string, to: string, fill: (i: number) => Omit<HealthDay, "date">): HealthDay[] => {
+    const out: HealthDay[] = [];
+    for (let date = from, i = 0; date <= to; date = addDays(date, 1), i++) out.push({ date, ...fill(i) });
+    return out;
+  };
+  const health = (export_date: string, days: HealthDay[] = [], source: HealthDataset["source"] = "apple-health"): HealthDataset => ({
+    source,
+    imported_at: `${export_date}T08:00:00Z`,
+    export_date,
+    days,
+  });
+  const hevy = (source: HevyDataset["source"], synced_at: string, workoutDays: string[]): HevyDataset => ({
+    source,
+    synced_at,
+    workouts: workoutDays.map((d, i) => ({ id: `w${i}`, title: "Lift", start_time: `${d}T12:00:00Z`, end_time: `${d}T13:00:00Z`, exercises: [] })),
+    exercise_templates: [],
+  });
+  /** Real Hevy synced the day after a Nov 21 export: the stretch is Oct 24 – Nov 20, the usual Oct 24, 2025 – Oct 23, 2026. */
+  const realTraining = (workoutDays: string[], synced_at = "2026-11-22T10:00:00Z", timeZone = "UTC") =>
+    buildTraining(hevy("hevy", synced_at, workoutDays), timeZone, new Date("2026-11-22T12:00:00Z"));
+  const row = (s: ReturnType<typeof recentStretch>, id: string) => s.rows.find((r) => r.id === id)!;
+  const FROM = "2026-10-24";
+  const TO = "2026-11-20";
+  const USUAL_TO = "2026-10-23";
+
+  it("ends the day before the export", () => {
+    const s = recentStretch(health("2026-11-21"), realTraining([]), "UTC");
+    expect({ from: s.from, to: s.to, usualFrom: s.usualFrom, usualTo: s.usualTo }).toEqual({
+      from: FROM,
+      to: TO,
+      usualFrom: "2025-10-24",
+      usualTo: USUAL_TO,
+    });
+  });
+
+  it("ends on the Hevy end day when it is earlier", () => {
+    // The sample's last workout is a week before the export, so only the Hevy end day can give Nov 5.
+    const training = buildTraining(hevy("sample", "2026-11-13T00:00:00Z", ["2026-11-01", "2026-11-05"]), "UTC");
+    const s = recentStretch(health("2026-11-13", [], "sample"), training, "UTC");
+    expect(s.to).toBe("2026-11-05");
+    expect(s.from).toBe("2026-10-09");
+  });
+
+  it("ends the day before the export beside the Hevy sample", () => {
+    const training = buildTraining(hevy("sample", "2026-11-13T00:00:00Z", ["2026-11-10", "2026-11-12"]), "UTC");
+    const s = recentStretch(health("2027-01-05"), training, "UTC");
+    expect(s.to).toBe("2027-01-04");
+    expect(s.from).toBe("2026-12-08");
+    expect(s.rows.some((r) => r.id === "training")).toBe(false);
+  });
+
+  it("spans New Year", () => {
+    const training = buildTraining(hevy("hevy", "2027-01-20T00:00:00Z", []), "UTC", new Date("2027-01-20T12:00:00Z"));
+    const s = recentStretch(health("2027-01-17"), training, "UTC");
+    expect(s.from).toBe("2026-12-20");
+    expect(s.to).toBe("2027-01-16");
+    expect(s.usualTo).toBe("2026-12-19");
+    expect(s.usualFrom).toBe("2025-12-20");
+  });
+
+  it("skips days without a value", () => {
+    const days = [...span(addDays(USUAL_TO, -399), USUAL_TO, () => ({ steps: 10000 })), ...span(FROM, TO, (i) => (i % 2 ? {} : { steps: 8000 }))];
+    expect(row(recentStretch(health("2026-11-21", days), realTraining([]), "UTC"), "steps")).toEqual({
+      id: "steps",
+      recent: 8000,
+      usual: 10000,
+      status: "compared",
+    });
+  });
+
+  it("needs 14 days in the stretch", () => {
+    const usual = span(addDays(USUAL_TO, -364), USUAL_TO, () => ({ steps: 10000 }));
+    const withDays = (n: number) => [...usual, ...span(FROM, TO, (i) => (i < n ? { steps: 9000 } : {}))];
+    const thirteen = row(recentStretch(health("2026-11-21", withDays(13)), realTraining([]), "UTC"), "steps");
+    expect(thirteen).toMatchObject({ recent: 9000, status: "not-enough-data" });
+    expect(row(recentStretch(health("2026-11-21", withDays(14)), realTraining([]), "UTC"), "steps").status).toBe("compared");
+  });
+
+  it("needs 90 days in the usual", () => {
+    const withUsual = (n: number) => [...span(addDays(USUAL_TO, -(n - 1)), USUAL_TO, () => ({ steps: 10000 })), ...span(FROM, TO, () => ({ steps: 9000 }))];
+    expect(row(recentStretch(health("2026-11-21", withUsual(89)), realTraining([]), "UTC"), "steps").status).toBe("not-enough-data");
+    expect(row(recentStretch(health("2026-11-21", withUsual(90)), realTraining([]), "UTC"), "steps").status).toBe("compared");
+  });
+
+  it("treats a usual of zero as not enough data", () => {
+    const days = [...span(addDays(USUAL_TO, -364), USUAL_TO, () => ({ exercise_min: 0 })), ...span(FROM, TO, () => ({ exercise_min: 30 }))];
+    expect(row(recentStretch(health("2026-11-21", days), realTraining([]), "UTC"), "exercise")).toMatchObject({
+      recent: 30,
+      usual: 0,
+      status: "not-enough-data",
+    });
+  });
+
+  it("counts a day with two workouts once", () => {
+    const training = realTraining(["2025-01-01", "2026-11-02", "2026-11-02", "2026-11-05", "2026-11-09", "2026-11-12"]);
+    expect(row(recentStretch(health("2026-11-21"), training, "UTC"), "training").recent).toBe(1);
+  });
+
+  it("counts the training usual from the first workout", () => {
+    const first = addDays(FROM, -200);
+    const workoutDays: string[] = [];
+    for (let d = first; d < FROM; d = addDays(d, 7)) workoutDays.push(d);
+    const r = row(recentStretch(health("2026-11-21"), realTraining(workoutDays), "UTC"), "training");
+    expect(r.usual).toBeCloseTo(1, 1);
+    expect(r.status).toBe("compared");
+  });
+
+  it("needs Hevy history before the stretch", () => {
+    const status = (first: string) => row(recentStretch(health("2026-11-21"), realTraining([first, "2026-11-10"]), "UTC"), "training").status;
+    expect(status(addDays(FROM, -89))).toBe("not-enough-data");
+    expect(status(addDays(FROM, -90))).toBe("compared");
+    expect(status("2026-11-01")).toBe("not-enough-data");
+  });
+
+  it("handles a Hevy account with no workouts", () => {
+    const s = recentStretch(health("2026-11-21"), realTraining([]), "UTC");
+    expect(row(s, "training")).toMatchObject({ recent: 0, status: "not-enough-data" });
+    for (const r of s.rows) {
+      expect(Number.isNaN(r.recent)).toBe(false);
+      expect(Number.isNaN(r.usual)).toBe(false);
+    }
+  });
+
+  it("asks for a sync when Hevy is older than the stretch", () => {
+    const stale = row(recentStretch(health("2026-11-21"), realTraining(["2025-01-01"], "2026-11-19T12:00:00Z"), "UTC"), "training");
+    expect(stale).toEqual({ id: "training", recent: null, usual: null, status: "not-synced" });
+    const fresh = row(recentStretch(health("2026-11-21"), realTraining(["2025-01-01"], "2026-11-20T12:00:00Z"), "UTC"), "training");
+    expect(fresh.status).not.toBe("not-synced");
+  });
+
+  it("asks for a sync when the sync time can't be read", () => {
+    for (const synced of ["", "not a date"]) {
+      expect(row(recentStretch(health("2026-11-21"), realTraining(["2025-01-01"], synced), "UTC"), "training").status).toBe("not-synced");
+    }
+  });
+
+  it("compares the sync day in the viewer's time zone", () => {
+    const zone = "America/Los_Angeles";
+    const status = (synced: string) =>
+      row(recentStretch(health("2026-11-21"), realTraining(["2025-01-01"], synced, zone), zone), "training").status;
+    expect(status("2026-11-21T05:00:00Z")).not.toBe("not-synced"); // Nov 20, 9 pm in Los Angeles
+    expect(status("2026-11-20T05:00:00Z")).toBe("not-synced"); // Nov 19, 9 pm
+  });
+
+  it("orders rows training first, then the measures", () => {
+    expect(recentStretch(health("2026-11-21"), realTraining([]), "UTC").rows.map((r) => r.id)).toEqual([
+      "training",
+      "steps",
+      "distance",
+      "exercise",
+      "calories",
+      "sleep",
+    ]);
+  });
+
+  it("compares every row on the demo", () => {
+    const s = recentStretch(sampleHealthJson as HealthDataset, buildTraining(sampleHevyJson as HevyDataset, "UTC"), "UTC");
+    expect(s.to).toBe("2026-11-12");
+    expect(s.rows).toHaveLength(6);
+    expect(s.rows.filter((r) => r.status !== "compared")).toEqual([]);
   });
 });

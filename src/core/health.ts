@@ -1,7 +1,8 @@
 // Pure helpers for the Activity tab's daily health figures. No DOM.
 // A day without a measure has no data; it is never counted as 0.
-import { addDays } from "./dates";
+import { addDays, toLocalDay } from "./dates";
 import { windowFor, type DateRange, type DayWindow } from "./ranges";
+import type { Training } from "./training";
 import type { HealthDataset, HealthDay } from "./types";
 
 export type MeasureId = "steps" | "distance" | "exercise" | "calories" | "sleep";
@@ -113,4 +114,89 @@ export function healthWindow(range: DateRange, endDay: string, days: readonly He
 export function healthEndDay(hevyEndDay: string, data: HealthDataset, hevyIsSample: boolean): string {
   if (hevyIsSample && data.source === "apple-health") return data.export_date;
   return hevyEndDay < data.export_date ? hevyEndDay : data.export_date;
+}
+
+/** The stretch's length: four whole weeks, so each weekday appears four times. */
+const STRETCH_DAYS = 28;
+/** The usual: the year just before the stretch. */
+const USUAL_DAYS = 365;
+/** Days with a value needed before a comparison is made, in the stretch and in the usual. */
+const MIN_STRETCH_DAYS = 14;
+const MIN_USUAL_DAYS = 90;
+
+export type StretchRowId = "training" | MeasureId;
+export type StretchStatus = "compared" | "not-enough-data" | "not-synced";
+
+export interface StretchRow {
+  id: StretchRowId;
+  /** Training: days a week. A health measure: the average per day with a value. */
+  recent: number | null;
+  usual: number | null;
+  status: StretchStatus;
+}
+
+export interface RecentStretch {
+  from: string; // first day of the 28
+  to: string; // the last complete day
+  usualFrom: string;
+  usualTo: string; // the day before `from`
+  /** Training first (left out for a real export beside the Hevy sample), then the measures in MEASURES order. */
+  rows: StretchRow[];
+}
+
+/** Days from `from` to `to`, inclusive; 0 when `to` is before `from`. Counts calendar days, so time zones can't shift it. */
+function daysBetween(from: string, to: string): number {
+  let n = 0;
+  for (let day = from; day <= to; day = addDays(day, 1)) n++;
+  return n;
+}
+
+function meanIn(days: readonly HealthDay[], measure: MeasureId, w: DayWindow): { mean: number | null; days: number } {
+  const values = valuesIn(days, measure, w);
+  return { mean: values.length === 0 ? null : values.reduce((sum, v) => sum + v.value, 0) / values.length, days: values.length };
+}
+
+function trainingRow(training: Training, s: Omit<RecentStretch, "rows">, timeZone: string): StretchRow {
+  // A sync time that can't be read is treated as no sync, rather than crashing the tab.
+  const synced = training.data.synced_at;
+  if (training.data.source === "hevy" && (Number.isNaN(Date.parse(synced)) || toLocalDay(synced, timeZone) < s.to)) {
+    return { id: "training", recent: null, usual: null, status: "not-synced" };
+  }
+  const count = (from: string, to: string) => {
+    let n = 0;
+    for (const day of training.days.keys()) if (day >= from && day <= to) n++;
+    return n;
+  };
+  const recent = count(s.from, s.to) / (STRETCH_DAYS / 7);
+  const usualFrom = training.firstDay > s.usualFrom ? training.firstDay : s.usualFrom;
+  const spanDays = daysBetween(usualFrom, s.usualTo);
+  const usual = spanDays === 0 ? null : count(usualFrom, s.usualTo) / (spanDays / 7);
+  const enough = training.days.size > 0 && training.firstDay <= s.from && spanDays >= MIN_USUAL_DAYS;
+  return { id: "training", recent, usual, status: enough ? "compared" : "not-enough-data" };
+}
+
+/**
+ * The last four complete weeks against the year before them, for training days and each health measure.
+ * The stretch ends on the earlier of the health views' end day and the day before the export, which the
+ * export itself cuts short. Training uses the same dates, so every row describes the same weeks.
+ */
+export function recentStretch(health: HealthDataset, training: Training, timeZone: string): RecentStretch {
+  const hevyIsSample = training.data.source === "sample";
+  const endDay = healthEndDay(training.endDay, health, hevyIsSample);
+  const lastComplete = addDays(health.export_date, -1);
+  const to = endDay < lastComplete ? endDay : lastComplete;
+  const from = addDays(to, -(STRETCH_DAYS - 1));
+  const usualTo = addDays(from, -1);
+  const dates = { from, to, usualFrom: addDays(usualTo, -(USUAL_DAYS - 1)), usualTo };
+
+  const rows: StretchRow[] = [];
+  // Sample workouts never sit beside a real export.
+  if (!(hevyIsSample && health.source === "apple-health")) rows.push(trainingRow(training, dates, timeZone));
+  for (const { id } of MEASURES) {
+    const recent = meanIn(health.days, id, { from, to });
+    const usual = meanIn(health.days, id, { from: dates.usualFrom, to: usualTo });
+    const enough = recent.days >= MIN_STRETCH_DAYS && usual.days >= MIN_USUAL_DAYS && usual.mean! > 0;
+    rows.push({ id, recent: recent.mean, usual: usual.mean, status: enough ? "compared" : "not-enough-data" });
+  }
+  return { ...dates, rows };
 }

@@ -143,6 +143,34 @@
   border-bottom: 2px solid var(--accent);
 }
 
+/* "Last 4 weeks": the stretch against the usual, above the rows. Same ink on every row, no red or green. */
+.stretch {
+  margin-bottom: 20px;
+}
+.stretch .box-head span {
+  font-size: 17px;
+}
+.stretch tbody th {
+  position: static;
+  color: var(--ink);
+  background: none;
+  border-bottom: 1px solid var(--grid);
+}
+.stretch tbody tr:last-child > * {
+  border-bottom: 0;
+}
+/* The names line up with the row labels below (190px); the value hugs its figure, and the comparison takes the rest. */
+.stretch tbody th {
+  width: 190px;
+}
+.stretch td.num {
+  width: 1%;
+  white-space: nowrap;
+}
+.stretch-vs {
+  color: var(--ink-soft);
+}
+
 /* The year table is its own box under the chart. */
 .activity-detail .box + .box {
   margin-top: 24px;
@@ -174,5 +202,24 @@
   }
   .activity-label {
     font-size: 19px;
+  }
+  /* The three columns stay; the comparison wraps rather than pushing the card wider. */
+  .stretch .box-head {
+    flex-wrap: wrap;
+  }
+  .stretch th,
+  .stretch td {
+    padding: 6px 4px;
+    font-size: 18px;
+  }
+  .stretch tbody th {
+    width: auto;
+  }
+  .stretch th,
+  .stretch-vs {
+    line-height: 1.1;
+  }
+  .stretch-vs {
+    overflow-wrap: anywhere;
   }
 }

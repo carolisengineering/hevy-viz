@@ -20,7 +20,7 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
 - **Exercises:** search, filter by kind and sort hundreds of exercises, with a page and progress chart for each.
 - **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged, and each group week by week.
 - **Calendar:** every month in the range as a calendar, newest first, with a dot for each training day. Pick a day to see its workouts: start time, length, and each exercise's top set.
-- **Activity:** your steps, distance, active calories, exercise minutes and time asleep, month by month, from an Apple Health export. Each measure has a page with a chart, yearly marks and a table. Needs one import (see [Apple Health](#apple-health)).
+- **Activity:** your steps, distance, active calories, exercise minutes and time asleep, month by month, from an Apple Health export. Each measure has a page with a chart, yearly marks and a table. At the top, a "Last 4 weeks" card compares the four weeks before your export with the 12 months before them, for training days and each measure. Needs one import (see [Apple Health](#apple-health)).
 - Date ranges (90 days / 1 year / all time) that apply to every view.
 - lb by default, or kg; remembered per browser. Distance on the Activity tab follows it (lb shows miles, kg shows kilometers).
 - A crosshair tooltip with keyboard support (focus the chart, then use ←/→), plus a table view of every chart.
@@ -220,7 +220,7 @@ The browser tests need Playwright's Chromium once: `npx playwright install --onl
 - [x] Weekly sets per muscle group (heatmap)
 - [x] Training calendar
 - [x] Activity history from Apple Health (steps, distance, calories, exercise, sleep)
-- [ ] Recent stretch report card
+- [x] Recent stretch report card
 - [ ] All activity on the calendar
 - [ ] Sleep and activity against lifting
 - [x] Incremental sync via `/v1/workouts/events`
