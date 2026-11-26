@@ -20,7 +20,7 @@ Shows a lifter's full Hevy history, and their activity and sleep from Apple Heal
 2. **Am I training consistently?** Frequency, gaps, and how one period compares to another.
 3. **Is my training balanced?** Volume by muscle group and neglected areas.
 4. **What's the history of this exercise?** Find any exercise, whatever its type, and see its history.
-5. **How active am I, and how am I sleeping, over the years?** Steps, distance, active calories, exercise minutes and time asleep, from an Apple Health export.
+5. **How active am I, and how am I sleeping, over the years?** Steps, distance, active calories, exercise minutes and time asleep, from an Apple Health export. The Activity tab also compares the last four weeks with the past 12 months.
 
 Success: the owner can answer any of these in seconds, on either device, without the dashboard hiding most of their data.
 

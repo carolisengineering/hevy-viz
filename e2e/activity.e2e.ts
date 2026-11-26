@@ -313,3 +313,55 @@ test.describe("detail page", () => {
     });
   }
 });
+
+const card = (page: import("@playwright/test").Page) => page.locator(".stretch");
+
+test("compares the last four weeks on the demo", async ({ page }) => {
+  await page.goto("/#/activity");
+  await expect(card(page).getByRole("heading", { name: "Last 4 weeks" })).toBeVisible();
+  await expect(card(page)).toContainText("Oct 16 – Nov 12");
+  await expect(card(page).locator("tbody tr th")).toHaveText(["Training", "Steps", "Distance", "Exercise", "Active calories", "Sleep"]);
+  await expect(card(page).locator("caption")).toContainText("Oct 16 – Nov 12");
+  const cardFirst = await page.evaluate(() => {
+    const [c, r] = [document.querySelector(".stretch"), document.querySelector(".activity-rows")];
+    return !!c && !!r && !!(c.compareDocumentPosition(r) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  expect(cardFirst).toBe(true);
+});
+
+test("keeps the card the same whatever the range", async ({ page }) => {
+  await page.goto("/#/activity");
+  const before = await card(page).innerText();
+  await page.click('button[role=radio]:has-text("90 days")');
+  await expect(page.locator('button[role=radio]:has-text("90 days")')).toHaveAttribute("aria-checked", "true");
+  expect(await card(page).innerText()).toBe(before);
+});
+
+test("fits the card on a phone screen", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/activity");
+  await expect(card(page)).toBeVisible();
+  const fits = await card(page).evaluate((el) => el.scrollWidth <= el.clientWidth);
+  expect(fits).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test("leaves out training beside a real export", async ({ page }) => {
+  const health = readHealthSample();
+  health.source = "apple-health";
+  health.export_date = "2027-01-05";
+  health.days = [...health.days, { date: "2026-12-14", steps: 9000 }, { date: "2026-12-20", steps: 9000 }];
+  await serveHealth(page, health);
+  await page.goto("/#/activity");
+  await expect(card(page)).toContainText("Dec 8 – Jan 4");
+  await expect(card(page).locator("tbody tr")).toHaveCount(5);
+  await expect(card(page).locator("tbody tr th")).not.toContainText(["Training"]);
+});
+
+test("has no card without health data", async ({ page }) => {
+  await serveSynced(page, syncedEndingDaysAgo(0));
+  await serveHealth(page, null);
+  await page.goto("/#/activity");
+  await expect(page.getByText("npm run health")).toBeVisible();
+  await expect(card(page)).toHaveCount(0);
+});

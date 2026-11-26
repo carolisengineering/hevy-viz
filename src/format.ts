@@ -1,6 +1,6 @@
 // Display formatting shared by every view, the chart and its table.
 import { parseDay } from "./core/dates";
-import type { MeasureId } from "./core/health";
+import type { MeasureId, RecentStretch, StretchRow, StretchRowId } from "./core/health";
 import { METRIC_LABEL, type MetricId, type ProgressPoint } from "./core/progress";
 
 // Days are UTC midnights (see core/dates), so format in UTC to keep the same date.
@@ -218,3 +218,40 @@ export function healthFormat(measure: MeasureId, unit: Unit): ChartFormat {
       return { ...base, value: (v) => formatCount(Math.round(v)), unit: "" };
   }
 }
+
+// The "Last 4 weeks" card. Four-week averages wobble on their own, so small differences read as "about the same".
+const SAME_PERCENT = 5;
+const SAME_SLEEP_MIN = 10;
+
+export const STRETCH_LABELS: Record<StretchRowId, string> = {
+  training: "Training",
+  steps: "Steps",
+  distance: "Distance",
+  exercise: "Exercise",
+  calories: "Active calories",
+  sleep: "Sleep",
+};
+
+/** "2.5 days a week", or a health measure's daily figure ("8,412", "7h05"); "—" when there is none. */
+export function stretchValue(row: StretchRow, unit: Unit): string {
+  if (row.recent == null) return "—";
+  return row.id === "training" ? `${row.recent.toFixed(1)} days a week` : formatHealth(row.id, row.recent, unit);
+}
+
+/** "12% below", "25 min less", "usual 3.4", "about the same", "not enough data" or "sync Hevy to include". */
+export function stretchComparison(row: StretchRow, _unit: Unit): string {
+  if (row.status === "not-synced") return "sync Hevy to include";
+  if (row.status === "not-enough-data" || row.recent == null || row.usual == null) return "not enough data";
+  if (row.id === "training") return `usual ${row.usual.toFixed(1)}`;
+  const diff = row.recent - row.usual;
+  if (row.id === "sleep") {
+    if (Math.abs(diff) < SAME_SLEEP_MIN) return "about the same";
+    return `${Math.round(Math.abs(diff) / 5) * 5} min ${diff > 0 ? "more" : "less"}`;
+  }
+  const percent = (diff * 100) / row.usual;
+  if (Math.abs(percent) < SAME_PERCENT) return "about the same";
+  return `${Math.round(Math.abs(percent))}% ${percent > 0 ? "above" : "below"}`;
+}
+
+/** "Oct 24 – Nov 20" */
+export const stretchDates = (s: RecentStretch): string => `${formatShortDate(s.from)} – ${formatShortDate(s.to)}`;

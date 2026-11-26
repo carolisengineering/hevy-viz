@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { RecentStretch, StretchRow } from "./core/health";
 import type { ProgressPoint } from "./core/progress";
 import {
   chartFormat,
@@ -19,6 +20,9 @@ import {
   formatShortDate,
   formatValue,
   formatWeight,
+  stretchComparison,
+  stretchDates,
+  stretchValue,
   valueUnit,
 } from "./format";
 
@@ -172,5 +176,51 @@ describe("formatYearLabel", () => {
     expect(formatYearLabel({ year: "2026", partialTo: "2026-11-13" })).toBe("2026, to Nov 13");
     expect(formatYearLabel({ year: "2025", partialFrom: "2025-11-14" })).toBe("2025, from Nov 14");
     expect(formatYearLabel({ year: "2026", partialFrom: "2026-05-01", partialTo: "2026-08-31" })).toBe("2026, May 1 to Aug 31");
+  });
+});
+
+describe("stretch text", () => {
+  const row = (id: StretchRow["id"], recent: number | null, usual: number | null, status: StretchRow["status"] = "compared"): StretchRow => ({
+    id,
+    recent,
+    usual,
+    status,
+  });
+
+  it("says a percentage for steps, with under 5% as about the same", () => {
+    expect(stretchComparison(row("steps", 104.9, 100), "lb")).toBe("about the same");
+    expect(stretchComparison(row("steps", 105, 100), "lb")).toBe("5% above");
+    expect(stretchComparison(row("steps", 88, 100), "lb")).toBe("12% below");
+  });
+
+  it("says minutes for sleep, rounded to 5, with under 10 as about the same", () => {
+    expect(stretchComparison(row("sleep", 429, 420), "lb")).toBe("about the same");
+    expect(stretchComparison(row("sleep", 432, 420), "lb")).toBe("10 min more");
+    expect(stretchComparison(row("sleep", 395, 420), "lb")).toBe("25 min less");
+  });
+
+  it("says days a week for training", () => {
+    const r = row("training", 2.5, 3.4);
+    expect(stretchValue(r, "lb")).toBe("2.5 days a week");
+    expect(stretchComparison(r, "lb")).toBe("usual 3.4");
+  });
+
+  it("writes distance in the chosen unit", () => {
+    expect(stretchValue(row("distance", 5.8, 6), "lb")).toBe("3.6 mi");
+    expect(stretchValue(row("distance", 5.8, 6), "kg")).toBe("5.8 km");
+  });
+
+  it("says when a row can't be compared", () => {
+    const thin = row("exercise", 30, null, "not-enough-data");
+    expect(stretchValue(thin, "lb")).toBe("30 min");
+    expect(stretchComparison(thin, "lb")).toBe("not enough data");
+    const stale = row("training", null, null, "not-synced");
+    expect(stretchValue(stale, "lb")).toBe("—");
+    expect(stretchComparison(stale, "lb")).toBe("sync Hevy to include");
+  });
+
+  it("names the stretch's dates across New Year", () => {
+    const s: RecentStretch = { from: "2026-12-20", to: "2027-01-16", usualFrom: "2025-12-20", usualTo: "2026-12-19", rows: [] };
+    expect(stretchDates(s)).toBe("Dec 20 – Jan 16");
   });
 });
