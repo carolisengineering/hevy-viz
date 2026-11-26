@@ -150,16 +150,25 @@ describe("healthEndDay", () => {
   });
 
   it("is the export date when the export is older than the Hevy end day", () => {
-    expect(healthEndDay("2026-11-25", data("2026-11-13"))).toBe("2026-11-13");
+    expect(healthEndDay("2026-11-25", data("2026-11-13"), false)).toBe("2026-11-13");
   });
 
-  it("is the Hevy end day when the export is newer (the sample case)", () => {
-    expect(healthEndDay("2026-11-12", data("2026-11-13"))).toBe("2026-11-12");
+  it("is the Hevy end day when the export is newer and the Hevy data is real", () => {
+    expect(healthEndDay("2026-11-12", data("2026-11-13"), false)).toBe("2026-11-12");
+  });
+
+  it("is the export date for a real export beside the Hevy sample, even when the sample ends earlier", () => {
+    expect(healthEndDay("2026-11-12", data("2027-03-01"), true)).toBe("2027-03-01");
+  });
+
+  it("keeps the earlier-of rule for the health sample beside the Hevy sample", () => {
+    const sample: HealthDataset = { ...data("2026-11-13"), source: "sample" };
+    expect(healthEndDay("2026-11-12", sample, true)).toBe("2026-11-12");
   });
 
   it("keeps a stale export's last month and year honest", () => {
     const d = data("2026-12-02", [day("2026-10-10", 1000), day("2026-11-10", 2000), day("2026-12-01", 3000), day("2026-12-02", 5000)]);
-    const end = healthEndDay("2027-01-05", d);
+    const end = healthEndDay("2027-01-05", d, false);
     expect(latestCompleteMonth(d.days, "steps", end)).toEqual({ month: "2026-11", value: 2000, days: 1 });
     const years = yearlyAverages(d.days, "steps", { from: "2026-01-01", to: end });
     expect(years.at(-1)?.partialTo).toBe("2026-12-02");

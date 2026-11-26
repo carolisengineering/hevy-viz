@@ -88,6 +88,13 @@ describe("HealthAggregator", () => {
     expect(days[0]).not.toHaveProperty("sleep_min");
   });
 
+  it("skips an asleep interval that ends at or before its start", () => {
+    expect(run(sleep("Watch", `${D} 06:00:00`, `${D} 06:00:00`), sleep("Watch", `${D} 07:00:00`, `${D} 05:00:00`))).toEqual([]);
+    expect(run(sleep("Watch", `${D} 01:00:00`, `${D} 06:00:00`), sleep("Watch", `${D} 07:00:00`, `${D} 05:00:00`))).toEqual([
+      { date: D, sleep_min: 300 },
+    ]);
+  });
+
   it("files a nap under the same day and a night under the morning", () => {
     const days = run(sleep("Watch", `${D} 14:00:00`, `${D} 14:30:00`), sleep("Watch", `${D} 23:30:00`, "2025-03-05 06:30:00"));
     expect(days).toEqual([

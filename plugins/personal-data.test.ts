@@ -85,4 +85,9 @@ describe("blockPublicPersonalData", () => {
     await writeFile(join(root, "public/data/hevy.json"), "{}");
     await expect(runBuild()).rejects.toThrow(/public\/data\/hevy\.json/);
   });
+
+  it("fails the build when public/data/health.json exists, and says where it belongs", async () => {
+    await writeFile(join(root, "public/data/health.json"), "{}");
+    await expect(runBuild()).rejects.toThrow(/public\/data\/health\.json.*data\/health\.json/s);
+  });
 });

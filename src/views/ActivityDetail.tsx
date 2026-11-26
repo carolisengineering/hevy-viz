@@ -17,6 +17,8 @@ interface Props {
   measure: MeasureId;
   range: DateRange;
   unit: Unit;
+  /** Whether the Hevy data is the sample, whose end day says nothing about a real health export. */
+  hevyIsSample: boolean;
   /** Switches the range to all time, from the empty state. */
   onShowAll: () => void;
 }
@@ -28,12 +30,12 @@ const BackLink = () => (
 );
 
 /** One measure's page: its monthly averages over the range, a mark per year, and a table of the years. */
-export function ActivityDetail({ training, health, measure, range, unit, onShowAll }: Props) {
+export function ActivityDetail({ training, health, measure, range, unit, hevyIsSample, onShowAll }: Props) {
   const [showTable, setShowTable] = useState(false);
   // A detail page opens at its top, not at the list's scroll position.
   useLayoutEffect(() => window.scrollTo(0, 0), [measure]);
   const days = health.status === "ready" ? health.data.days : undefined;
-  const endDay = health.status === "ready" ? healthEndDay(training.endDay, health.data) : "";
+  const endDay = health.status === "ready" ? healthEndDay(training.endDay, health.data, hevyIsSample) : "";
   const w = useMemo(() => days && healthWindow(range, endDay, days), [days, range, endDay]);
   const months = useMemo(() => (days && w ? monthlyAverages(days, measure, w) : []), [days, w, measure]);
   const years = useMemo(() => (days && w ? yearlyAverages(days, measure, w) : []), [days, w, measure]);
@@ -51,9 +53,11 @@ export function ActivityDetail({ training, health, measure, range, unit, onShowA
     body = (
       <div className="empty-state">
         <p>No data in this range.</p>
-        <button className="link" onClick={onShowAll}>
-          Show all time
-        </button>
+        {range.id !== "all" && (
+          <button className="link" onClick={onShowAll}>
+            Show all time
+          </button>
+        )}
       </div>
     );
   } else {

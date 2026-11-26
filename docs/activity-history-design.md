@@ -1,6 +1,6 @@
 # Activity history (Apple Health, part 1): design
 
-**Status:** proposed 2026-11-25. Approved 2026-11-25.
+**Status:** implemented in PR #20, merged 2026-11-25. Proposed and approved 2026-11-25.
 **Scope:** one PR. The first of four Apple Health projects (see Later projects). Replaces the roadmap item "Apple Health overlay (body weight, resting HR)".
 Choices are the author's unless marked as the owner's.
 
@@ -139,6 +139,7 @@ The public demo has no Apple Health data. `npm run sample` also writes `public/d
 
 - **The health sample is used only when the Hevy data is the sample too** (the demo, or a fresh clone). With real Hevy data and no `data/health.json`, the tab shows the empty state, never invented health figures next to real lifting. *(Author's call, from the builder check.)*
 - Ranges end the way `rangeEndDay` already decides for the Hevy data: today for real data, the sample's last day for the sample. The header's existing "Sample data" label then covers both.
+  - *Changed 2026-11-25:* ranges end on the earlier of that day and the export date, so a stale export never looks complete. When the health data is real and the Hevy data is the sample (Health imported, Hevy never synced), ranges end on the export date.
 
 ## Code layout
 

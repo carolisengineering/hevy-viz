@@ -1,5 +1,5 @@
-// Vite plugins that keep your synced Hevy data on your machine: served by the
-// dev server, never copied into a build.
+// Vite plugins that keep your synced Hevy and Apple Health data on your machine:
+// served by the dev server, never copied into a build.
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -17,8 +17,11 @@ export const SYNCED_DATA_FILE = fileURLToPath(new URL("../data/hevy.json", impor
 /** Where `npm run health` writes the Apple Health daily figures; same rules as above. */
 export const HEALTH_DATA_FILE = fileURLToPath(new URL("../data/health.json", import.meta.url));
 
-/** Where the synced file lived before it moved out of public/. */
-const LEGACY_PUBLIC_FILE = "data/hevy.json";
+/** Personal files that must never sit in public/ (Vite copies all of it into the build), and where each belongs. */
+const BLOCKED_PUBLIC_FILES = [
+  { file: "data/hevy.json", fix: "Delete it; `npm run sync` now writes to data/hevy.json, which is never built." },
+  { file: "data/health.json", fix: "Delete it; `npm run health` writes to data/health.json, which is never built." },
+];
 
 type Middleware = (req: unknown, res: ServerResponse, next: () => void) => Promise<void>;
 
@@ -48,7 +51,7 @@ export function servePersonalData(): Plugin {
 }
 
 /**
- * Build-only: fail if public/ still holds a synced file from before it moved,
+ * Build-only: fail if public/ holds a personal data file (Hevy or Apple Health),
  * since Vite copies everything in public/ into the build.
  */
 export function blockPublicPersonalData(): Plugin {
@@ -60,11 +63,11 @@ export function blockPublicPersonalData(): Plugin {
       publicDir = config.publicDir;
     },
     buildStart() {
-      if (publicDir && existsSync(join(publicDir, LEGACY_PUBLIC_FILE))) {
-        this.error(
-          `public/${LEGACY_PUBLIC_FILE} holds personal workout data and would be copied into the build. ` +
-            `Delete it; \`npm run sync\` now writes to data/hevy.json, which is never built.`,
-        );
+      if (!publicDir) return;
+      for (const { file, fix } of BLOCKED_PUBLIC_FILES) {
+        if (existsSync(join(publicDir, file))) {
+          this.error(`public/${file} holds personal data and would be copied into the build. ${fix}`);
+        }
       }
     },
   };

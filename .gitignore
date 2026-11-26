@@ -3,9 +3,10 @@ dist/
 *.tsbuildinfo
 .DS_Store
 
-# Personal workout data from `npm run sync`. Never commit or deploy it.
+# Personal workout and health data from `npm run sync` and `npm run health`. Never commit or deploy it.
 /data/
 public/data/hevy.json
+public/data/health.json
 
 # Hevy API key for npm run sync and the MCP server's sync_now. Never commit it.
 .env

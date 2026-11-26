@@ -9,6 +9,8 @@ import { ExportReadError, exportXmlLines, importLines } from "./health/read-expo
 import { writeJsonAtomically } from "./write-dataset.ts";
 
 const DATA_FILE = "data/health.json";
+// HEALTH_OUT redirects the output, so the tests never touch a real data/health.json.
+const OUT_FILE = process.env.HEALTH_OUT ?? HEALTH_DATA_FILE;
 const PROGRESS_EVERY = 1_000_000;
 const count = (n: number) => n.toLocaleString("en-US");
 
@@ -35,9 +37,9 @@ try {
     }
   });
   if (progressShown) process.stdout.write("\n");
-  await mkdir(dirname(HEALTH_DATA_FILE), { recursive: true });
-  await writeJsonAtomically(HEALTH_DATA_FILE, dataset);
-  console.log(`Imported ${count(dataset.days.length)} days → ${DATA_FILE}`);
+  await mkdir(dirname(OUT_FILE), { recursive: true });
+  await writeJsonAtomically(OUT_FILE, dataset);
+  console.log(`Imported ${count(dataset.days.length)} days → ${process.env.HEALTH_OUT ?? DATA_FILE}`);
   for (const [label, key] of MEASURES) {
     const dates = dataset.days.filter((d) => d[key] !== undefined).map((d) => d.date);
     console.log(`${label}: ${dates.length > 0 ? `${dates[0]} to ${dates[dates.length - 1]}` : "none"}`);

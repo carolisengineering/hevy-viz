@@ -41,6 +41,34 @@ test("says so when a measure has no data in the range", async ({ page }) => {
   await expect(rows(page).nth(0)).not.toContainText("No data in this range");
 });
 
+test("says when a measure that isn't the Watch's starts, in words", async ({ page }) => {
+  const health = readHealthSample();
+  health.days = health.days.map((d) => {
+    if (d.date >= "2025-06-01") return d;
+    const { sleep_min: _sleep, ...rest } = d;
+    return rest;
+  });
+  await serveHealth(page, health);
+  await page.goto("/#/activity");
+  await expect(rows(page).nth(4).locator(".activity-sub")).toHaveText("starts Jun 2025");
+  await expect(rows(page).nth(4)).toHaveAttribute("aria-label", /starts Jun 2025/);
+  await expect(rows(page).nth(0).locator(".activity-sub")).toHaveCount(0);
+  await expect(rows(page).nth(2).locator(".activity-sub")).toHaveText("before your Watch");
+});
+
+test("draws a dot for each month that stands alone in a row", async ({ page }) => {
+  const health = readHealthSample();
+  health.days = health.days.map((d) => {
+    if (["2025-06", "2025-08", "2025-09"].includes(d.date.slice(0, 7))) return d;
+    const { sleep_min: _sleep, ...rest } = d;
+    return rest;
+  });
+  await serveHealth(page, health);
+  await page.goto("/#/activity");
+  // Jun stands alone; Aug and Sep are joined by a line segment.
+  await expect(rows(page).nth(4).locator(".activity-dot")).toHaveCount(1);
+});
+
 test("explains how to import when there is no health data", async ({ page }) => {
   await serveSynced(page, syncedEndingDaysAgo(0));
   await serveHealth(page, null);
@@ -55,11 +83,24 @@ test("ends on the export date when the export is older than today", async ({ pag
   health.days = health.days.filter((d) => d.date <= health.export_date);
   await serveSynced(page, syncedEndingDaysAgo(0));
   await serveHealth(page, health);
+  await page.setViewportSize({ width: 1280, height: 800 }); // wide enough to label every month
   await page.goto("/#/activity");
   await expect(page.getByText("Apple Health data as of Aug 20, 2026")).toBeVisible();
   // July is the last complete month before the export; today's end day would name a later one.
   await expect(rows(page).first().locator(".activity-when")).toHaveText("Jul");
-  await expect(page.locator(".activity-tick").last()).not.toHaveText(/Sep|Oct|Nov|Dec/);
+  await expect(page.locator(".activity-tick").last()).toHaveText("Aug");
+});
+
+test("keeps a real export's last days beside the Hevy sample", async ({ page }) => {
+  const health = readHealthSample();
+  health.source = "apple-health";
+  health.export_date = "2027-01-05";
+  health.days = [...health.days, { date: "2026-12-14", steps: 9000 }, { date: "2026-12-20", steps: 9000 }];
+  await page.route("**/data/health.json", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify(health) }));
+  await page.goto("/#/activity");
+  await expect(page.getByText("Apple Health data as of Jan 5, 2027")).toBeVisible();
+  // December is the last complete month; the Hevy sample's end day would stop at November.
+  await expect(rows(page).first().locator(".activity-when")).toHaveText("Dec 2026");
 });
 
 test("marks the month of the latest figure and labels the timeline", async ({ page }) => {
@@ -114,7 +155,9 @@ test("keeps the axis labels apart on the whole sample at 390px", async ({ page }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/#/activity");
   await page.evaluate(() => document.fonts.ready);
+  await expect(page.locator(".activity-tick").first()).toBeVisible();
   const boxes = await page.locator(".activity-tick").evaluateAll((els) => els.map((el) => el.getBoundingClientRect()).map((r) => [r.left, r.right]));
+  expect(boxes.length).toBeGreaterThan(0);
   for (let i = 1; i < boxes.length; i++) expect(boxes[i][0]).toBeGreaterThan(boxes[i - 1][1]);
 });
 
@@ -221,6 +264,29 @@ test.describe("detail page", () => {
     await page.click('button[role=radio]:has-text("lb")');
     await expect(page.locator("tbody tr").first()).toContainText("mi");
     await expect(yearRows(page).first()).toContainText("mi");
+  });
+
+  test("the detail page ends on the export date when the export is older than today", async ({ page }) => {
+    const health = readHealthSample();
+    health.export_date = "2026-08-20";
+    health.days = health.days.filter((d) => d.date <= health.export_date);
+    await serveSynced(page, syncedEndingDaysAgo(0));
+    await serveHealth(page, health);
+    await page.goto("/#/activity/steps");
+    await expect(yearRows(page).first().locator("td").first()).toHaveText("2026, to Aug 20");
+  });
+
+  test("offers Show all time only when the range isn't already all time", async ({ page }) => {
+    const health = readHealthSample();
+    health.days = health.days.map(({ sleep_min: _sleep, ...rest }) => rest);
+    await serveHealth(page, health);
+    await page.goto("/#/activity/sleep");
+    await page.click('button[role=radio]:has-text("90 days")');
+    await expect(page.getByText("No data in this range.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Show all time" })).toBeVisible();
+    await page.click('button[role=radio]:has-text("All time")');
+    await expect(page.getByText("No data in this range.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Show all time" })).toHaveCount(0);
   });
 
   test("exercise says where the Watch data starts", async ({ page }) => {

@@ -98,7 +98,11 @@ export class HealthAggregator {
       for (const [hour, share] of splitByHour(startMs, wallMs(record.end), value)) hours.set(hour, (hours.get(hour) ?? 0) + share);
       if (record.watch) this.watchDays.add(isoDate(startMs));
     } else if (record.kind === "sleep") {
-      if (record.asleep) this.asleep.push([wallMs(record.start), wallMs(record.end)]);
+      if (record.asleep) {
+        const start = wallMs(record.start);
+        const end = wallMs(record.end);
+        if (end > start) this.asleep.push([start, end]); // an empty or backwards interval is bad data
+      }
     } else {
       this.summaries.set(record.date, { kcal: toKilocalories(record.activeEnergy, record.activeEnergyUnit), exerciseMin: record.exerciseMin });
     }

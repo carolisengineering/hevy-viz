@@ -41,7 +41,7 @@ Hevy's own charts are limited by time window and focus on one exercise at a time
 - **Units:** the data is in kilograms; no unit preference exists yet.
 - `src/core` is pure, has no DOM, and is shared with a planned MCP server.
 - Personal data never ships in a build.
-- **Dates:** days are local to the viewer's time zone, and ranges end today (the sample ends on its last workout). The Activity tab's ranges end on the export date when that is earlier.
+- **Dates:** days are local to the viewer's time zone, and ranges end today (the sample ends on its last workout). The Activity tab's ranges end on the Apple Health export date when that is earlier (or always, for an imported export beside the Hevy sample).
 - **Tests:** Vitest unit tests and Playwright browser tests (`e2e/`) gate changes.
 - **Undecided:** whether a personal build is ever deployed, and which time zone scripts use.
 
