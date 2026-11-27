@@ -200,3 +200,21 @@ export function recentStretch(health: HealthDataset, training: Training, timeZon
   }
   return { ...dates, rows };
 }
+
+/** A day's steps band for the calendar: 1–6 by fixed step counts, 0 when there are no steps. */
+export type StepBand = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/** The lowest step count of bands 1–6. */
+export const STEP_BAND_FLOORS: readonly number[] = [0, 5000, 7500, 10000, 15000, 20000];
+
+export function stepBand(steps: number | undefined): StepBand {
+  if (steps === undefined) return 0;
+  let band = 1;
+  while (band < STEP_BAND_FLOORS.length && steps >= STEP_BAND_FLOORS[band]!) band++;
+  return band as StepBand;
+}
+
+/** The Health days keyed by date. */
+export function healthByDay(days: readonly HealthDay[]): Map<string, HealthDay> {
+  return new Map(days.map((d) => [d.date, d]));
+}
