@@ -119,6 +119,15 @@
   box-shadow: inset 0 0 0 2px var(--ink-line);
 }
 
+/* On a shaded day the hover tint would darken the shade past the number's contrast floor,
+   so pointing at it draws the border instead. */
+.calendar-month td[class*="steps-"] > a:hover {
+  background: none;
+}
+.calendar-month td[class*="steps-"] > a:hover:not(.selected) {
+  border-color: var(--ink-line);
+}
+
 /* The shades' key, under the summary. */
 .step-legend {
   display: flex;

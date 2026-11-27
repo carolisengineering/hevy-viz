@@ -374,4 +374,9 @@ describe("healthByDay", () => {
     expect(byDay.get("2026-11-03")).toBe(days[1]);
     expect(byDay.get("2026-11-04")).toBeUndefined();
   });
+
+  it("leaves out the export day and after, which are cut short", () => {
+    const byDay = healthByDay([day("2026-11-12", 9000), day("2026-11-13", 600), day("2026-11-14", 300)], "2026-11-13");
+    expect([...byDay.keys()]).toEqual(["2026-11-12"]);
+  });
 });

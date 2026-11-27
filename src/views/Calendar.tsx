@@ -71,7 +71,7 @@ export function Calendar({ training, range, day, unit, health, hevyIsSample }: P
   const entries = useMemo(() => (selected ? dayEntries(training, selected, TIME_ZONE) : []), [training, selected]);
   // Sample lifting is never drawn beside a real export.
   const byDay = useMemo(
-    () => (health.status === "ready" && !(hevyIsSample && health.data.source === "apple-health") ? healthByDay(health.data.days) : null),
+    () => (health.status === "ready" && !(hevyIsSample && health.data.source === "apple-health") ? healthByDay(health.data.days, health.data.export_date) : null),
     [health, hevyIsSample],
   );
   const wide = useMediaQuery(WIDE);

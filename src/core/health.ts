@@ -214,7 +214,7 @@ export function stepBand(steps: number | undefined): StepBand {
   return band as StepBand;
 }
 
-/** The Health days keyed by date. */
-export function healthByDay(days: readonly HealthDay[]): Map<string, HealthDay> {
-  return new Map(days.map((d) => [d.date, d]));
+/** The Health days keyed by date. With `exportDate`, the export day and any after it are left out: they're cut short, not low. */
+export function healthByDay(days: readonly HealthDay[], exportDate?: string): Map<string, HealthDay> {
+  return new Map(days.filter((d) => exportDate === undefined || d.date < exportDate).map((d) => [d.date, d]));
 }

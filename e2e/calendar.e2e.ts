@@ -162,7 +162,8 @@ test("shades days by steps on the demo", async ({ page }) => {
 test("hatches days after the export", async ({ page }) => {
   const today = localDay(new Date());
   const health = readHealthSample();
-  const move = Math.round((Date.parse(`${shiftDay(today, -10)}T00:00:00Z`) - Date.parse(`${health.days.at(-1)!.date}T00:00:00Z`)) / 86_400_000);
+  // The last Health day is the export day, cut short at the export: hatched too, not a low day.
+  const move = Math.round((Date.parse(`${shiftDay(today, -9)}T00:00:00Z`) - Date.parse(`${health.days.at(-1)!.date}T00:00:00Z`)) / 86_400_000);
   health.source = "apple-health";
   health.days = health.days.map((d) => ({ ...d, date: shiftDay(d.date, move) }));
   health.export_date = shiftDay(today, -9);
@@ -170,6 +171,7 @@ test("hatches days after the export", async ({ page }) => {
   await serveHealth(page, health);
   await page.goto("/#/calendar");
   await expect(page.locator(`td[data-day="${shiftDay(today, -3)}"]`)).toHaveClass(/(^| )steps-0( |$)/);
+  await expect(page.locator(`td[data-day="${shiftDay(today, -9)}"]`)).toHaveClass(/(^| )steps-0( |$)/);
   await expect(page.locator(`td[data-day="${shiftDay(today, -10)}"]`)).toHaveClass(/(^| )steps-[1-6]( |$)/);
 });
 
@@ -234,6 +236,13 @@ function contrast(a: string, b: string): number {
   return (hi! + 0.05) / (lo! + 0.05);
 }
 
+/** `top` (an rgba() that may be see-through) laid over the opaque `bottom`, as rgb(). */
+function over(top: string, bottom: string): string {
+  const [r, g, b, a = 1] = top.match(/[\d.]+/g)!.map(Number);
+  const [R, G, B] = bottom.match(/[\d.]+/g)!.map(Number);
+  return `rgb(${r! * a + R! * (1 - a)}, ${g! * a + G! * (1 - a)}, ${b! * a + B! * (1 - a)})`;
+}
+
 test("keeps the darkest shade readable", async ({ page }) => {
   const health = readHealthSample();
   health.days = health.days.map((d) => (d.date === lastSampleTrainingDay ? { ...d, steps: 25000 } : d));
@@ -248,6 +257,13 @@ test("keeps the darkest shade readable", async ({ page }) => {
   }));
   expect(contrast(colors.number, colors.background)).toBeGreaterThanOrEqual(4.5);
   expect(contrast(colors.dot, colors.background)).toBeGreaterThanOrEqual(3);
+
+  // Pointing at the day (or a tap's sticky hover) must not dim it below the floors.
+  await cell.locator("a").hover();
+  const tint = await cell.locator("a").evaluate((a) => getComputedStyle(a).backgroundColor);
+  const hovered = over(tint, colors.background);
+  expect(contrast(colors.number, hovered)).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(colors.dot, hovered)).toBeGreaterThanOrEqual(3);
 });
 
 test("fits the legend on a phone", async ({ page }) => {
