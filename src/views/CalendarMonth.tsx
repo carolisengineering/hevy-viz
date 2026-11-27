@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { CalendarDay, CalendarMonth as Month } from "../core/calendar";
 import { dayDotRadius, REST_DOT_RADIUS } from "../components/dayDot";
+import { stepBand } from "../core/health";
+import type { HealthDay } from "../core/types";
 import { formatCount, formatFullDate, formatMonth } from "../format";
 import { routeHref } from "../hooks/useRoute";
 
@@ -29,7 +31,10 @@ function DayMark({ cell }: { cell: CalendarDay }) {
   );
 }
 
-function DayCell({ cell, selected }: { cell: CalendarDay; selected: boolean }) {
+/** Health data by date, or null when the calendar shows none. */
+type HealthByDay = ReadonlyMap<string, HealthDay> | null | undefined;
+
+function DayCell({ cell, selected, health }: { cell: CalendarDay; selected: boolean; health: HealthByDay }) {
   if (!cell.inWindow) {
     return (
       <td data-day={cell.day} className="outside">
@@ -37,20 +42,24 @@ function DayCell({ cell, selected }: { cell: CalendarDay; selected: boolean }) {
       </td>
     );
   }
-  if (cell.sessions === 0) {
+  const today = health?.get(cell.day);
+  const shade = health ? `steps-${stepBand(today?.steps)}` : undefined;
+  if (cell.sessions === 0 && !today) {
     return (
-      <td data-day={cell.day} className={selected ? "selected" : undefined}>
+      <td data-day={cell.day} className={[shade, selected && "selected"].filter(Boolean).join(" ") || undefined}>
         <DayMark cell={cell} />
       </td>
     );
   }
+  const load = cell.sessions === 0 ? "no sessions" : `${plural(cell.sessions, "session", "sessions")}, ${plural(cell.sets, "set", "sets")}`;
+  const steps = today?.steps === undefined ? "" : `, ${plural(today.steps, "step", "steps")}`;
   return (
-    <td data-day={cell.day}>
+    <td data-day={cell.day} className={shade}>
       <a
         href={routeHref({ view: "calendar", day: cell.day })}
         className={selected ? "selected" : undefined}
         aria-current={selected ? "date" : undefined}
-        aria-label={`${formatFullDate(cell.day)}: ${plural(cell.sessions, "session", "sessions")}, ${plural(cell.sets, "set", "sets")}`}
+        aria-label={`${formatFullDate(cell.day)}: ${load}${steps}`}
       >
         <DayMark cell={cell} />
       </a>
@@ -58,8 +67,8 @@ function DayCell({ cell, selected }: { cell: CalendarDay; selected: boolean }) {
   );
 }
 
-/** One month as a Monday-first table, then `after` (the day panel, on narrow screens). */
-export function CalendarMonth({ month, selected, after }: { month: Month; selected: string | null; after?: ReactNode }) {
+/** One month as a Monday-first table, then `after` (the day panel, on narrow screens). With `health`, days are shaded by steps and Health-only days are links too. */
+export function CalendarMonth({ month, selected, after, health }: { month: Month; selected: string | null; after?: ReactNode; health?: HealthByDay }) {
   return (
     <div className="calendar-month-block">
       <table className="calendar-month">
@@ -78,7 +87,7 @@ export function CalendarMonth({ month, selected, after }: { month: Month; select
         <tbody>
           {month.weeks.map((week) => (
             <tr key={week.find((c) => c != null)!.day}>
-              {week.map((cell, i) => (cell ? <DayCell key={cell.day} cell={cell} selected={cell.day === selected} /> : <td key={`pad-${i}`} />))}
+              {week.map((cell, i) => (cell ? <DayCell key={cell.day} cell={cell} selected={cell.day === selected} health={health} /> : <td key={`pad-${i}`} />))}
             </tr>
           ))}
         </tbody>

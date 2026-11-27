@@ -1,6 +1,6 @@
 # Recent stretch (Apple Health, part 2): design
 
-**Status:** proposed 2026-11-25. Approved 2026-11-25.
+**Status:** implemented in PR #23, merged 2026-11-26. Proposed and approved 2026-11-25.
 **Scope:** one PR. The second of four Apple Health projects (see `docs/activity-history-design.md`, Later projects).
 Choices are the author's unless marked as the owner's.
 

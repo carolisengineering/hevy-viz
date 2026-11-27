@@ -1,6 +1,7 @@
 // Display formatting shared by every view, the chart and its table.
 import { parseDay } from "./core/dates";
-import type { MeasureId, RecentStretch, StretchRow, StretchRowId } from "./core/health";
+import { MEASURES, STEP_BAND_FLOORS, type MeasureId, type RecentStretch, type StretchRow, type StretchRowId } from "./core/health";
+import type { HealthDay } from "./core/types";
 import { METRIC_LABEL, type MetricId, type ProgressPoint } from "./core/progress";
 
 // Days are UTC midnights (see core/dates), so format in UTC to keep the same date.
@@ -179,6 +180,24 @@ export function formatHealth(measure: MeasureId, value: number, unit: Unit): str
       return `${Math.floor(total / 60)}h${String(total % 60).padStart(2, "0")}`;
     }
   }
+}
+
+const DAY_TOTAL_SUFFIX: Record<MeasureId, string> = { steps: " steps", distance: "", exercise: " exercise", calories: "", sleep: " sleep" };
+
+/** "9,300 steps · 4.1 mi · 46 min exercise · 540 kcal · 7h20 sleep": the day's measures in Activity-tab order, missing ones left out; "" when it has none. */
+export function formatDayTotals(day: HealthDay, unit: Unit): string {
+  return MEASURES.flatMap(({ id, key }) => {
+    const value = day[key];
+    return value === undefined ? [] : [`${formatHealth(id, value, unit)}${DAY_TOTAL_SUFFIX[id]}`];
+  }).join(" · ");
+}
+
+/** A steps band's range for the legend: "under 5,000", "5,000–7,499", …, "20,000+". */
+export function stepBandLabel(band: 1 | 2 | 3 | 4 | 5 | 6): string {
+  const from = STEP_BAND_FLOORS[band - 1]!;
+  const next = STEP_BAND_FLOORS[band];
+  if (band === 1) return `under ${formatCount(next!)}`;
+  return next === undefined ? `${formatCount(from)}+` : `${formatCount(from)}–${formatCount(next - 1)}`;
 }
 
 const shortMonthFormat = new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" });

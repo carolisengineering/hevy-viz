@@ -10,6 +10,16 @@
   --accent: #d81b60;
   --select: #ffc21a;
 
+  /* Calendar day shades by steps, light to strong: ink pre-mixed on paper, kept light enough
+     that the day number stays ≥4.5:1 and the dot ≥3:1. */
+  --steps-1: #f0f0ed;
+  --steps-2: #e4e8e7;
+  --steps-3: #d7dfe1;
+  --steps-4: #cad5db;
+  --steps-5: #bdccd5;
+  --steps-6: #b0c3cf;
+  --steps-hatch: #d1dadf;
+
   --font-display: "Sue Ellen Francisco", "Patrick Hand SC", cursive;
   --font-data: "Patrick Hand SC", "Segoe Print", cursive;
 }
@@ -25,6 +35,13 @@
     --ink-line: #7f9bbe;
     --accent: #ff5c93;
     --select: #ffc21a;
+    --steps-1: #1d2633;
+    --steps-2: #29323f;
+    --steps-3: #343e4c;
+    --steps-4: #404b59;
+    --steps-5: #4d5867;
+    --steps-6: #586473;
+    --steps-hatch: #3c4654;
   }
 }
 
@@ -37,4 +54,11 @@
   --ink-line: #7f9bbe;
   --accent: #ff5c93;
   --select: #ffc21a;
+  --steps-1: #1d2633;
+  --steps-2: #29323f;
+  --steps-3: #343e4c;
+  --steps-4: #404b59;
+  --steps-5: #4d5867;
+  --steps-6: #586473;
+  --steps-hatch: #3c4654;
 }

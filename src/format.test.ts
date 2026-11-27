@@ -7,6 +7,7 @@ import {
   formatClock,
   formatCount,
   formatDate,
+  formatDayTotals,
   formatDistance,
   formatDuration,
   formatFullDate,
@@ -20,6 +21,7 @@ import {
   formatShortDate,
   formatValue,
   formatWeight,
+  stepBandLabel,
   stretchComparison,
   stretchDates,
   stretchValue,
@@ -229,5 +231,35 @@ describe("stretch text", () => {
     const s: RecentStretch = { from: "2025-10-16", to: "2025-11-12", usualFrom: "2024-10-16", usualTo: "2025-10-15", rows: [] };
     expect(stretchDates(s, "2025")).toBe("Oct 16 – Nov 12");
     expect(stretchDates(s, "2026")).toBe("Oct 16 – Nov 12, 2025");
+  });
+});
+
+describe("day totals", () => {
+  const full = { date: "2026-11-03", steps: 9300, distance_km: 6.6, exercise_min: 46, active_kcal: 540, sleep_min: 440 };
+
+  it("lists every measure in Activity-tab order", () => {
+    expect(formatDayTotals(full, "lb")).toBe("9,300 steps · 4.1 mi · 46 min exercise · 540 kcal · 7h20 sleep");
+  });
+
+  it("follows the km setting", () => {
+    expect(formatDayTotals(full, "kg")).toBe("9,300 steps · 6.6 km · 46 min exercise · 540 kcal · 7h20 sleep");
+  });
+
+  it("leaves out missing measures", () => {
+    expect(formatDayTotals({ date: "2026-11-03", sleep_min: 440 }, "lb")).toBe("7h20 sleep");
+    expect(formatDayTotals({ date: "2026-11-03" }, "lb")).toBe("");
+  });
+});
+
+describe("stepBandLabel", () => {
+  it("names each band's range", () => {
+    expect(([1, 2, 3, 4, 5, 6] as const).map(stepBandLabel)).toEqual([
+      "under 5,000",
+      "5,000–7,499",
+      "7,500–9,999",
+      "10,000–14,999",
+      "15,000–19,999",
+      "20,000+",
+    ]);
   });
 });

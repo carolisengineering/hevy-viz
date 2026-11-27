@@ -84,6 +84,79 @@
   opacity: 0.5;
 }
 
+/* Days shaded by steps from Apple Health; a day with no steps is hatched. The shade sits inside
+   the cell's padding, so neighboring days stay apart. */
+.calendar-month td[class*="steps-"] {
+  background-clip: content-box;
+}
+.calendar-month td.steps-0,
+.step-swatch.steps-0 {
+  background-image: repeating-linear-gradient(45deg, var(--steps-hatch) 0 1px, transparent 1px 5px);
+}
+.steps-1 {
+  background-color: var(--steps-1);
+}
+.steps-2 {
+  background-color: var(--steps-2);
+}
+.steps-3 {
+  background-color: var(--steps-3);
+}
+.steps-4 {
+  background-color: var(--steps-4);
+}
+.steps-5 {
+  background-color: var(--steps-5);
+}
+.steps-6 {
+  background-color: var(--steps-6);
+}
+/* Six shades of one ink sit close together, so the top two bands also get a ring inside the cell. */
+.calendar-month td.steps-5,
+.calendar-month td.steps-6,
+.step-swatch.steps-5,
+.step-swatch.steps-6 {
+  box-shadow: inset 0 0 0 2px var(--ink-line);
+}
+
+/* On a shaded day the hover tint would darken the shade past the number's contrast floor,
+   so pointing at it draws the border instead. */
+.calendar-month td[class*="steps-"] > a:hover {
+  background: none;
+}
+.calendar-month td[class*="steps-"] > a:hover:not(.selected) {
+  border-color: var(--ink-line);
+}
+
+/* The shades' key, under the summary. */
+.step-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  list-style: none;
+  margin: -12px 0 22px;
+  padding: 0;
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+.step-legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.step-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid var(--grid);
+}
+
+.day-totals {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
 /* Wide screens: months flow in columns, and the day panel gets a column of its own. */
 @media (min-width: 1000px) {
   .calendar-view {

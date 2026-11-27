@@ -7,12 +7,14 @@ import { buildTraining } from "./training";
 import type { HealthDataset, HealthDay, HevyDataset } from "./types";
 import {
   firstDayOf,
+  healthByDay,
   healthEndDay,
   healthWindow,
   latestCompleteMonth,
   MEASURES,
   monthlyAverages,
   recentStretch,
+  stepBand,
   windowAverage,
   yearlyAverages,
 } from "./health";
@@ -342,5 +344,39 @@ describe("recentStretch", () => {
     expect(s.to).toBe("2026-11-12");
     expect(s.rows).toHaveLength(6);
     expect(s.rows.filter((r) => r.status !== "compared")).toEqual([]);
+  });
+});
+
+describe("stepBand", () => {
+  it.each([
+    [undefined, 0],
+    [0, 1],
+    [4999, 1],
+    [5000, 2],
+    [7499, 2],
+    [7500, 3],
+    [9999, 3],
+    [10000, 4],
+    [14999, 4],
+    [15000, 5],
+    [19999, 5],
+    [20000, 6],
+    [45000, 6],
+  ])("puts %s steps in band %i", (steps, band) => {
+    expect(stepBand(steps)).toBe(band);
+  });
+});
+
+describe("healthByDay", () => {
+  it("looks up a day by its date", () => {
+    const days = [day("2026-11-02", 4000), day("2026-11-03", 9300)];
+    const byDay = healthByDay(days);
+    expect(byDay.get("2026-11-03")).toBe(days[1]);
+    expect(byDay.get("2026-11-04")).toBeUndefined();
+  });
+
+  it("leaves out the export day and after, which are cut short", () => {
+    const byDay = healthByDay([day("2026-11-12", 9000), day("2026-11-13", 600), day("2026-11-14", 300)], "2026-11-13");
+    expect([...byDay.keys()]).toEqual(["2026-11-12"]);
   });
 });

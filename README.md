@@ -19,7 +19,7 @@ Interactive charts of your full [Hevy](https://www.hevyapp.com/) workout history
   - your latest workouts.
 - **Exercises:** search, filter by kind and sort hundreds of exercises, with a page and progress chart for each.
 - **Balance:** working sets per week for every muscle group and muscle, with under-trained groups flagged, and each group week by week.
-- **Calendar:** every month in the range as a calendar, newest first, with a dot for each training day. Pick a day to see its workouts: start time, length, and each exercise's top set.
+- **Calendar:** every month in the range as a calendar, newest first, with a dot for each training day. Pick a day to see its workouts: start time, length, and each exercise's top set. With Apple Health data, days are shaded by steps in six bands, with a legend, and a picked day also shows its steps, distance, exercise, calories and sleep.
 - **Activity:** your steps, distance, active calories, exercise minutes and time asleep, month by month, from an Apple Health export. Each measure has a page with a chart, yearly marks and a table. At the top, a "Last 4 weeks" card compares the four weeks before your export with the 12 months before them, for training days and each measure. Needs one import (see [Apple Health](#apple-health)).
 - Date ranges (90 days / 1 year / all time) that apply to every view.
 - lb by default, or kg; remembered per browser. Distance on the Activity tab follows it (lb shows miles, kg shows kilometers).
@@ -190,7 +190,7 @@ mcp/server.ts               MCP server: stdio, tool registration, `sync_now`, lo
 1. `useDataset` loads `data/hevy.json`, or the sample if you haven't synced, and drops any workout whose start time can't be read.
 2. `useHealth` loads `data/health.json` (or the health sample, only when the Hevy data is the sample too) on its own, so a missing health file never affects the other tabs.
 3. `useTraining` builds the training model (`src/core/training.ts`) once per dataset: the progress index for every exercise and the per-day training load.
-4. `App.tsx` reads the route from the URL hash (`#/`, `#/exercises`, `#/exercises/<id>`, `#/balance`, `#/calendar`, `#/calendar/<day>`, `#/activity`, `#/activity/<measure>`) and hands the training model, range and unit to that view (Activity also gets the health data). Changing the range, unit or view only filters and formats.
+4. `App.tsx` reads the route from the URL hash (`#/`, `#/exercises`, `#/exercises/<id>`, `#/balance`, `#/calendar`, `#/calendar/<day>`, `#/activity`, `#/activity/<measure>`) and hands the training model, range and unit to that view (Activity and Calendar also get the health data). Changing the range, unit or view only filters and formats.
 
 **Rules the code follows**
 
