@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { calendarMonths } from "../core/calendar";
 import type { DayLoad } from "../core/consistency";
+import { healthByDay } from "../core/health";
 import { CalendarMonth } from "./CalendarMonth";
 
 const load = (sessions: number, sets: number): DayLoad => ({ sessions, sets, minutes: 60 });
@@ -54,5 +55,40 @@ describe("CalendarMonth", () => {
     expect(cell).toContain('class="outside"');
     expect(cell).not.toContain("<circle");
     expect(html).not.toContain('href="#/calendar/2026-11-20"');
+  });
+});
+
+describe("CalendarMonth with Health data", () => {
+  const health = healthByDay([
+    { date: "2026-11-03", steps: 12000 },
+    { date: "2026-11-05", sleep_min: 420 },
+  ]);
+  const shaded = renderToStaticMarkup(<CalendarMonth month={november} selected="2026-11-03" health={health} />);
+
+  it("shades a training day by its steps and reads them out", () => {
+    const cell = cellFor(shaded, "2026-11-03");
+    expect(cell).toMatch(/^<td[^>]*class="steps-4"/);
+    expect(cell).toContain('aria-label="Tue, Nov 3, 2026: 2 sessions, 20 sets, 12,000 steps"');
+  });
+
+  it("links a rest day with Health data, hatched when it has no steps", () => {
+    const cell = cellFor(shaded, "2026-11-05");
+    expect(cell).toMatch(/^<td[^>]*class="steps-0"/);
+    expect(cell).toContain('<a href="#/calendar/2026-11-05"');
+    expect(cell).toContain('aria-label="Thu, Nov 5, 2026: no sessions"');
+  });
+
+  it("hatches a rest day without Health data and doesn't link it", () => {
+    const cell = cellFor(shaded, "2026-11-04");
+    expect(cell).toMatch(/^<td[^>]*class="steps-0"/);
+    expect(cell).not.toContain("<a");
+  });
+
+  it("leaves days outside the window unshaded", () => {
+    expect(cellFor(shaded, "2026-11-20")).not.toContain("steps-");
+  });
+
+  it("shades nothing without Health data", () => {
+    expect(html).not.toContain("steps-");
   });
 });

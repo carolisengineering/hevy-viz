@@ -1,4 +1,5 @@
-import { expect, sample, serveSynced, syncedEndingDaysAgo, test } from "./fixtures.ts";
+import type { Page } from "@playwright/test";
+import { expect, readHealthSample, sample, serveHealth, serveSynced, syncedEndingDaysAgo, test } from "./fixtures.ts";
 
 const captions = (page: import("@playwright/test").Page) => page.locator("table.calendar-month caption");
 
@@ -48,7 +49,8 @@ test("shows the latest training day by default", async ({ page }) => {
 
 test("picks a day and goes back", async ({ page }) => {
   await page.goto("/#/calendar");
-  const links = page.locator("table.calendar-month").first().locator("a");
+  // Training days only: rest days with Health data become links once it loads.
+  const links = page.locator("table.calendar-month").first().locator('a:not([aria-label*="no sessions"])');
   await links.nth(0).click();
   expect(new URL(page.url()).hash).toMatch(/^#\/calendar\/2026-11-\d\d$/);
   await expect(links.nth(0)).toHaveAttribute("aria-current", "date");
@@ -131,4 +133,126 @@ test("keeps the end of a long day reachable on a laptop", async ({ page }) => {
   await last.scrollIntoViewIfNeeded();
   await expect(last).toBeInViewport();
   await expect(page.locator("table.calendar-month").first()).toBeInViewport();
+});
+
+// Day totals from Apple Health: shades, the legend, and the panel's totals line.
+
+const STEP_FLOORS = [5000, 7500, 10000, 15000, 20000];
+const expectedBand = (steps: number | undefined) => (steps === undefined ? 0 : 1 + STEP_FLOORS.filter((f) => steps >= f).length);
+const shadedCells = (page: Page) => page.locator('table.calendar-month td[class*="steps-"]');
+const pad = (n: number) => String(n).padStart(2, "0");
+/** The local calendar day of `date`, as the app works days out in the browser's time zone. */
+const localDay = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const shiftDay = (day: string, days: number) => new Date(Date.parse(`${day}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+const sampleTrainingDays = new Set(sample.workouts.map((w) => localDay(new Date(w.start_time))));
+const lastSampleTrainingDay = [...sampleTrainingDays].sort().at(-1)!;
+
+test("shades days by steps on the demo", async ({ page }) => {
+  await page.goto("/#/calendar");
+  await page.click('button[role=radio]:has-text("90 days")');
+  await expect(page.locator(".step-legend li")).toHaveText(["under 5,000", "5,000–7,499", "7,500–9,999", "10,000–14,999", "15,000–19,999", "20,000+", "no data"]);
+  const steps = new Map(readHealthSample().days.map((d) => [d.date, d.steps]));
+  const cells = await page
+    .locator("table.calendar-month td[data-day]:not(.outside)")
+    .evaluateAll((tds) => tds.map((td) => [td.getAttribute("data-day")!, [...td.classList].filter((c) => c.startsWith("steps-"))] as const));
+  expect(cells.length).toBeGreaterThan(80);
+  for (const [day, classes] of cells) expect(classes, day).toEqual([`steps-${expectedBand(steps.get(day))}`]);
+});
+
+test("hatches days after the export", async ({ page }) => {
+  const today = localDay(new Date());
+  const health = readHealthSample();
+  const move = Math.round((Date.parse(`${shiftDay(today, -10)}T00:00:00Z`) - Date.parse(`${health.days.at(-1)!.date}T00:00:00Z`)) / 86_400_000);
+  health.source = "apple-health";
+  health.days = health.days.map((d) => ({ ...d, date: shiftDay(d.date, move) }));
+  health.export_date = shiftDay(today, -9);
+  await serveSynced(page, syncedEndingDaysAgo(0));
+  await serveHealth(page, health);
+  await page.goto("/#/calendar");
+  await expect(page.locator(`td[data-day="${shiftDay(today, -3)}"]`)).toHaveClass(/(^| )steps-0( |$)/);
+  await expect(page.locator(`td[data-day="${shiftDay(today, -10)}"]`)).toHaveClass(/(^| )steps-[1-6]( |$)/);
+});
+
+test("picks a rest day with Health data", async ({ page }) => {
+  const restDay = readHealthSample()
+    .days.map((d) => d.date)
+    .filter((d) => d < lastSampleTrainingDay && !sampleTrainingDays.has(d))
+    .at(-1)!;
+  await page.goto("/#/calendar");
+  await page.locator(`td[data-day="${restDay}"] a`).click();
+  expect(new URL(page.url()).hash).toBe(`#/calendar/${restDay}`);
+  await expect(page.locator(".day-panel")).toContainText("Rest day.");
+  await expect(page.locator(".day-totals")).toContainText("steps");
+});
+
+test("shows the day's totals above its workouts", async ({ page }) => {
+  await page.goto("/#/calendar");
+  await expect(page.locator(".day-totals")).toBeVisible();
+  const before = await page
+    .locator(".day-totals")
+    .evaluate((p) => !!(p.compareDocumentPosition(document.querySelector(".day-workout")!) & Node.DOCUMENT_POSITION_FOLLOWING));
+  expect(before).toBe(true);
+});
+
+/** Waits for both data files, so an absent shade isn't just health data still loading. */
+async function openSettled(page: Page) {
+  await page.goto("/#/calendar");
+  await expect(page.locator("table.calendar-month").first()).toBeVisible();
+  await page.waitForLoadState("networkidle");
+}
+
+test("leaves the calendar alone without health data", async ({ page }) => {
+  await serveSynced(page, syncedEndingDaysAgo(0));
+  await serveHealth(page, null);
+  await openSettled(page);
+  await expect(shadedCells(page)).toHaveCount(0);
+  await expect(page.locator(".step-legend")).toHaveCount(0);
+  await expect(page.locator(".day-totals")).toHaveCount(0);
+  await expect(page.getByText("dot size = working sets", { exact: true })).toBeVisible();
+});
+
+test("leaves the calendar alone beside a real export", async ({ page }) => {
+  const health = readHealthSample();
+  health.source = "apple-health";
+  await serveHealth(page, health);
+  await openSettled(page);
+  await expect(shadedCells(page)).toHaveCount(0);
+  await expect(page.locator(".step-legend")).toHaveCount(0);
+  await expect(page.locator(".day-totals")).toHaveCount(0);
+});
+
+/** WCAG contrast between two computed `rgb(…)` colors. */
+function contrast(a: string, b: string): number {
+  const lum = (css: string) => {
+    const [r, g, b] = css.match(/[\d.]+/g)!.slice(0, 3).map((v) => {
+      const c = Number(v) / 255;
+      return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi! + 0.05) / (lo! + 0.05);
+}
+
+test("keeps the darkest shade readable", async ({ page }) => {
+  const health = readHealthSample();
+  health.days = health.days.map((d) => (d.date === lastSampleTrainingDay ? { ...d, steps: 25000 } : d));
+  await serveHealth(page, health);
+  await page.goto("/#/calendar");
+  const cell = page.locator(`td[data-day="${lastSampleTrainingDay}"]`);
+  await expect(cell).toHaveClass(/(^| )steps-6( |$)/);
+  const colors = await cell.evaluate((td) => ({
+    background: getComputedStyle(td).backgroundColor,
+    number: getComputedStyle(td.querySelector(".day-number")!).color,
+    dot: getComputedStyle(td.querySelector(".day-dot circle")!).fill,
+  }));
+  expect(contrast(colors.number, colors.background)).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(colors.dot, colors.background)).toBeGreaterThanOrEqual(3);
+});
+
+test("fits the legend on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/#/calendar");
+  await expect(page.locator(".step-legend")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });

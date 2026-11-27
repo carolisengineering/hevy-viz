@@ -1,7 +1,8 @@
 import { Star } from "../components/ink";
 import { workoutMinutes } from "../core/consistency";
 import type { LatestEntry } from "../core/training";
-import { formatClock, formatFullDate, formatMinutes, formatPointSet, type Unit } from "../format";
+import type { HealthDay } from "../core/types";
+import { formatClock, formatDayTotals, formatFullDate, formatMinutes, formatPointSet, type Unit } from "../format";
 import { routeHref } from "../hooks/useRoute";
 
 interface Props {
@@ -10,15 +11,19 @@ interface Props {
   entries: LatestEntry[];
   unit: Unit;
   timeZone: string;
+  /** The day's Apple Health figures, when the calendar shows them. */
+  totals?: HealthDay;
 }
 
-/** A picked day's workouts: each one's title, start and length, and every exercise's top set. */
-export function DayPanel({ day, entries, unit, timeZone }: Props) {
+/** A picked day's Health totals, then its workouts: each one's title, start and length, and every exercise's top set. */
+export function DayPanel({ day, entries, unit, timeZone, totals }: Props) {
+  const totalsLine = totals ? formatDayTotals(totals, unit) : "";
   return (
     <section className="box day-panel" aria-labelledby="day-panel-title">
       <div className="box-head">
         <h3 id="day-panel-title">{formatFullDate(day)}</h3>
       </div>
+      {totalsLine && <p className="day-totals">{totalsLine}</p>}
       {entries.length === 0 ? (
         <p className="quiet">Rest day.</p>
       ) : (

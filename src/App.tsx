@@ -96,7 +96,7 @@ function Dashboard({ data, skipped }: { data: HevyDataset; skipped: number }) {
         ) : route.view === "overview" ? (
           <Overview training={training} range={range} unit={unit} />
         ) : route.view === "calendar" ? (
-          <Calendar training={training} range={range} day={route.day} unit={unit} />
+          <Calendar training={training} range={range} day={route.day} unit={unit} health={health} hevyIsSample={data.source === "sample"} />
         ) : route.view === "activity" && route.measure != null ? (
           <ActivityDetail
             training={training}
