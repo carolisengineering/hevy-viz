@@ -28,7 +28,7 @@ There's one sensible way: a small pure function in `src/core` reads each day's f
 ## The shading
 
 - **Six fixed bands** by the day's steps: under 5,000; 5,000–7,499; 7,500–9,999; 10,000–14,999; 15,000–19,999; 20,000 and up. The first three follow the common published activity levels *(author's call)*; the owner split 10,000 and up into three *(owner, 2026-11-26)*. Fixed bands mean the same thing in every year, where bands relative to the owner's own year would shift as habits change.
-- **A day with no step data** gets a faint diagonal hatch, so it can't be mistaken for a low day. That includes days after the export date.
+- **A day with no step data** gets a faint diagonal hatch, so it can't be mistaken for a low day. That includes the export day, which the export cuts short, and the days after it. *(Export day added 2026-11-27, at review.)*
 - **Shades are ink at increasing strength,** with the darkest kept light enough that the lifting dot and the day number stay readable (at least 3:1 for the dot, 4.5:1 for the number). Dark mode gets its own values. Exact strengths follow DESIGN.md. Six shades of one ink inside that ceiling sit close together, so the builder checks with a screenshot that neighboring bands are still told apart in both modes; if they aren't, the top bands may also thicken the day's border. *(Author's call.)*
 - **A legend under the summary line:** the six swatches with their step ranges, plus "no data".
 - **No health data at all** (nothing imported, or a load error): the calendar looks exactly as it does today, with no hatch and no legend.
@@ -36,7 +36,7 @@ There's one sensible way: a small pure function in `src/core` reads each day's f
 
 ## The day panel
 
-- **The totals line,** above the day's workouts, lists only the measures the day has, in Activity-tab order and formatting: "9,300 steps · 4.1 mi · 540 kcal · 46 min exercise · 7h20 sleep". Distance follows the km/mi setting. A day with no Health data has no line.
+- **The totals line,** above the day's workouts, lists only the measures the day has, in Activity-tab order and formatting: "9,300 steps · 4.1 mi · 46 min exercise · 540 kcal · 7h20 sleep". Distance follows the km/mi setting. A day with no Health data has no line.
 - **Sleep** is the night filed under that day by project 1's rule (the night that ended that morning).
 - **A rest day** with Health data can be picked. Its panel shows the totals line and says "Rest day." where the workouts would go, as the panel already does for a rest day. *(Changed 2026-11-26, at planning: was "No workouts".)* The calendar still opens on the latest training day, as now.
 
@@ -53,7 +53,7 @@ Each day's label gains its steps: "Wednesday, November 19, 2026: 1 session, 18 s
 ## Acceptance
 
 - Unit tests: 4,999, 5,000, 7,499, 7,500, 9,999, 10,000, 14,999, 15,000, 19,999 and 20,000 steps fall in the right bands; no steps is band 0; the panel line leaves out missing measures; sleep and distance use the existing formatting.
-- End-to-end on the demo: cells carry their band; a day after the sample's last health day is hatched; the legend shows; picking a health-only rest day shows its totals and "No workouts"; with no health data, no cell is shaded and there's no legend; real Health beside the Hevy sample shows no shading. All on desktop, phone and dark mode.
+- End-to-end on the demo: cells carry their band; a day after the sample's last health day is hatched; the legend shows; picking a health-only rest day shows its totals and "Rest day."; with no health data, no cell is shaded and there's no legend; real Health beside the Hevy sample shows no shading. All on desktop, phone and dark mode.
 
 ## Left to the builder
 
